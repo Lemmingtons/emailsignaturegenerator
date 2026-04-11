@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Signature Generator | SignatureForge</title>
+  <meta name="description" content="Create a professional email signature in minutes. 18 templates, full customisation, no subscription. Pay once, use forever.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://signatureforge.com.au/generator">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Email Signature Generator | SignatureForge">
+  <meta property="og:description" content="Professional email signatures for $5. No subscription. Pay once, use forever.">
+  <meta property="og:type" content="website">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SignatureForge",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "5.00",
+      "priceCurrency": "AUD"
+    },
+    "description": "Professional email signature generator. 18 templates, full customisation, no subscription."
+  }
+  </script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <a href="#generator-main" class="skip-link">Skip to content</a>
+
+  <!-- ── Header ── -->
+  <header class="site-header" role="banner">
+    <a href="index.html" class="site-logo" aria-label="SignatureForge home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      SignatureForge
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="index.html#templates">Templates</a>
+    </nav>
+  </header>
+
+  <!-- ── Generator ── -->
+  <main class="generator-page" id="generator-main">
+
+    <!-- Pro Banner -->
+    <div class="pro-banner" id="pro-banner" role="region" aria-label="Upgrade to Pro">
+      <div class="pro-banner-text">
+        <h3>Unlock all 18 templates</h3>
+        <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
+      </div>
+      <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $5">Unlock Pro &mdash; $5</button>
+    </div>
+
+    <div class="generator-grid">
+
+      <!-- ── Left Column: Controls ── -->
+      <div class="controls-column">
+
+        <!-- Templates -->
+        <div class="card">
+          <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Templates
+          </div>
+          <div class="card-body">
+            <div class="category-tabs" id="category-tabs" role="tablist" aria-label="Template categories"></div>
+            <div class="template-grid" id="template-grid" role="listbox" aria-label="Template selection"></div>
+          </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="card" style="margin-top: 16px;">
+          <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Contact Details
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" placeholder="Jane Smith" autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label for="title">Job Title</label>
+                <input type="text" id="title" placeholder="Marketing Manager">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="company">Company</label>
+              <input type="text" id="company" placeholder="Acme Corp">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" placeholder="0400 000 000" autocomplete="tel">
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email">
+              </div>
+            </div>
+
+            <!-- Photo -->
+            <div class="section-label">Photo</div>
+            <div class="form-group">
+              <label for="photoUrl">Photo URL</label>
+              <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
+              <span class="photo-hint">Paste a publicly hosted image URL for email clients</span>
+            </div>
+            <div class="form-group">
+              <div class="photo-upload-area">
+                <div class="photo-preview" id="photoPreviewThumb">
+                  <span class="photo-placeholder">No photo</span>
+                </div>
+                <div class="photo-controls">
+                  <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
+                    Upload preview
+                  </label>
+                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo for preview">
+                  <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
+                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="section-label">Social Links</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="website">Website</label>
+                <input type="url" id="website" placeholder="https://acme.com">
+              </div>
+              <div class="form-group">
+                <label for="linkedin">LinkedIn</label>
+                <input type="url" id="linkedin" placeholder="https://linkedin.com/in/...">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="instagram">Instagram</label>
+                <input type="url" id="instagram" placeholder="https://instagram.com/...">
+              </div>
+              <div class="form-group">
+                <label for="facebook">Facebook</label>
+                <input type="url" id="facebook" placeholder="https://facebook.com/...">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customisation -->
+        <div class="card" style="margin-top: 16px;">
+          <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Customise
+          </div>
+          <div class="card-body">
+
+            <!-- Colours -->
+            <div class="control-row">
+              <label for="primaryColor">Primary</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="primaryColor" value="#0891B2" aria-label="Primary colour">
+                <input type="text" class="color-hex" id="primaryColorHex" value="#0891B2" aria-label="Primary colour hex code">
+              </div>
+            </div>
+            <div class="control-row">
+              <label for="secondaryColor">Secondary</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="secondaryColor" value="#7c3aed" aria-label="Secondary colour">
+                <input type="text" class="color-hex" id="secondaryColorHex" value="#7c3aed" aria-label="Secondary colour hex code">
+              </div>
+            </div>
+            <div class="control-row">
+              <label for="textColor">Text</label>
+              <div class="color-picker-wrap">
+                <input type="color" id="textColor" value="#1e293b" aria-label="Text colour">
+                <input type="text" class="color-hex" id="textColorHex" value="#1e293b" aria-label="Text colour hex code">
+              </div>
+            </div>
+
+            <!-- Font -->
+            <div class="control-row">
+              <label for="fontFamily">Font</label>
+              <select id="fontFamily" aria-label="Font family">
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="'Georgia', serif">Georgia</option>
+                <option value="'Verdana', Geneva, sans-serif">Verdana</option>
+                <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+                <option value="'Tahoma', Geneva, sans-serif">Tahoma</option>
+                <option value="'Courier New', monospace">Courier</option>
+                <option value="'Times New Roman', serif">Times</option>
+                <option value="'Lucida Console', Monaco, monospace">Lucida</option>
+              </select>
+            </div>
+
+            <!-- Divider -->
+            <div class="section-label">Divider</div>
+            <div class="toggle-group" id="divider-toggles" role="radiogroup" aria-label="Divider style">
+              <button class="toggle-option active" data-value="line" role="radio" aria-checked="true">Line</button>
+              <button class="toggle-option" data-value="thin" role="radio" aria-checked="false">Thin</button>
+              <button class="toggle-option" data-value="dot" role="radio" aria-checked="false">Dotted</button>
+              <button class="toggle-option" data-value="none" role="radio" aria-checked="false">None</button>
+            </div>
+
+            <!-- Photo Shape -->
+            <div class="section-label">Photo Shape</div>
+            <div class="toggle-group" id="photo-shape-toggles" role="radiogroup" aria-label="Photo shape">
+              <button class="toggle-option active" data-value="circle" role="radio" aria-checked="true">Circle</button>
+              <button class="toggle-option" data-value="rounded" role="radio" aria-checked="false">Rounded</button>
+              <button class="toggle-option" data-value="square" role="radio" aria-checked="false">Square</button>
+            </div>
+
+            <!-- Icon Style -->
+            <div class="section-label">Icon Style</div>
+            <div class="toggle-group" id="icon-style-toggles" role="radiogroup" aria-label="Social icon style">
+              <button class="toggle-option active" data-value="mono" role="radio" aria-checked="true">Mono</button>
+              <button class="toggle-option" data-value="color" role="radio" aria-checked="false">Colour</button>
+              <button class="toggle-option" data-value="rounded" role="radio" aria-checked="false">Rounded</button>
+              <button class="toggle-option" data-value="square" role="radio" aria-checked="false">Square</button>
+            </div>
+
+            <!-- CTA (Sales templates) -->
+            <div class="section-label">Call to Action</div>
+            <div class="form-group">
+              <label for="ctaText">Button Text</label>
+              <input type="text" id="ctaText" placeholder="Book a Meeting">
+            </div>
+            <div class="form-group">
+              <label for="ctaUrl">Button URL</label>
+              <input type="url" id="ctaUrl" placeholder="https://calendly.com/your-link">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Right Column: Preview ── -->
+      <div class="preview-column">
+        <div class="preview-sticky">
+          <div class="card">
+            <div class="card-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Live Preview
+            </div>
+            <div class="card-body">
+              <div id="signature-preview" class="preview-area empty">
+                Start typing to preview your signature
+              </div>
+
+              <div class="btn-row">
+                <button class="btn btn-primary" id="copyHtmlBtn" aria-label="Copy signature for Gmail">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span class="btn-label">Copy for Gmail</span>
+                  <span class="btn-feedback">Copied!</span>
+                </button>
+                <button class="btn btn-secondary" id="copyTextBtn" aria-label="Copy as plain text">
+                  <span class="btn-label">Plain Text</span>
+                  <span class="btn-feedback">Copied!</span>
+                </button>
+              </div>
+
+              <details class="instructions">
+                <summary>How to add this signature to Gmail</summary>
+                <ol>
+                  <li>Click <strong>"Copy for Gmail"</strong> above</li>
+                  <li>Open <strong>Gmail</strong> and click the gear icon (top right)</li>
+                  <li>Click <strong>"See all settings"</strong></li>
+                  <li>Scroll to the <strong>"Signature"</strong> section</li>
+                  <li>Click <strong>"Create new"</strong> and give it a name</li>
+                  <li>Click inside the editor, press <code>Ctrl+A</code> (or <code>Cmd+A</code>) then <code>Ctrl+V</code> (<code>Cmd+V</code>)</li>
+                  <li>Scroll down and click <strong>"Save Changes"</strong></li>
+                  <li>Set it as your default for new emails and replies</li>
+                </ol>
+              </details>
+
+              <details class="instructions">
+                <summary>How to add this signature to Outlook</summary>
+                <ol>
+                  <li>Click <strong>"Copy for Gmail"</strong> above (works for Outlook too)</li>
+                  <li>Open <strong>Outlook</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Compose and reply</strong></li>
+                  <li>Under <strong>Email signature</strong>, click <strong>"+ New signature"</strong></li>
+                  <li>Paste with <code>Ctrl+V</code> (<code>Cmd+V</code>)</li>
+                  <li>Click <strong>Save</strong> and set as default</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 SignatureForge. No subscriptions. No lock-in. Just great signatures.</p>
+  </footer>
+
+  <script src="js/templates.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

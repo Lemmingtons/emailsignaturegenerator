@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Test Harness | SignatureForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .test-page { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .test-header { margin-bottom: 32px; }
+    .test-header h1 { font-family: var(--font-heading); font-size: 28px; font-weight: 800; color: var(--text); }
+    .test-header p { color: var(--text-secondary); margin-top: 8px; }
+
+    .test-controls {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: end;
+    }
+    .test-controls .control-group { display: flex; flex-direction: column; gap: 4px; }
+    .test-controls label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .test-controls select, .test-controls input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-height: 40px; }
+    .test-controls button { min-height: 40px; }
+
+    .test-stats {
+      background: var(--primary-light);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .test-stats strong { color: var(--primary); }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+      gap: 20px;
+    }
+
+    .test-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .test-card-header {
+      padding: 12px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .test-card-header h3 {
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .test-card-header .meta {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .test-card-header .badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+    }
+    .badge-free { background: #DCFCE7; color: #166534; }
+    .badge-pro { background: #EDE9FE; color: #5B21B6; }
+    .badge-cat { background: var(--primary-light); color: var(--primary); }
+
+    .test-card-body {
+      padding: 20px;
+      min-height: 120px;
+    }
+
+    .test-card-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .copy-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .copy-btn.copied { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .error-card { border-color: #ef4444; }
+    .error-card .test-card-header { background: #FEF2F2; }
+    .error-msg { color: #ef4444; font-size: 13px; font-weight: 600; padding: 16px; }
+
+    .validation-log {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .validation-log h3 {
+      padding: 12px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-heading);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .validation-log pre {
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-pass { color: #16a34a; }
+    .log-fail { color: #ef4444; }
+    .log-warn { color: #d97706; }
+    .log-info { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <div class="test-page">
+    <div class="test-header">
+      <h1>SignatureForge Test Harness</h1>
+      <p>Renders all 18 templates with test data. Validates HTML structure, checks for common email client issues, and lets you copy any signature to test in Gmail/Outlook.</p>
+    </div>
+
+    <!-- Test Controls -->
+    <div class="test-controls">
+      <div class="control-group">
+        <label for="test-color">Primary Colour</label>
+        <input type="color" id="test-color" value="#0891B2">
+      </div>
+      <div class="control-group">
+        <label for="test-font">Font</label>
+        <select id="test-font">
+          <option value="Arial, Helvetica, sans-serif">Arial</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Verdana', Geneva, sans-serif">Verdana</option>
+          <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+          <option value="'Tahoma', Geneva, sans-serif">Tahoma</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="test-photo">Photo Shape</label>
+        <select id="test-photo">
+          <option value="circle">Circle</option>
+          <option value="rounded">Rounded</option>
+          <option value="square">Square</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="test-divider">Divider</label>
+        <select id="test-divider">
+          <option value="line">Line</option>
+          <option value="thin">Thin</option>
+          <option value="dot">Dotted</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="test-icons">Icons</label>
+        <select id="test-icons">
+          <option value="mono">Mono</option>
+          <option value="color">Colour</option>
+          <option value="rounded">Rounded</option>
+          <option value="square">Square</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="runAllTests()" aria-label="Re-render all templates">Re-render All</button>
+      </div>
+      <div class="control-group">
+        <label>&nbsp;</label>
+        <button class="btn btn-secondary" onclick="runValidation()" aria-label="Run validation checks">Run Validation</button>
+      </div>
+    </div>
+
+    <div id="test-stats" class="test-stats"></div>
+    <div id="test-grid" class="test-grid"></div>
+    <div id="validation-log" class="validation-log" style="display: none;">
+      <h3>Validation Log</h3>
+      <pre id="log-output"></pre>
+    </div>
+  </div>
+
+  <script src="js/templates.js"></script>
+  <script>
+    // ── Test Data ──
+    const TEST_DATA = {
+      fullName: 'Jane Smith',
+      title: 'Marketing Manager',
+      company: 'Acme Corporation',
+      phone: '0431 924 630',
+      email: 'jane@acmecorp.com.au',
+      photoUrl: 'https://i.pravatar.cc/200?img=47',
+      website: 'https://www.acmecorp.com.au',
+      instagram: 'https://instagram.com/acmecorp',
+      facebook: 'https://facebook.com/acmecorp',
+      linkedin: 'https://linkedin.com/in/janesmith',
+    };
+
+    const TEST_DATA_MINIMAL = {
+      fullName: 'John Doe',
+      title: 'Consultant',
+      company: '',
+      phone: '0400 000 000',
+      email: 'john@example.com',
+      photoUrl: '',
+      website: '',
+      instagram: '',
+      facebook: '',
+      linkedin: '',
+    };
+
+    function getStyle() {
+      return {
+        primaryColor: document.getElementById('test-color').value,
+        secondaryColor: '#7c3aed',
+        textColor: '#1e293b',
+        fontFamily: document.getElementById('test-font').value,
+        dividerStyle: document.getElementById('test-divider').value,
+        photoShape: document.getElementById('test-photo').value,
+        iconStyle: document.getElementById('test-icons').value,
+        ctaText: 'Book a Meeting',
+        ctaUrl: 'https://calendly.com/janesmith',
+      };
+    }
+
+    function runAllTests() {
+      const grid = document.getElementById('test-grid');
+      const stats = document.getElementById('test-stats');
+      const style = getStyle();
+      let passed = 0;
+      let failed = 0;
+      let warnings = 0;
+      let cards = '';
+
+      Object.entries(TEMPLATES).forEach(([id, template]) => {
+        let html = '';
+        let error = '';
+
+        try {
+          html = template.render(TEST_DATA, style);
+
+          // Basic validation
+          if (!html || html.trim().length === 0) {
+            error = 'Template returned empty HTML';
+          } else if (!html.includes('<table')) {
+            error = 'No <table> element found — email clients require table-based layouts';
+          } else if (html.includes('<div')) {
+            error = 'Contains <div> elements — these break in many email clients';
+          }
+        } catch (e) {
+          error = 'RENDER ERROR: ' + e.message;
+        }
+
+        if (error) {
+          failed++;
+        } else {
+          passed++;
+        }
+
+        cards += `
+          <div class="test-card ${error ? 'error-card' : ''}">
+            <div class="test-card-header">
+              <h3>${template.name}</h3>
+              <div class="meta">
+                <span class="badge badge-cat">${template.category}</span>
+                <span class="badge ${template.pro ? 'badge-pro' : 'badge-free'}">${template.pro ? 'Pro' : 'Free'}</span>
+              </div>
+            </div>
+            <div class="test-card-body" id="preview-${id}">
+              ${error ? `<div class="error-msg">${error}</div>` : html}
+            </div>
+            <div class="test-card-footer">
+              <button class="copy-btn" onclick="copySignature('${id}', this)" aria-label="Copy ${template.name} as HTML">Copy HTML</button>
+              <button class="copy-btn" onclick="copyRaw('${id}', this)" aria-label="View ${template.name} raw HTML">View Source</button>
+            </div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML = cards;
+      stats.innerHTML = `<strong>${passed}</strong> passed / <strong>${failed}</strong> failed / <strong>${Object.keys(TEMPLATES).length}</strong> total templates rendered with current settings`;
+    }
+
+    async function copySignature(id, btn) {
+      const style = getStyle();
+      const html = TEMPLATES[id].render(TEST_DATA, style);
+      const plain = [TEST_DATA.fullName, TEST_DATA.title, TEST_DATA.phone, TEST_DATA.email].join('\n');
+
+      try {
+        const blob = new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plain], { type: 'text/plain' }),
+        });
+        await navigator.clipboard.write([blob]);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy HTML'; btn.classList.remove('copied'); }, 2000);
+      } catch (e) {
+        alert('Copy failed: ' + e.message);
+      }
+    }
+
+    function copyRaw(id, btn) {
+      const style = getStyle();
+      const html = TEMPLATES[id].render(TEST_DATA, style);
+      const win = window.open('', '_blank', 'width=800,height=600');
+      win.document.write('<pre style="white-space: pre-wrap; word-break: break-all; font-size: 12px; padding: 20px; font-family: monospace;">' + html.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>');
+      win.document.title = TEMPLATES[id].name + ' — Raw HTML';
+    }
+
+    function runValidation() {
+      const logContainer = document.getElementById('validation-log');
+      const logOutput = document.getElementById('log-output');
+      logContainer.style.display = '';
+      const style = getStyle();
+      let log = '';
+
+      function pass(msg) { log += `<span class="log-pass">PASS</span> ${msg}\n`; }
+      function fail(msg) { log += `<span class="log-fail">FAIL</span> ${msg}\n`; }
+      function warn(msg) { log += `<span class="log-warn">WARN</span> ${msg}\n`; }
+      function info(msg) { log += `<span class="log-info">INFO</span> ${msg}\n`; }
+
+      info('=== SignatureForge Template Validation ===\n');
+      info(`Testing ${Object.keys(TEMPLATES).length} templates with full and minimal data\n`);
+
+      // Test each template with full data
+      Object.entries(TEMPLATES).forEach(([id, template]) => {
+        info(`\n--- ${template.name} (${id}) ---`);
+
+        // 1. Renders without error
+        try {
+          const html = template.render(TEST_DATA, style);
+          pass('Renders with full data');
+
+          // 2. Returns non-empty HTML
+          if (html && html.trim().length > 0) {
+            pass('Returns non-empty HTML (' + html.length + ' chars)');
+          } else {
+            fail('Returns empty HTML');
+          }
+
+          // 3. Uses table-based layout
+          if (html.includes('<table')) {
+            pass('Uses table-based layout');
+          } else {
+            fail('Missing <table> — will break in email clients');
+          }
+
+          // 4. No <div> elements
+          if (!html.includes('<div')) {
+            pass('No <div> elements (email-safe)');
+          } else {
+            fail('Contains <div> — may break in Outlook');
+          }
+
+          // 5. All styles inline
+          if (!html.includes('class=')) {
+            pass('No CSS classes (all inline styles)');
+          } else {
+            fail('Contains CSS classes — email clients strip <style> blocks');
+          }
+
+          // 6. Includes the user's name
+          if (html.includes(TEST_DATA.fullName)) {
+            pass('Includes full name');
+          } else {
+            fail('Missing full name in output');
+          }
+
+          // 7. Phone is linked
+          if (html.includes('tel:')) {
+            pass('Phone number is a tel: link');
+          } else if (!TEST_DATA.phone) {
+            info('No phone provided — skipped');
+          } else {
+            warn('Phone number is not a tel: link');
+          }
+
+          // 8. Email is linked
+          if (html.includes('mailto:')) {
+            pass('Email is a mailto: link');
+          } else if (!TEST_DATA.email) {
+            info('No email provided — skipped');
+          } else {
+            warn('Email is not a mailto: link');
+          }
+
+          // 9. Photo included
+          if (html.includes(TEST_DATA.photoUrl)) {
+            pass('Photo URL included');
+          } else {
+            warn('Photo URL not found in output');
+          }
+
+          // 10. Website included
+          if (html.includes(TEST_DATA.website) || html.includes('acmecorp.com.au')) {
+            pass('Website included in output');
+          } else {
+            warn('Website not found in output');
+          }
+
+          // 11. Social icons present
+          const socialCount = (html.match(/icons8\.com/g) || []).length;
+          if (socialCount >= 3) {
+            pass('Social icons present (' + socialCount + ' found)');
+          } else if (socialCount > 0) {
+            warn('Only ' + socialCount + ' social icon(s) found');
+          } else {
+            warn('No social icons found');
+          }
+
+          // 12. No broken image references
+          if (!html.includes('src=""') && !html.includes("src=''")) {
+            pass('No empty src attributes');
+          } else {
+            fail('Contains empty src="" — causes broken image icons');
+          }
+
+          // 13. Width/height on images
+          const imgTags = html.match(/<img[^>]+>/g) || [];
+          const missingDimensions = imgTags.filter(img => !img.includes('width=') || !img.includes('height='));
+          if (missingDimensions.length === 0) {
+            pass('All images have width/height attributes');
+          } else {
+            warn(missingDimensions.length + ' image(s) missing width/height — may cause layout shift');
+          }
+
+          // 14. Alt text on images
+          const missingAlt = imgTags.filter(img => !img.includes('alt='));
+          if (missingAlt.length === 0) {
+            pass('All images have alt text');
+          } else {
+            warn(missingAlt.length + ' image(s) missing alt text');
+          }
+
+          // 15. Primary colour used
+          if (html.includes(style.primaryColor)) {
+            pass('Primary colour applied');
+          } else {
+            warn('Primary colour not found in output');
+          }
+
+          // 16. Font family used
+          if (html.includes('font-family')) {
+            pass('Font family specified inline');
+          } else {
+            warn('No font-family found — will fall back to client default');
+          }
+
+        } catch (e) {
+          fail('RENDER ERROR: ' + e.message);
+        }
+
+        // Test with minimal data
+        try {
+          const html2 = template.render(TEST_DATA_MINIMAL, style);
+          pass('Renders with minimal data (no photo, no socials, no company)');
+
+          if (html2.includes('undefined') || html2.includes('null')) {
+            fail('Output contains "undefined" or "null" with minimal data');
+          } else {
+            pass('No undefined/null leaks with minimal data');
+          }
+
+          if (html2.includes('src=""') || html2.includes("src=''")) {
+            fail('Empty src with no photo — will show broken image');
+          } else {
+            pass('No broken images with empty photo');
+          }
+        } catch (e) {
+          fail('MINIMAL DATA ERROR: ' + e.message);
+        }
+
+        // Test with empty name (edge case — should be caught by UI)
+        try {
+          const html3 = template.render({ ...TEST_DATA, fullName: '' }, style);
+          if (html3.includes('undefined')) {
+            warn('Empty name produces "undefined" in output');
+          } else {
+            pass('Handles empty name gracefully');
+          }
+        } catch (e) {
+          warn('Empty name causes error: ' + e.message);
+        }
+      });
+
+      // Summary
+      const passCount = (log.match(/class="log-pass"/g) || []).length;
+      const failCount = (log.match(/class="log-fail"/g) || []).length;
+      const warnCount = (log.match(/class="log-warn"/g) || []).length;
+      log = `<span class="log-info">=== SUMMARY: ${passCount} passed, ${failCount} failed, ${warnCount} warnings ===\n</span>` + log;
+
+      logOutput.innerHTML = log;
+      logContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Auto-run on load
+    document.addEventListener('DOMContentLoaded', function() {
+      runAllTests();
+      runValidation();
+    });
+
+    // Re-render on control change
+    ['test-color', 'test-font', 'test-photo', 'test-divider', 'test-icons'].forEach(id => {
+      document.getElementById(id).addEventListener('change', runAllTests);
+      document.getElementById(id).addEventListener('input', runAllTests);
+    });
+  </script>
+</body>
+</html>

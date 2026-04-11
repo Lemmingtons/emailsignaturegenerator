@@ -1,0 +1,706 @@
+// ── Email Signature Templates ──
+// All templates use HTML table layout for maximum email client compatibility.
+// Each template is a function that takes form data + style config and returns HTML.
+
+const TEMPLATES = {
+
+  // ═══════════════════════════════════════════
+  // PROFESSIONAL / CORPORATE
+  // ═══════════════════════════════════════════
+
+  classic: {
+    name: 'Classic',
+    category: 'professional',
+    pro: false,
+    icon: '&#9635;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const divider = this._divider(dividerStyle, primaryColor);
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.4;">
+  <tr>
+    ${this._photoCell(data, photoRadius)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 8px;">
+          <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  executive: {
+    name: 'Executive',
+    category: 'professional',
+    pro: false,
+    icon: '&#9733;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius, 100)}
+    <td style="vertical-align: top; ${data.photoUrl ? 'border-left: 3px solid ' + primaryColor + '; padding-left: 18px;' : ''}">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 6px;">
+          <strong style="font-size: 17px; color: ${textColor}; font-family: ${fontFamily}; letter-spacing: 0.3px;">${data.fullName.toUpperCase()}</strong><br/>
+          <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 6px; padding-top: 4px; font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLineStacked(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  corporate: {
+    name: 'Corporate',
+    category: 'professional',
+    pro: true,
+    icon: '&#127970;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; border-top: 4px solid ${primaryColor}; padding-top: 14px;">
+  <tr>
+    ${this._photoCell(data, photoRadius)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 10px;">
+          <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' | ' : ''}${data.company || ''}</span>
+        </td></tr>
+        <tr><td>
+          <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+            ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a></td></tr>` : ''}
+            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a></td></tr>` : ''}
+            ${data.website ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a></td></tr>` : ''}
+          </table>
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  boardroom: {
+    name: 'Boardroom',
+    category: 'professional',
+    pro: true,
+    icon: '&#128188;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr><td style="padding-bottom: 12px;">
+    <table cellpadding="0" cellspacing="0" border="0"><tr>
+      ${data.photoUrl ? `<td style="vertical-align: middle; padding-right: 14px;"><img src="${data.photoUrl}" width="60" height="60" style="border-radius: ${photoRadius}; display: block; width: 60px; height: 60px; object-fit: cover; border: 0;" alt="${data.fullName}" /></td>` : ''}
+      <td style="vertical-align: middle;">
+        <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+        <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily};">${data.title || ''}</span>
+      </td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 8px 0; font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+    ${data.company ? `<strong style="color: ${textColor};">${data.company}</strong><br/>` : ''}
+    ${this._contactLine(data, fontFamily)}
+  </td></tr>
+  ${this._socialRow(data, iconStyle, primaryColor, 8)}
+</table>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // CREATIVE / DESIGNER
+  // ═══════════════════════════════════════════
+
+  gradient: {
+    name: 'Gradient',
+    category: 'creative',
+    pro: true,
+    icon: '&#127752;',
+    render(data, style) {
+      const { primaryColor, secondaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const secondary = secondaryColor || '#7c3aed';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius, 90)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 8px;">
+          <strong style="font-size: 18px; color: ${primaryColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: ${secondary}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" width="200"><tr><td style="background: linear-gradient(to right, ${primaryColor}, ${secondary}); height: 3px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr></table>
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  bold: {
+    name: 'Bold',
+    category: 'creative',
+    pro: false,
+    icon: '&#9889;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${data.photoUrl ? `<td style="vertical-align: top; padding-right: 18px;"><img src="${data.photoUrl}" width="90" height="90" style="border-radius: ${photoRadius}; display: block; width: 90px; height: 90px; object-fit: cover; border: 3px solid ${primaryColor};" alt="${data.fullName}" /></td>` : ''}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 6px;">
+          <strong style="font-size: 20px; color: ${primaryColor}; font-family: ${fontFamily}; letter-spacing: -0.5px;">${data.fullName}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          <span style="font-size: 13px; color: #fff; background: ${primaryColor}; padding: 3px 10px; border-radius: 3px; font-family: ${fontFamily}; font-weight: 600;">${data.title || 'Professional'}</span>
+          ${data.company ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily}; padding-left: 8px;">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  modern: {
+    name: 'Modern',
+    category: 'creative',
+    pro: true,
+    icon: '&#10024;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; background: #fafafa; border-radius: 8px; padding: 16px;">
+  <tr><td>
+    <table cellpadding="0" cellspacing="0" border="0"><tr>
+      ${data.photoUrl ? `<td style="vertical-align: top; padding-right: 16px;"><img src="${data.photoUrl}" width="80" height="80" style="border-radius: ${photoRadius}; display: block; width: 80px; height: 80px; object-fit: cover; border: 0;" alt="${data.fullName}" /></td>` : ''}
+      <td style="vertical-align: top;">
+        <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+        <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
+        ${data.company ? `<br/><span style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 1px;">${data.company}</span>` : ''}
+      </td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding-top: 10px; padding-bottom: 6px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
+  </td></tr>
+  <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+    ${this._contactLine(data, fontFamily)}
+  </td></tr>
+  ${this._socialRow(data, iconStyle, primaryColor)}
+</table>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // MINIMAL
+  // ═══════════════════════════════════════════
+
+  clean: {
+    name: 'Clean',
+    category: 'minimal',
+    pro: false,
+    icon: '&#9723;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, dividerStyle } = style;
+      const sep = dividerStyle === 'pipe' ? ' | ' : dividerStyle === 'dot' ? ' \u00b7 ' : ' \u2014 ';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.6;">
+  <tr><td>
+    <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>
+    ${data.title ? `<span style="color: #9ca3af;">${sep}</span><span style="font-size: 13px; color: #6b7280; font-family: ${fontFamily};">${data.title}</span>` : ''}
+  </td></tr>
+  ${data.company ? `<tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</td></tr>` : ''}
+  <tr><td style="font-size: 12px; color: #6b7280; padding-top: 4px; font-family: ${fontFamily};">
+    ${this._contactLine(data, fontFamily, sep)}
+  </td></tr>
+</table>`;
+    }
+  },
+
+  textonly: {
+    name: 'Text Only',
+    category: 'minimal',
+    pro: false,
+    icon: '&#9776;',
+    render(data, style) {
+      const { textColor, fontFamily } = style;
+
+      let lines = [`<strong style="color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>`];
+      if (data.title) lines.push(`<span style="color: #6b7280;">${data.title}</span>`);
+      if (data.company) lines.push(`<span style="color: #6b7280;">${data.company}</span>`);
+      if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none;">${data.phone}</a>`);
+      if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none;">${data.email}</a>`);
+      if (data.website) lines.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none;">${data.website.replace(/^https?:\/\//, '')}</a>`);
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; line-height: 1.7;">
+  <tr><td>${lines.join('<br/>')}</td></tr>
+</table>`;
+    }
+  },
+
+  dash: {
+    name: 'Dash',
+    category: 'minimal',
+    pro: true,
+    icon: '&#8212;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily } = style;
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
+    <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+    ${data.title ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title}</span><br/>` : ''}
+    ${data.company ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span><br/>` : ''}
+    <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+      ${this._contactLine(data, fontFamily, ' | ')}
+    </span>
+  </td></tr>
+</table>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // SOCIAL-FIRST
+  // ═══════════════════════════════════════════
+
+  socialstar: {
+    name: 'Social Star',
+    category: 'social',
+    pro: true,
+    icon: '&#128640;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius, 80)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 6px;">
+          <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          ${this._socialRowLarge(data, iconStyle, primaryColor)}
+        </td></tr>
+        <tr><td style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily, ' \u00b7 ')}
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  creator: {
+    name: 'Creator',
+    category: 'social',
+    pro: false,
+    icon: '&#127916;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; text-align: center;">
+  <tr><td style="padding-bottom: 10px;">
+    ${data.photoUrl ? `<img src="${data.photoUrl}" width="70" height="70" style="border-radius: ${photoRadius}; display: inline-block; width: 70px; height: 70px; object-fit: cover; border: 0;" alt="${data.fullName}" />` : ''}
+  </td></tr>
+  <tr><td style="padding-bottom: 4px;">
+    <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>
+  </td></tr>
+  <tr><td style="padding-bottom: 8px;">
+    <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
+    ${data.company ? `<br/><span style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">${data.company}</span>` : ''}
+  </td></tr>
+  <tr><td style="padding-bottom: 6px;">
+    ${this._socialRowLarge(data, iconStyle, primaryColor)}
+  </td></tr>
+  <tr><td style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">
+    ${this._contactLine(data, fontFamily, ' \u00b7 ')}
+  </td></tr>
+</table>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // SALES / CTA
+  // ═══════════════════════════════════════════
+
+  ctabox: {
+    name: 'CTA Box',
+    category: 'sales',
+    pro: true,
+    icon: '&#128279;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const cta = ctaText || 'Book a Meeting';
+      const ctaLink = ctaUrl || '#';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 6px;">
+          <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' \u2014 ' : ''}${data.company || ''}</span>
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily}; padding-bottom: 10px;">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        <tr><td>
+          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};">${cta}</a>
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor, 10)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  banner: {
+    name: 'Banner',
+    category: 'sales',
+    pro: true,
+    icon: '&#128230;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const cta = ctaText || 'Learn More';
+      const ctaLink = ctaUrl || '#';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 6px;">
+          <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+  <tr><td colspan="2" style="padding-top: 12px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: ${primaryColor}; border-radius: 6px;">
+      <tr><td style="padding: 12px 18px; color: #fff; font-size: 13px; font-family: ${fontFamily};">
+        <strong>${cta}</strong>
+        <a href="${ctaLink}" target="_blank" style="color: #fff; text-decoration: underline; padding-left: 8px; font-size: 12px; font-family: ${fontFamily};">Click here &rarr;</a>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>`;
+    }
+  },
+
+  meetinglink: {
+    name: 'Meeting',
+    category: 'sales',
+    pro: false,
+    icon: '&#128197;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle, ctaText, ctaUrl } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const divider = this._divider(dividerStyle, primaryColor);
+      const cta = ctaText || 'Schedule a call';
+      const ctaLink = ctaUrl || '#';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 8px;">
+          <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        <tr><td style="padding-top: 8px;">
+          <a href="${ctaLink}" target="_blank" style="color: ${primaryColor}; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};">&#128197; ${cta}</a>
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // INDUSTRY-SPECIFIC
+  // ═══════════════════════════════════════════
+
+  realestate: {
+    name: 'Real Estate',
+    category: 'industry',
+    pro: true,
+    icon: '&#127968;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const cta = ctaText || 'View My Listings';
+      const ctaLink = ctaUrl || '#';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${data.photoUrl ? `<td style="vertical-align: top; padding-right: 18px;"><img src="${data.photoUrl}" width="100" height="100" style="border-radius: ${photoRadius}; display: block; width: 100px; height: 100px; object-fit: cover; border: 0;" alt="${data.fullName}" /></td>` : ''}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 4px;">
+          <strong style="font-size: 17px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || 'Licensed Agent'}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLineStacked(data, fontFamily)}
+        </td></tr>
+        <tr><td style="padding-top: 10px;">
+          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;">${cta}</a>
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  trades: {
+    name: 'Trades',
+    category: 'industry',
+    pro: true,
+    icon: '&#128295;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; border-left: 5px solid ${primaryColor}; padding-left: 14px;">
+  <tr><td>
+    <table cellpadding="0" cellspacing="0" border="0"><tr>
+      ${data.photoUrl ? `<td style="vertical-align: middle; padding-right: 14px;"><img src="${data.photoUrl}" width="65" height="65" style="border-radius: ${photoRadius}; display: block; width: 65px; height: 65px; object-fit: cover; border: 0;" alt="${data.fullName}" /></td>` : ''}
+      <td style="vertical-align: middle;">
+        <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
+        <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 700;">${data.title || ''}</span>
+        ${data.company ? `<br/><span style="font-size: 13px; color: #6b7280; font-family: ${fontFamily}; font-weight: 600;">${data.company}</span>` : ''}
+      </td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding-top: 8px; font-size: 13px; color: #6b7280; font-family: ${fontFamily};">
+    ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a><br/>` : ''}
+    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>` : ''}
+  </td></tr>
+  ${this._socialRow(data, iconStyle, primaryColor, 8)}
+</table>`;
+    }
+  },
+
+  consultant: {
+    name: 'Consultant',
+    category: 'industry',
+    pro: false,
+    icon: '&#128736;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr>
+    ${this._photoCell(data, photoRadius, 80)}
+    <td style="vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="padding-bottom: 2px;">
+          <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>
+        </td></tr>
+        <tr><td style="padding-bottom: 6px;">
+          <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+        </td></tr>
+        <tr><td style="padding-bottom: 8px;">
+          <table cellpadding="0" cellspacing="0" border="0" width="60"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
+        </td></tr>
+        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+          ${this._contactLine(data, fontFamily)}
+        </td></tr>
+        ${this._socialRow(data, iconStyle, primaryColor)}
+      </table>
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+};
+
+// ═══════════════════════════════════════════
+// SHARED HELPER METHODS
+// ═══════════════════════════════════════════
+// Attached to every template via prototype-like injection
+
+const _helpers = {
+  _photoCell(data, radius, size = 90) {
+    if (!data.photoUrl) return '';
+    return `<td style="vertical-align: top; padding-right: 18px;">
+      <img src="${data.photoUrl}" alt="${data.fullName}" width="${size}" height="${size}" style="border-radius: ${radius}; display: block; width: ${size}px; height: ${size}px; object-fit: cover; border: 0;" />
+    </td>`;
+  },
+
+  _contactLine(data, fontFamily, sep = '<span style="color: #d1d5db; padding: 0 8px;">|</span>') {
+    const parts = [];
+    if (data.phone) parts.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
+    if (data.email) parts.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
+    if (data.website) parts.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
+    return parts.join(sep);
+  },
+
+  _contactLineStacked(data, fontFamily) {
+    let lines = [];
+    if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
+    if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
+    if (data.website) lines.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
+    return lines.join('<br/>');
+  },
+
+  _divider(style, color) {
+    if (style === 'none') return '';
+    const styles = {
+      line: `border-top: 2px solid ${color}`,
+      thin: `border-top: 1px solid #e5e7eb`,
+      dot: `border-top: 2px dotted ${color}`,
+      double: `border-top: 3px double ${color}`,
+    };
+    const borderStyle = styles[style] || styles.line;
+    return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="${borderStyle}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>`;
+  },
+
+  _getIconUrl(platform, iconStyle, primaryColor) {
+    const color = primaryColor.replace('#', '');
+    const styleMap = {
+      mono: '6B6B6B',
+      color: color,
+      rounded: '6B6B6B',
+      square: '6B6B6B',
+    };
+    const iconColor = styleMap[iconStyle] || '6B6B6B';
+    const iconSet = iconStyle === 'rounded' ? 'ios-filled' : iconStyle === 'square' ? 'windows' : 'ios-filled';
+    const platformMap = {
+      website: 'globe--v1',
+      instagram: 'instagram-new--v1',
+      facebook: 'facebook-new',
+      linkedin: 'linkedin',
+    };
+    return `https://img.icons8.com/${iconSet}/24/${iconColor}/${platformMap[platform]}.png`;
+  },
+
+  _socialRow(data, iconStyle, primaryColor, topPad = 10) {
+    const socials = [
+      { url: data.website, platform: 'website', alt: 'Website' },
+      { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
+      { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
+      { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
+    ].filter(s => s.url);
+
+    if (!socials.length) return '';
+
+    const cells = socials.map(s => {
+      const icon = this._getIconUrl(s.platform, iconStyle, primaryColor);
+      return `<td style="padding-right: 8px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
+    }).join('');
+
+    return `<tr><td style="padding-top: ${topPad}px;"><table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table></td></tr>`;
+  },
+
+  _socialRowLarge(data, iconStyle, primaryColor) {
+    const socials = [
+      { url: data.website, platform: 'website', alt: 'Website' },
+      { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
+      { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
+      { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
+    ].filter(s => s.url);
+
+    if (!socials.length) return '';
+
+    const cells = socials.map(s => {
+      const icon = this._getIconUrl(s.platform, iconStyle, primaryColor);
+      return `<td style="padding-right: 10px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
+    }).join('');
+
+    return `<table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`;
+  },
+};
+
+// Attach helpers to all templates
+Object.values(TEMPLATES).forEach(t => {
+  Object.keys(_helpers).forEach(k => {
+    t[k] = _helpers[k];
+  });
+});
+
+// ── Category metadata ──
+const CATEGORIES = [
+  { id: 'all', name: 'All' },
+  { id: 'professional', name: 'Professional' },
+  { id: 'creative', name: 'Creative' },
+  { id: 'minimal', name: 'Minimal' },
+  { id: 'social', name: 'Social' },
+  { id: 'sales', name: 'Sales / CTA' },
+  { id: 'industry', name: 'Industry' },
+];
+
