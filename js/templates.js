@@ -630,23 +630,20 @@ const _helpers = {
     return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="${borderStyle}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>`;
   },
 
-  _getIconUrl(platform, iconStyle, primaryColor) {
-    const color = primaryColor.replace('#', '');
-    const styleMap = {
-      mono: '6B6B6B',
-      color: color,
-      rounded: '6B6B6B',
-      square: '6B6B6B',
+  _getIconSvg(platform, iconStyle, primaryColor, size = 22) {
+    const color = (iconStyle === 'color') ? primaryColor : '#6B6B6B';
+    const bg = (iconStyle === 'rounded' || iconStyle === 'square') ? color : 'none';
+    const radius = iconStyle === 'rounded' ? '4' : '0';
+    const iconPaths = {
+      website: `<circle cx="12" cy="12" r="10" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${color}" stroke-width="1.8"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="${color}" stroke-width="1.8" fill="none"/>`,
+      linkedin: `<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" fill="${color}"/><rect x="2" y="9" width="4" height="12" fill="${color}"/><circle cx="4" cy="4" r="2" fill="${color}"/>`,
+      instagram: `<rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="${color}" stroke-width="1.8" fill="none"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`,
+      facebook: `<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="${color}"/>`,
     };
-    const iconColor = styleMap[iconStyle] || '6B6B6B';
-    const iconSet = iconStyle === 'rounded' ? 'ios-filled' : iconStyle === 'square' ? 'windows' : 'ios-filled';
-    const platformMap = {
-      website: 'globe--v1',
-      instagram: 'instagram-new--v1',
-      facebook: 'facebook-new',
-      linkedin: 'linkedin',
-    };
-    return `https://img.icons8.com/${iconSet}/24/${iconColor}/${platformMap[platform]}.png`;
+    const path = iconPaths[platform] || iconPaths.website;
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">${path}</svg>`;
+    const encoded = 'data:image/svg+xml;base64,' + btoa(svgContent);
+    return encoded;
   },
 
   _socialRow(data, iconStyle, primaryColor, topPad = 10) {
@@ -660,7 +657,7 @@ const _helpers = {
     if (!socials.length) return '';
 
     const cells = socials.map(s => {
-      const icon = this._getIconUrl(s.platform, iconStyle, primaryColor);
+      const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 22);
       return `<td style="padding-right: 8px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
     }).join('');
 
@@ -678,7 +675,7 @@ const _helpers = {
     if (!socials.length) return '';
 
     const cells = socials.map(s => {
-      const icon = this._getIconUrl(s.platform, iconStyle, primaryColor);
+      const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 30);
       return `<td style="padding-right: 10px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
     }).join('');
 
