@@ -33,7 +33,7 @@
 
     // Check for pro unlock via URL param (post-Stripe redirect)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('pro') === 'true' || params.get('pro') === 'checkout' || localStorage.getItem('sig_pro') === 'true') {
+    if (params.get('pro') === 'true' || localStorage.getItem('sig_pro') === 'true') {
       unlockPro();
     }
 
