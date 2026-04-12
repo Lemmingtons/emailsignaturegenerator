@@ -199,7 +199,7 @@
   // ── Pro Purchase ──
   // TODO: Replace this URL with your actual Stripe Payment Link once created.
   // Create one at https://dashboard.stripe.com/payment-links
-  // Set the success URL to: https://signatureforge.com.au/generator.html?pro=true
+  // Set the success URL to: https://emailsignaturegenerator.ai/generator.html?pro=true
   const STRIPE_PAYMENT_LINK = '';
 
   function handleProPurchase() {
@@ -297,7 +297,7 @@
 
     // Add free branding if not pro
     if (!isPro) {
-      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://signatureforge.com.au/" style="color: #0891B2; text-decoration: none; font-weight: 600;">SignatureForge</a></td></tr></table>`;
+      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
     }
 
     preview.innerHTML = html;
@@ -316,7 +316,7 @@
     let html = template.render(data, style);
 
     if (!isPro) {
-      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://signatureforge.com.au/" style="color: #0891B2; text-decoration: none; font-weight: 600;">SignatureForge</a></td></tr></table>`;
+      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
     }
 
     // Plain text fallback
