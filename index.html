@@ -14,11 +14,16 @@
   <meta property="og:description" content="18 templates. Full customisation. No subscription. Pay once, use forever.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/">
+  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Email Signature Generator">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Email Signature Generator — $5 One-Time">
   <meta name="twitter:description" content="Professional email signatures. No subscription. Pay once.">
+  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Structured Data -->
   <script type="application/ld+json">
@@ -26,25 +31,38 @@
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Email Signature Generator",
+    "url": "https://emailsignaturegenerator.ai/generator",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
+    "featureList": [
+      "18 professional email signature templates",
+      "Custom colour picker with hex code input",
+      "8 email-safe fonts",
+      "Photo upload with circle, rounded, and square shapes",
+      "Social icons for LinkedIn, Instagram, Facebook, website",
+      "Call-to-action buttons",
+      "One-click copy for Gmail and Outlook",
+      "Compatible with 50+ email clients",
+      "No account required",
+      "No data stored server-side"
+    ],
     "offers": [
       {
         "@type": "Offer",
         "name": "Free",
         "price": "0",
         "priceCurrency": "AUD",
-        "description": "6 free templates with subtle branding"
+        "description": "6 free templates with full customisation and subtle branding"
       },
       {
         "@type": "Offer",
         "name": "Pro",
         "price": "5.00",
         "priceCurrency": "AUD",
-        "description": "All 18 templates, no branding, CTA buttons, premium designs"
+        "description": "All 18 templates, no branding, CTA buttons, premium designs, lifetime access"
       }
     ],
-    "description": "Professional email signature generator. 18 templates, full customisation, no subscription."
+    "description": "Professional email signature generator. 18 templates, full customisation, works with Gmail and Outlook. Pay $5 once, no subscription."
   }
   </script>
 
@@ -59,7 +77,7 @@
         "name": "Is this really a one-time payment?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Pay $5 once and you get lifetime access to all Pro templates. No subscription, no recurring charges, no hidden fees."
+          "text": "Yes. Pay $5 AUD once and you get lifetime access to all Pro templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
         }
       },
       {
@@ -67,7 +85,7 @@
         "name": "Will my signature work in Gmail and Outlook?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. All signatures use HTML table-based layouts that are compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients."
+          "text": "Yes. All signatures use HTML table-based layouts that are compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients. Every template is tested across major clients."
         }
       },
       {
@@ -75,10 +93,67 @@
         "name": "Can I use the free version?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Absolutely. The free version includes 6 templates with full customisation. The only difference is a small branding line and access to fewer templates."
+          "text": "Absolutely. The free version includes 6 templates with full customisation of colours, fonts, photo, and social links. The only difference is a small 'Made with emailsignaturegenerator.ai' text line and access to fewer template designs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need to create an account?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The generator works entirely in your browser. No account, no login, no tracking. Your data stays on your device. If you purchase Pro, the unlock is stored in your browser."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What if I need to update my signature later?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Come back anytime and create a new one. Pro access is stored in your browser, so you can generate as many signatures as you like with no limits and no extra charges."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I get a refund?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. We offer a 30-day money-back guarantee. If you're not happy, email us and we'll refund you, no questions asked."
         }
       }
     ]
+  }
+  </script>
+
+  <!-- Organization Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Email Signature Generator",
+    "url": "https://emailsignaturegenerator.ai/",
+    "logo": "https://emailsignaturegenerator.ai/favicon.svg",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "email": "info@strata-reports.ai",
+      "contactType": "customer support"
+    },
+    "description": "Professional email signature generator. 18 templates, full customisation, one-time payment of $5 AUD. No subscription.",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Email Signature Templates",
+      "numberOfItems": 18
+    }
+  }
+  </script>
+
+  <!-- WebSite Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Email Signature Generator",
+    "url": "https://emailsignaturegenerator.ai/",
+    "description": "Create professional email signatures in under 2 minutes. 18 templates, full customisation, works with Gmail and Outlook. Pay once, own forever."
   }
   </script>
 
@@ -143,56 +218,27 @@
     </section>
 
     <!-- ══════════════════════════════════════
-         TEMPLATE SHOWCASE
+         TEMPLATE SHOWCASE CAROUSEL
          ══════════════════════════════════════ -->
-    <section class="landing-section" id="templates" aria-label="Template gallery">
+    <section class="sig-carousel-section" id="templates" aria-label="Template previews">
       <div class="landing-section-header">
-        <h2>18 templates. 6 categories. Your style.</h2>
-        <p>From corporate boardrooms to creative studios. Pick a template, customise the colours and fonts, and you're done.</p>
+        <h2>18 templates. Your style.</h2>
+        <p>From corporate boardrooms to creative studios — pick a template, tweak the colours, and you're done.</p>
       </div>
-      <div class="template-showcase">
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#9635;</div>
-          <h3>Professional</h3>
-          <p>Clean, corporate-safe designs. Classic layouts with photo, contact info, and social links.</p>
-          <span class="showcase-badge free">2 free</span>
-          <span class="showcase-badge pro">2 pro</span>
+
+      <div class="sig-carousel-wrap">
+        <div class="sig-carousel" id="sigCarousel" aria-live="polite" aria-atomic="true">
+          <div class="sig-carousel-track" id="sigCarouselTrack"></div>
         </div>
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#9889;</div>
-          <h3>Creative</h3>
-          <p>Bold colours, gradient accents, modern typography. Stand out in every inbox.</p>
-          <span class="showcase-badge free">1 free</span>
-          <span class="showcase-badge pro">2 pro</span>
-        </div>
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#9723;</div>
-          <h3>Minimal</h3>
-          <p>Text-focused, ultra-lightweight. No images, no clutter. Just the essentials.</p>
-          <span class="showcase-badge free">2 free</span>
-          <span class="showcase-badge pro">1 pro</span>
-        </div>
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#127916;</div>
-          <h3>Social-First</h3>
-          <p>Large social icons front and centre. Perfect for influencers and content creators.</p>
-          <span class="showcase-badge free">1 free</span>
-          <span class="showcase-badge pro">1 pro</span>
-        </div>
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#128279;</div>
-          <h3>Sales / CTA</h3>
-          <p>Built-in call-to-action buttons. Drive meetings, demos, and clicks from every email.</p>
-          <span class="showcase-badge free">1 free</span>
-          <span class="showcase-badge pro">2 pro</span>
-        </div>
-        <div class="showcase-card">
-          <div class="showcase-icon" aria-hidden="true">&#127968;</div>
-          <h3>Industry</h3>
-          <p>Purpose-built for real estate, trades, and consulting. Tailored layouts for your field.</p>
-          <span class="showcase-badge free">1 free</span>
-          <span class="showcase-badge pro">2 pro</span>
-        </div>
+        <button class="sig-carousel-arrow sig-carousel-prev" id="sigPrev" aria-label="Previous template">&#8249;</button>
+        <button class="sig-carousel-arrow sig-carousel-next" id="sigNext" aria-label="Next template">&#8250;</button>
+      </div>
+
+      <div class="sig-carousel-dots" id="sigDots" role="tablist" aria-label="Template navigation"></div>
+
+      <div class="sig-carousel-cta">
+        <a href="generator.html" class="btn btn-primary" style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; padding: 14px 36px;">Create Your Signature Free</a>
+        <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">6 templates free &nbsp;&middot;&nbsp; All 18 from $5 once &nbsp;&middot;&nbsp; No subscription</p>
       </div>
     </section>
 
@@ -323,9 +369,134 @@
       &nbsp;&middot;&nbsp;
       <a href="#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
-      <a href="mailto:hello@emailsignaturegenerator.ai">Contact</a>
+      <a href="mailto:info@strata-reports.ai">Contact</a>
     </p>
   </footer>
 
+  <script src="js/templates.js"></script>
+  <script>
+  (function () {
+    var D = {
+      fullName: 'Sarah Mitchell',
+      title: 'Senior Account Manager',
+      company: 'Acme Corporation',
+      phone: '+1 555 012 3456',
+      email: 'sarah@acmecorp.com',
+      website: 'https://acmecorp.com',
+      photoUrl: 'assets/sample-headshot.jpg',
+      linkedin: 'https://linkedin.com/in/sarahmitchell',
+      instagram: 'https://instagram.com/sarahmitchell',
+      facebook: '',
+    };
+
+    var SLIDES = [
+      {
+        id: 'classic', category: 'Professional', name: 'Classic', isPro: false,
+        desc: 'Clean and corporate-safe. Works perfectly in Gmail, Outlook, and every major client.',
+        style: { primaryColor: '#0891B2', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
+      },
+      {
+        id: 'bold', category: 'Creative', name: 'Bold', isPro: false,
+        desc: 'Bold colours and modern typography. Stand out in every inbox.',
+        style: { primaryColor: '#0F766E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
+      },
+      {
+        id: 'gradient', category: 'Creative', name: 'Gradient', isPro: true,
+        desc: 'Gradient accents and bold colour. Makes a strong impression without sacrificing professionalism.',
+        style: { primaryColor: '#7C3AED', secondaryColor: '#EC4899', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
+      },
+      {
+        id: 'creator', category: 'Social', name: 'Creator', isPro: false,
+        desc: 'Social icons front and centre. Perfect for influencers and content creators.',
+        style: { primaryColor: '#22C55E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'none', photoShape: 'circle', iconStyle: 'color' }
+      },
+      {
+        id: 'meetinglink', category: 'Sales / CTA', name: 'Meeting', isPro: false,
+        desc: 'Drive meetings and demos directly from your email signature.',
+        style: { primaryColor: '#EA580C', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
+      },
+      {
+        id: 'consultant', category: 'Industry', name: 'Consultant', isPro: false,
+        desc: 'Purpose-built for consulting and professional services. Tailored layout for your field.',
+        style: { primaryColor: '#0D9488', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
+      },
+    ];
+
+    var track = document.getElementById('sigCarouselTrack');
+    var dotsContainer = document.getElementById('sigDots');
+    var carousel = document.getElementById('sigCarousel');
+    var current = 0;
+    var timer = null;
+
+    // Build slides and dots
+    SLIDES.forEach(function (s, i) {
+      var html = TEMPLATES[s.id].render(D, s.style);
+      var badge = s.isPro
+        ? '<span class="showcase-badge pro">Pro</span>'
+        : '<span class="showcase-badge free">Free</span>';
+
+      var slide = document.createElement('div');
+      slide.className = 'sig-carousel-slide';
+      slide.setAttribute('role', 'tabpanel');
+      slide.setAttribute('aria-label', s.category + ' template');
+      slide.innerHTML =
+        '<div class="sig-slide-meta">' +
+          '<span class="sig-category-label">' + s.category +
+            '<span class="sig-template-name">\u2014 ' + s.name + '</span>' +
+          '</span>' + badge +
+        '</div>' +
+        '<div class="sig-preview-frame">' + html + '</div>' +
+        '<div class="sig-slide-footer">' + s.desc + '</div>';
+      track.appendChild(slide);
+
+      var dot = document.createElement('button');
+      dot.className = 'sig-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('role', 'tab');
+      dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+      dot.setAttribute('aria-label', 'Slide ' + (i + 1) + ': ' + s.category);
+      dot.addEventListener('click', function (idx) {
+        return function () { stopAuto(); goTo(idx); startAuto(); };
+      }(i));
+      dotsContainer.appendChild(dot);
+    });
+
+    var dots = dotsContainer.querySelectorAll('.sig-dot');
+
+    function goTo(idx) {
+      current = (idx + SLIDES.length) % SLIDES.length;
+      track.style.transform = 'translateX(-' + (current * 100) + '%)';
+      dots.forEach(function (d, i) {
+        d.classList.toggle('active', i === current);
+        d.setAttribute('aria-selected', i === current ? 'true' : 'false');
+      });
+    }
+
+    function startAuto() { timer = setInterval(function () { goTo(current + 1); }, 4000); }
+    function stopAuto() { clearInterval(timer); }
+
+    document.getElementById('sigPrev').addEventListener('click', function () { stopAuto(); goTo(current - 1); startAuto(); });
+    document.getElementById('sigNext').addEventListener('click', function () { stopAuto(); goTo(current + 1); startAuto(); });
+
+    carousel.addEventListener('mouseenter', stopAuto);
+    carousel.addEventListener('mouseleave', startAuto);
+    carousel.addEventListener('focusin', stopAuto);
+    carousel.addEventListener('focusout', startAuto);
+
+    // Touch swipe
+    var touchStartX = 0;
+    carousel.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+    carousel.addEventListener('touchend', function (e) {
+      var diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) { stopAuto(); goTo(current + (diff > 0 ? 1 : -1)); startAuto(); }
+    }, { passive: true });
+
+    // Respect reduced-motion preference
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      track.style.transition = 'none';
+    } else {
+      startAuto();
+    }
+  })();
+  </script>
 </body>
 </html>

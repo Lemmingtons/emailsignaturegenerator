@@ -1,0 +1,81 @@
+[
+  {
+    "slug": "gmail",
+    "label": "Gmail",
+    "description": "Create a professional email signature for Gmail in under 2 minutes. Copy with one click and paste directly into Gmail Settings.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator",
+      "Open <strong>Gmail</strong> and click the gear icon (top right)",
+      "Click <strong>\"See all settings\"</strong>",
+      "Scroll to the <strong>\"Signature\"</strong> section",
+      "Click <strong>\"Create new\"</strong> and give it a name",
+      "Click inside the editor, press <code>Ctrl+A</code> then <code>Ctrl+V</code>",
+      "Scroll down and click <strong>\"Save Changes\"</strong>"
+    ],
+    "keywords": ["email signature for Gmail", "Gmail email signature generator", "how to create email signature in Gmail"]
+  },
+  {
+    "slug": "outlook",
+    "label": "Outlook",
+    "description": "Generate a professional Outlook email signature that renders perfectly in Outlook for Windows, Mac, and Outlook.com.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator (works for Outlook too)",
+      "Open <strong>Outlook</strong> → <strong>Settings</strong> → <strong>Compose and reply</strong>",
+      "Under <strong>Email signature</strong>, click <strong>\"+ New signature\"</strong>",
+      "Paste with <code>Ctrl+V</code> (<code>Cmd+V</code>)",
+      "Click <strong>Save</strong> and set as default"
+    ],
+    "keywords": ["email signature for Outlook", "Outlook email signature generator", "how to add email signature in Outlook"]
+  },
+  {
+    "slug": "apple-mail",
+    "label": "Apple Mail",
+    "description": "Create a professional Apple Mail email signature. Our HTML signatures render correctly across all Apple Mail versions on Mac and iPhone.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator",
+      "Open <strong>Apple Mail</strong> → <strong>Preferences</strong> → <strong>Signatures</strong>",
+      "Click <strong>\"+\"</strong> to add a new signature",
+      "Uncheck <strong>\"Always match my default message font\"</strong>",
+      "Click inside the signature editor, press <code>Cmd+A</code> then <code>Cmd+V</code>"
+    ],
+    "keywords": ["Apple Mail email signature", "Mac email signature generator", "email signature for Apple Mail"]
+  },
+  {
+    "slug": "google-workspace",
+    "label": "Google Workspace",
+    "description": "Create professional email signatures for your entire Google Workspace team. Compatible with all Google Workspace Gmail plans.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator",
+      "Open <strong>Gmail</strong> in your Google Workspace account",
+      "Click the gear icon → <strong>\"See all settings\"</strong>",
+      "Scroll to the <strong>\"Signature\"</strong> section and create a new signature",
+      "Paste with <code>Ctrl+V</code> and save"
+    ],
+    "keywords": ["Google Workspace email signature", "G Suite email signature", "email signature for Google Workspace"]
+  },
+  {
+    "slug": "yahoo-mail",
+    "label": "Yahoo Mail",
+    "description": "Create a professional Yahoo Mail email signature. Our HTML signatures are fully compatible with Yahoo Mail's signature editor.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator",
+      "Open <strong>Yahoo Mail</strong> → <strong>Settings</strong> (gear icon) → <strong>More Settings</strong>",
+      "Click <strong>\"Writing email\"</strong> in the sidebar",
+      "Toggle on <strong>\"Signature\"</strong> and click <strong>\"HTML\"</strong>",
+      "Paste your signature and save"
+    ],
+    "keywords": ["Yahoo Mail email signature", "email signature for Yahoo", "Yahoo email signature generator"]
+  },
+  {
+    "slug": "microsoft-365",
+    "label": "Microsoft 365",
+    "description": "Create professional email signatures for Microsoft 365 and Outlook.com. HTML table layouts render consistently across all Microsoft email clients.",
+    "installInstructions": [
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator",
+      "Open <strong>Outlook.com</strong> → <strong>Settings</strong> → <strong>Compose and reply</strong>",
+      "Under <strong>Email signature</strong>, paste your signature",
+      "Click <strong>Save</strong>"
+    ],
+    "keywords": ["Microsoft 365 email signature", "Outlook 365 email signature", "Office 365 email signature generator"]
+  }
+]

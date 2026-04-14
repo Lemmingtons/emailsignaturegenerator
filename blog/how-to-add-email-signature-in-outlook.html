@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Add an Email Signature in Outlook (2026 Guide)</title>
+  <meta name="description" content="Step-by-step guide to adding a professional HTML email signature in Outlook for Windows, Mac, and Outlook.com. Takes under 2 minutes.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="How to Add an Email Signature in Outlook (2026 Guide)">
+  <meta property="og:description" content="Step-by-step guide to adding a professional HTML email signature in Outlook for Windows, Mac, and Outlook.com.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook">
+  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:site_name" content="Email Signature Generator">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to Add an Email Signature in Outlook (2026 Guide)">
+  <meta name="twitter:description" content="Step-by-step: add a professional email signature to Outlook for Windows, Mac, and Outlook.com.">
+  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+
+  <!-- Article Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Add an Email Signature in Outlook (2026 Guide)",
+    "description": "Step-by-step guide to adding a professional HTML email signature in Outlook for Windows, Mac, and Outlook.com.",
+    "datePublished": "2026-04-12",
+    "dateModified": "2026-04-12",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Email Signature Generator",
+      "url": "https://emailsignaturegenerator.ai/"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook"
+    }
+  }
+  </script>
+
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I add an email signature in Outlook?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "To add an email signature in Outlook for Windows: (1) Open Outlook and click File → Options → Mail → Signatures. (2) Click New to create a signature. (3) Paste your HTML signature. (4) Set it as the default for New messages and Replies/Forwards. (5) Click OK. For Outlook.com: go to Settings → Compose and reply → Email signature, paste your signature, and save."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I add an HTML email signature to Outlook without it losing formatting?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "To preserve HTML formatting when pasting into Outlook, copy your signature using the 'Copy for Gmail' button (which produces HTML-compatible output), then paste with Ctrl+V into the Outlook signature editor. Do not use Paste Special or paste as plain text. Outlook renders HTML table-based signatures reliably."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my email signature look broken in Outlook?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Outlook uses Microsoft Word's HTML rendering engine, which has stricter CSS support than web browsers. Common issues: CSS float or flexbox layouts (use HTML tables instead), web fonts (use Arial, Georgia, or Verdana), background images (not reliably supported), and external stylesheets (use inline styles only)."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Breadcrumb Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://emailsignaturegenerator.ai/" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://emailsignaturegenerator.ai/blog/" },
+      { "@type": "ListItem", "position": 3, "name": "How to Add an Email Signature in Outlook", "item": "https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook" }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .blog-post { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+    .blog-post h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); margin-bottom: 12px; line-height: 1.2; }
+    .post-meta { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 32px; }
+    .blog-post h2 { font-size: 1.35rem; margin: 40px 0 12px; }
+    .blog-post h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+    .blog-post p { line-height: 1.75; margin-bottom: 16px; }
+    .blog-post ol, .blog-post ul { padding-left: 24px; line-height: 1.8; margin-bottom: 16px; }
+    .step-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 24px 0; }
+    .tip-box { background: #f0f9ff; border-left: 3px solid #0891b2; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 24px 0; }
+    .tip-box strong { color: #0891b2; }
+    .cta-inline { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; text-align: center; margin: 40px 0; }
+    .cta-inline h3 { margin-bottom: 8px; }
+    .cta-inline p { color: var(--text-secondary); margin-bottom: 20px; }
+    .breadcrumb { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; }
+    .breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+    code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    .faq-section { margin-top: 48px; }
+    .version-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .version-tab { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 0.9rem; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <header class="site-header" role="banner">
+    <a href="../index.html" class="site-logo" aria-label="Email Signature Generator home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      Email Signature Generator
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="../index.html#templates">Templates</a>
+      <a href="../index.html#pricing">Pricing</a>
+      <a href="../generator.html" class="nav-cta">Create Signature</a>
+    </nav>
+  </header>
+
+  <main id="main-content" class="blog-post">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> › <a href="index.html">Blog</a> › How to Add an Email Signature in Outlook
+    </nav>
+
+    <h1>How to Add an Email Signature in Outlook (2026 Guide)</h1>
+    <p class="post-meta">Updated April 2026 · 5 min read</p>
+
+    <p>Adding an HTML email signature to Outlook takes under 2 minutes. This guide covers Outlook for Windows, Outlook for Mac, and Outlook.com — with step-by-step instructions for each.</p>
+
+    <div class="cta-inline">
+      <h3>Need a professional Outlook signature?</h3>
+      <p>Create one free in under 2 minutes — 18 templates, full customisation, works perfectly in Outlook.</p>
+      <a href="../generator.html" class="btn btn-primary">Create Free Outlook Signature</a>
+    </div>
+
+    <h2>Outlook for Windows (Microsoft 365 / Outlook 2016–2024)</h2>
+
+    <div class="step-box">
+      <ol>
+        <li>Open <strong>Outlook</strong> and click <strong>File</strong> in the top-left menu.</li>
+        <li>Click <strong>Options</strong>, then <strong>Mail</strong>, then click <strong>Signatures…</strong></li>
+        <li>Under <strong>"Select signature to edit"</strong>, click <strong>New</strong>. Give your signature a name.</li>
+        <li>In the editor at the bottom, paste your signature with <code>Ctrl+V</code>.</li>
+        <li>Under <strong>"Choose default signature"</strong>, set your signature for <strong>New messages</strong> and <strong>Replies/forwards</strong>.</li>
+        <li>Click <strong>OK</strong> to save.</li>
+      </ol>
+    </div>
+
+    <div class="tip-box">
+      <strong>Tip:</strong> Use the "Copy for Gmail" button in our generator — it produces HTML that is compatible with both Gmail and Outlook.
+    </div>
+
+    <h2>Outlook for Mac (Microsoft 365 for Mac)</h2>
+
+    <div class="step-box">
+      <ol>
+        <li>Open <strong>Outlook</strong> on your Mac.</li>
+        <li>Click <strong>Outlook</strong> in the menu bar, then <strong>Settings</strong>.</li>
+        <li>Click <strong>Signatures</strong>.</li>
+        <li>Click <strong>"+"</strong> to add a new signature.</li>
+        <li>Paste your signature with <code>Cmd+V</code> in the editor.</li>
+        <li>Set it as the default for your account using the dropdown menus.</li>
+        <li>Close the window to save.</li>
+      </ol>
+    </div>
+
+    <h2>Outlook.com (web browser)</h2>
+
+    <div class="step-box">
+      <ol>
+        <li>Open <strong>Outlook.com</strong> in your browser and sign in.</li>
+        <li>Click the <strong>Settings gear icon</strong> (top right).</li>
+        <li>Click <strong>"View all Outlook settings"</strong> at the bottom of the panel.</li>
+        <li>Go to <strong>Mail → Compose and reply</strong>.</li>
+        <li>Under <strong>Email signature</strong>, paste your signature with <code>Ctrl+V</code>.</li>
+        <li>Check <strong>"Automatically include my signature on new messages"</strong> and <strong>"…on messages I forward or reply to"</strong>.</li>
+        <li>Click <strong>Save</strong>.</li>
+      </ol>
+    </div>
+
+    <h2>Why Outlook renders email signatures differently</h2>
+
+    <p>Outlook for Windows uses <strong>Microsoft Word's HTML rendering engine</strong>, not a standard web browser. This means some modern CSS features don't work reliably. Specifically:</p>
+
+    <ul>
+      <li><strong>CSS flexbox and grid</strong> — not supported. Use HTML tables for layout.</li>
+      <li><strong>Web fonts</strong> — Outlook falls back to system fonts. Stick to Arial, Georgia, Verdana, Tahoma, or Trebuchet MS.</li>
+      <li><strong>Background images in divs</strong> — partially supported. Avoid relying on them.</li>
+      <li><strong>External CSS files</strong> — stripped. All styles must be inline.</li>
+    </ul>
+
+    <p>Our email signatures use HTML table-based layouts with inline CSS, which is the industry standard for cross-client compatibility — including Outlook.</p>
+
+    <h2>How to check your Outlook signature looks correct</h2>
+
+    <p>After adding your signature, compose a test email and send it to a personal Gmail account. This lets you see exactly how the signature renders for your recipients across different email clients.</p>
+
+    <div class="tip-box">
+      <strong>Common issue:</strong> If your signature looks correct in Outlook but broken for Gmail recipients, the likely cause is an image hosted on a private server or corporate network that external recipients can't access. Use publicly hosted image URLs.
+    </div>
+
+    <h2>Adding your signature on Outlook mobile (iOS and Android)</h2>
+
+    <p>Outlook's mobile app supports HTML signatures on iOS and Android:</p>
+
+    <ol>
+      <li>Open the <strong>Outlook app</strong> on your phone.</li>
+      <li>Tap your <strong>profile photo</strong> (top left), then tap the <strong>Settings gear icon</strong>.</li>
+      <li>Tap <strong>Signature</strong>.</li>
+      <li>Toggle on <strong>Per Account Signature</strong>.</li>
+      <li>Type your signature details. (HTML is not directly supported in the mobile editor — use the desktop version for HTML signatures.)</li>
+    </ol>
+
+    <div class="cta-inline">
+      <h3>Create your Outlook signature now</h3>
+      <p>Free templates. Full customisation. Takes under 2 minutes. No account required.</p>
+      <a href="../generator.html" class="btn btn-primary">Create Free Signature</a>
+    </div>
+
+    <section class="faq-section" aria-label="Frequently asked questions">
+      <h2>Frequently Asked Questions</h2>
+
+      <details class="instructions">
+        <summary>How do I add an email signature in Outlook?</summary>
+        <p>In Outlook for Windows: File → Options → Mail → Signatures → New → paste your signature → set as default → OK. In Outlook.com: Settings → View all Outlook settings → Mail → Compose and reply → paste signature → Save.</p>
+      </details>
+
+      <details class="instructions">
+        <summary>How do I add an HTML email signature to Outlook without losing formatting?</summary>
+        <p>Copy your signature using the "Copy for Gmail" button (HTML format), then paste with Ctrl+V directly into the Outlook signature editor. Do not use Paste Special or plain text paste, as this strips all formatting.</p>
+      </details>
+
+      <details class="instructions">
+        <summary>Why does my email signature look broken in Outlook?</summary>
+        <p>Outlook uses Microsoft Word's HTML engine, which doesn't support modern CSS. Use HTML table-based layouts (not flexbox), email-safe fonts (Arial, Georgia, Verdana), inline CSS only, and publicly hosted images. Our generator handles all of this automatically.</p>
+      </details>
+    </section>
+
+    <nav aria-label="Related articles" style="margin-top: 48px; border-top: 1px solid var(--border); padding-top: 32px;">
+      <h2 style="font-size: 1.1rem;">Related guides</h2>
+      <ul style="list-style: none; padding: 0;">
+        <li style="margin-bottom: 8px;"><a href="how-to-add-email-signature-in-gmail.html">How to Add an Email Signature in Gmail →</a></li>
+        <li style="margin-bottom: 8px;"><a href="email-signature-best-practices.html">Email Signature Best Practices 2026 →</a></li>
+        <li><a href="free-vs-paid-email-signature-generators.html">Free vs Paid Email Signature Generators →</a></li>
+      </ul>
+    </nav>
+
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="../generator.html">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="../index.html#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@strata-reports.ai">Contact</a>
+    </p>
+  </footer>
+
+</body>
+</html>

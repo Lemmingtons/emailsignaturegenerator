@@ -1,0 +1,67 @@
+# Email Signature Generator
+
+> A browser-based email signature generator with 18 professional templates. One-time payment of $5 AUD for Pro. No subscription, no account required.
+
+## What this tool does
+
+Email Signature Generator (emailsignaturegenerator.ai) lets professionals create HTML email signatures in under 2 minutes. Users pick a template, enter their contact details, customise colours and fonts, and copy the finished signature into Gmail, Outlook, Apple Mail, or any other email client.
+
+## Pricing
+
+- **Free**: $0 — 6 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
+- **Pro**: $5 AUD, one-time payment — All 18 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
+
+No subscription. No recurring charges. No account needed.
+
+## Key features
+
+- 18 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
+- Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
+- 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
+- Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
+- Social icon links: website, LinkedIn, Instagram, Facebook — 4 icon styles (mono, colour, rounded, square)
+- CTA buttons: customisable text and URL (e.g. "Book a Meeting")
+- One-click copy: rich HTML for Gmail / plain text for any client
+- Works in 50+ email clients: Gmail, Outlook, Apple Mail, Yahoo Mail, and more
+- 30-day money-back guarantee
+- No tracking, no data stored server-side
+
+## Template categories
+
+1. **Professional** — Clean corporate layouts with photo, contact info, and social links (2 free, 2 pro)
+2. **Creative** — Bold colours, gradient accents, modern typography (1 free, 2 pro)
+3. **Minimal** — Text-focused, ultra-lightweight, no images (2 free, 1 pro)
+4. **Social-First** — Large social icons, ideal for creators and influencers (1 free, 1 pro)
+5. **Sales / CTA** — Built-in call-to-action buttons for meetings and demos (1 free, 2 pro)
+6. **Industry** — Purpose-built for real estate, trades, consulting (1 free, 2 pro)
+
+## Frequently asked questions
+
+**Is this a one-time payment?**
+Yes. Pay $5 AUD once and get lifetime access to all Pro templates, including future templates. No subscription, no recurring charges.
+
+**Does it work in Gmail and Outlook?**
+Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
+
+**Do I need an account?**
+No. The generator runs entirely in your browser. No login, no account, no tracking. Pro access is stored in your browser.
+
+**Can I update my signature later?**
+Yes. Come back anytime and create a new signature. Pro access persists in your browser with no limits.
+
+**Is there a refund policy?**
+Yes. 30-day money-back guarantee. Email info@strata-reports.ai.
+
+## Contact
+
+- Email: info@strata-reports.ai
+- Website: https://emailsignaturegenerator.ai/
+
+## Pages
+
+- [Homepage](https://emailsignaturegenerator.ai/) — Product overview, templates, pricing, FAQ
+- [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
+
+## Competitor comparison
+
+Unlike subscription-based tools (typically $9/month = $108/year), Email Signature Generator charges a single $5 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.
