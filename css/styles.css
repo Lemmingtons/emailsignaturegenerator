@@ -1264,7 +1264,7 @@ body {
   .sig-carousel-wrap { padding: 0 16px; }
   .sig-carousel-prev { left: -4px; }
   .sig-carousel-next { right: -4px; }
-  .sig-preview-frame { padding: 20px 16px; }
+  .sig-preview-frame { padding: 28px 22px; zoom: 0.72; overflow: hidden; }
   .sig-slide-meta, .sig-slide-footer { padding: 12px 16px; }
   .sig-carousel-section { padding: 48px 16px; }
 
