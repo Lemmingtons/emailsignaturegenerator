@@ -1264,9 +1264,10 @@ body {
   .sig-carousel-wrap { padding: 0 16px; }
   .sig-carousel-prev { left: -4px; }
   .sig-carousel-next { right: -4px; }
-  .sig-preview-frame { padding: 12px 16px; overflow: hidden; display: block; }
+  .sig-preview-frame { padding: 12px 16px; overflow: hidden; display: block; min-height: auto; }
   .sig-preview-frame > * { zoom: 0.6; }
   .sig-slide-meta, .sig-slide-footer { padding: 12px 16px; }
+  .sig-slide-footer { white-space: normal; overflow: visible; }
   .sig-carousel-section { padding: 48px 16px; }
 
   .form-row { grid-template-columns: 1fr; }
