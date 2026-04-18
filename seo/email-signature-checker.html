@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Signature Checker — Free HTML Signature Analyzer</title>
+  <meta name="description" content="Free email signature checker. Paste your signature HTML and we'll flag contrast, Gmail dark-mode, Outlook, tracker, and accessibility issues in seconds. No account, runs in your browser.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/seo/email-signature-checker">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Email Signature Checker — Free HTML Signature Analyzer">
+  <meta property="og:description" content="Test your email signature before you send it. Free. No account. Flags dark-mode, contrast, Outlook and tracker issues.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://emailsignaturegenerator.ai/seo/email-signature-checker">
+  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:site_name" content="Email Signature Generator">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Email Signature Checker — Free HTML Signature Analyzer">
+  <meta name="twitter:description" content="Paste any signature HTML. Get an instant audit of dark-mode, contrast, Outlook, trackers, and more.">
+  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+
+  <!-- Breadcrumb Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://emailsignaturegenerator.ai/" },
+      { "@type": "ListItem", "position": 2, "name": "Email Signature Checker", "item": "https://emailsignaturegenerator.ai/seo/email-signature-checker" }
+    ]
+  }
+  </script>
+
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an email signature checker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An email signature checker is a tool that analyses the HTML of your existing signature and flags issues that would cause it to render poorly in certain email clients. Our free checker tests contrast ratios, Gmail dark-mode compatibility, Outlook rendering bugs, tracker pixels, accessibility, and total file size."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this signature checker free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The signature health check is completely free and runs entirely in your browser — your signature HTML is never uploaded or stored. There is no account or signup."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I test if my email signature works in dark mode?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Paste your signature HTML into our free health check. It scans for the specific patterns that break in Gmail dark mode — pure #000000 text, missing background-colour declarations, and mid-tone greys that Gmail silently recolours. You'll see a full report in under a second."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does the signature score mean?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The score is out of 100. Each audit check can deduct points: critical issues (invisible text, broken layouts) cost 20, warnings cost 7, info-level nits cost 2. 90+ is excellent, 75–89 is good, below 50 indicates a signature that will likely break for a significant share of recipients."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .seo-page { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+    .seo-page h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin-bottom: 16px; }
+    .seo-page .intro { font-size: 1.1rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 40px; }
+    .seo-cta-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; margin: 40px 0; }
+    .seo-cta-box h2 { font-size: 1.4rem; margin-bottom: 8px; }
+    .seo-cta-box p { color: var(--text-secondary); margin-bottom: 24px; }
+    .breadcrumb { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; }
+    .breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
+    .feature-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .feature-item h3 { font-size: 0.95rem; margin-bottom: 4px; }
+    .feature-item p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+    .checks-list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 32px 0; }
+    .checks-list h2 { font-size: 1.2rem; margin-bottom: 12px; }
+    .checks-list ul { list-style: none; padding: 0; }
+    .checks-list li { padding: 8px 0; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+    .checks-list li:last-child { border-bottom: none; }
+    .checks-list li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+    .faq-section h2 { font-size: 1.3rem; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <!-- Header -->
+  <header class="site-header" role="banner">
+    <a href="../index.html" class="site-logo" aria-label="Email Signature Generator home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      Email Signature Generator
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="../index.html#templates">Templates</a>
+      <a href="../health-check.html">Health Check</a>
+      <a href="../index.html#pricing">Pricing</a>
+      <a href="../generator.html" class="nav-cta">Create Signature</a>
+    </nav>
+  </header>
+
+  <main id="main-content" class="seo-page">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> › Email Signature Checker
+    </nav>
+
+    <h1>Free Email Signature Checker — Audit Any HTML Signature</h1>
+    <p class="intro">Most signature issues never show up in your own inbox — they only break for recipients on different clients, themes, or devices. Our free checker simulates every major failure mode in seconds: WCAG contrast, Gmail dark mode, Outlook rendering, tracker pixels, oversized HTML, and accessibility. Paste your signature, see the report, fix what matters.</p>
+
+    <div class="seo-cta-box">
+      <h2>Audit Your Signature Now — Free</h2>
+      <p>Runs in your browser. No upload, no signup, no tracking.</p>
+      <a href="../health-check.html" class="btn btn-primary" aria-label="Go to the free signature health check">Run the Health Check</a>
+    </div>
+
+    <section>
+      <h2>What the checker actually tests</h2>
+      <div class="features-grid">
+        <div class="feature-item">
+          <h3>Gmail dark-mode safety</h3>
+          <p>Flags pure-black text, missing backgrounds, and mid-tone greys Gmail silently recolours in dark inboxes.</p>
+        </div>
+        <div class="feature-item">
+          <h3>WCAG AA contrast</h3>
+          <p>Calculates real contrast ratios between every text/background pair. Fails anything under 4.5:1.</p>
+        </div>
+        <div class="feature-item">
+          <h3>Outlook compatibility</h3>
+          <p>Detects <code>display:flex</code>, embedded <code>&lt;style&gt;</code> blocks, and other patterns Outlook strips.</p>
+        </div>
+        <div class="feature-item">
+          <h3>Tracker pixels</h3>
+          <p>Detects 1×1 images and known tracker domains. These degrade deliverability and recipients' filters block them.</p>
+        </div>
+        <div class="feature-item">
+          <h3>Size &amp; weight</h3>
+          <p>Warns above 10KB, fails above 25KB. Gmail clips messages over 102KB per thread.</p>
+        </div>
+        <div class="feature-item">
+          <h3>Accessibility</h3>
+          <p>Missing alt text, layout tables without <code>role="presentation"</code>, link text, and more.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="checks-list">
+      <h2>Full audit includes</h2>
+      <ul>
+        <li>Total HTML size vs Gmail's 102KB clipping limit</li>
+        <li>Per-image host (HTTPS vs HTTP, data URIs, missing dimensions)</li>
+        <li>WCAG AA contrast ratio for every text/background pair</li>
+        <li>Gmail dark-mode rendering safety</li>
+        <li>Outlook-breaking CSS (flex, grid, external stylesheets, positioning)</li>
+        <li>Tracker pixel detection</li>
+        <li>Fixed-width responsive issues</li>
+        <li>Accessibility (alt text, table roles, link targets)</li>
+        <li>HTML parse validity</li>
+        <li><code>mailto:</code> / <code>tel:</code> / protocol formatting on links</li>
+      </ul>
+    </div>
+
+    <section class="faq-section" aria-label="Frequently asked questions">
+      <h2>Frequently asked questions</h2>
+      <details class="instructions">
+        <summary>What is an email signature checker?</summary>
+        <p>A signature checker reads your existing HTML and flags issues that would cause it to render poorly in certain email clients. Our free checker tests contrast ratios, Gmail dark-mode compatibility, Outlook rendering, tracker pixels, accessibility, and total file size.</p>
+      </details>
+      <details class="instructions">
+        <summary>Is this signature checker free?</summary>
+        <p>Yes. The health check is completely free and runs entirely in your browser — your signature HTML is never uploaded or stored. There is no account or signup.</p>
+      </details>
+      <details class="instructions">
+        <summary>How do I test if my email signature works in dark mode?</summary>
+        <p>Paste your signature HTML into our free health check. It scans for the specific patterns that break Gmail dark mode — pure #000000 text, missing background-colour declarations, and mid-tone greys that Gmail silently recolours. You'll see a full report in under a second.</p>
+      </details>
+      <details class="instructions">
+        <summary>What does the signature score mean?</summary>
+        <p>The score is out of 100. Each audit check can deduct points: critical issues (invisible text, broken layouts) cost 20, warnings cost 7, info-level nits cost 2. 90+ is excellent, 75–89 is good, below 50 indicates a signature that will likely break for a significant share of recipients.</p>
+      </details>
+      <details class="instructions">
+        <summary>Do you store the HTML I paste?</summary>
+        <p>No. The entire audit runs in your browser using the built-in <code>DOMParser</code>. Nothing is sent to a server, nothing is stored anywhere. Close the tab and it's gone.</p>
+      </details>
+    </section>
+
+    <div class="seo-cta-box" style="margin-top: 48px;">
+      <h2>Ready to audit your signature?</h2>
+      <p>Paste, click, see what's broken. It takes under ten seconds.</p>
+      <a href="../health-check.html" class="btn btn-primary">Run the Health Check</a>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="../generator.html">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="../health-check.html">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="../index.html#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@strata-reports.ai">Contact</a>
+    </p>
+  </footer>
+
+</body>
+</html>

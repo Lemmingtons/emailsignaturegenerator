@@ -25,11 +25,11 @@ const TEMPLATES = {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
         <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -57,9 +57,9 @@ const TEMPLATES = {
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 17px; color: ${textColor}; font-family: ${fontFamily}; letter-spacing: 0.3px;">${data.fullName.toUpperCase()}</strong><br/>
           <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
-        <tr><td style="padding-bottom: 6px; padding-top: 4px; font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="padding-bottom: 6px; padding-top: 4px; font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -86,13 +86,13 @@ const TEMPLATES = {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr><td style="padding-bottom: 10px;">
           <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' | ' : ''}${data.company || ''}</span>
+          <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' | ' : ''}${data.company || ''}</span>
         </td></tr>
         <tr><td>
-          <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
-            ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a></td></tr>` : ''}
-            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a></td></tr>` : ''}
-            ${data.website ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a></td></tr>` : ''}
+          <table cellpadding="0" cellspacing="0" border="0" style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
+            ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a></td></tr>` : ''}
+            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="mailto:${data.email}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.email}</a></td></tr>` : ''}
+            ${data.website ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${data.website}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a></td></tr>` : ''}
           </table>
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -122,7 +122,7 @@ const TEMPLATES = {
       </td>
     </tr></table>
   </td></tr>
-  <tr><td style="border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 8px 0; font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+  <tr><td style="border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 8px 0; font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
     ${data.company ? `<strong style="color: ${textColor};">${data.company}</strong><br/>` : ''}
     ${this._contactLine(data, fontFamily)}
   </td></tr>
@@ -153,12 +153,12 @@ const TEMPLATES = {
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 18px; color: ${primaryColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
           <span style="font-size: 12px; color: ${secondary}; font-family: ${fontFamily}; font-weight: 600;">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
         <tr><td style="padding-bottom: 8px;">
           <table cellpadding="0" cellspacing="0" border="0" width="200"><tr><td style="background: linear-gradient(to right, ${primaryColor}, ${secondary}); height: 3px; font-size: 1px; line-height: 1px;">&nbsp;</td></tr></table>
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -188,9 +188,9 @@ const TEMPLATES = {
         </td></tr>
         <tr><td style="padding-bottom: 8px;">
           <span style="font-size: 13px; color: #fff; background: ${primaryColor}; padding: 3px 10px; border-radius: 3px; font-family: ${fontFamily}; font-weight: 600;">${data.title || 'Professional'}</span>
-          ${data.company ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily}; padding-left: 8px;">${data.company}</span>` : ''}
+          ${data.company ? `<span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily}; padding-left: 8px;">${data.company}</span>` : ''}
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -224,7 +224,7 @@ const TEMPLATES = {
   <tr><td style="padding-top: 10px; padding-bottom: 6px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
   </td></tr>
-  <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+  <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
     ${this._contactLine(data, fontFamily)}
   </td></tr>
   ${this._socialRow(data, iconStyle, primaryColor)}
@@ -248,10 +248,10 @@ const TEMPLATES = {
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.6;">
   <tr><td>
     <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>
-    ${data.title ? `<span style="color: #9ca3af;">${sep}</span><span style="font-size: 13px; color: #6b7280; font-family: ${fontFamily};">${data.title}</span>` : ''}
+    ${data.title ? `<span style="color: #9ca3af;">${sep}</span><span style="font-size: 13px; color: #4b5563; font-family: ${fontFamily};">${data.title}</span>` : ''}
   </td></tr>
-  ${data.company ? `<tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</td></tr>` : ''}
-  <tr><td style="font-size: 12px; color: #6b7280; padding-top: 4px; font-family: ${fontFamily};">
+  ${data.company ? `<tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</td></tr>` : ''}
+  <tr><td style="font-size: 12px; color: #4b5563; padding-top: 4px; font-family: ${fontFamily};">
     ${this._contactLine(data, fontFamily, sep)}
   </td></tr>
 </table>`;
@@ -267,11 +267,11 @@ const TEMPLATES = {
       const { textColor, fontFamily } = style;
 
       let lines = [`<strong style="color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong>`];
-      if (data.title) lines.push(`<span style="color: #6b7280;">${data.title}</span>`);
-      if (data.company) lines.push(`<span style="color: #6b7280;">${data.company}</span>`);
-      if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none;">${data.phone}</a>`);
-      if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none;">${data.email}</a>`);
-      if (data.website) lines.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none;">${data.website.replace(/^https?:\/\//, '')}</a>`);
+      if (data.title) lines.push(`<span style="color: #4b5563;">${data.title}</span>`);
+      if (data.company) lines.push(`<span style="color: #4b5563;">${data.company}</span>`);
+      if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #4b5563; text-decoration: none;">${data.phone}</a>`);
+      if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #4b5563; text-decoration: none;">${data.email}</a>`);
+      if (data.website) lines.push(`<a href="${data.website}" style="color: #4b5563; text-decoration: none;">${data.website.replace(/^https?:\/\//, '')}</a>`);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; line-height: 1.7;">
   <tr><td>${lines.join('<br/>')}</td></tr>
@@ -290,9 +290,9 @@ const TEMPLATES = {
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
     <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-    ${data.title ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title}</span><br/>` : ''}
-    ${data.company ? `<span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span><br/>` : ''}
-    <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+    ${data.title ? `<span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title}</span><br/>` : ''}
+    ${data.company ? `<span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span><br/>` : ''}
+    <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
       ${this._contactLine(data, fontFamily, ' | ')}
     </span>
   </td></tr>
@@ -387,9 +387,9 @@ const TEMPLATES = {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' \u2014 ' : ''}${data.company || ''}</span>
+          <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title || ''}${data.title && data.company ? ' \u2014 ' : ''}${data.company || ''}</span>
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily}; padding-bottom: 10px;">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily}; padding-bottom: 10px;">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         <tr><td>
@@ -421,10 +421,10 @@ const TEMPLATES = {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -462,11 +462,11 @@ const TEMPLATES = {
       <table cellpadding="0" cellspacing="0" border="0">
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
-          <span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.title || ''}</span>
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
         <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         <tr><td style="padding-top: 8px;">
@@ -505,12 +505,12 @@ const TEMPLATES = {
         </td></tr>
         <tr><td style="padding-bottom: 8px;">
           <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${data.title || 'Licensed Agent'}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
         <tr><td style="padding-bottom: 8px;">
           <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
         <tr><td style="padding-top: 10px;">
@@ -540,13 +540,13 @@ const TEMPLATES = {
       <td style="vertical-align: middle;">
         <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${data.fullName}</strong><br/>
         <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 700;">${data.title || ''}</span>
-        ${data.company ? `<br/><span style="font-size: 13px; color: #6b7280; font-family: ${fontFamily}; font-weight: 600;">${data.company}</span>` : ''}
+        ${data.company ? `<br/><span style="font-size: 13px; color: #4b5563; font-family: ${fontFamily}; font-weight: 600;">${data.company}</span>` : ''}
       </td>
     </tr></table>
   </td></tr>
-  <tr><td style="padding-top: 8px; font-size: 13px; color: #6b7280; font-family: ${fontFamily};">
-    ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a><br/>` : ''}
-    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>` : ''}
+  <tr><td style="padding-top: 8px; font-size: 13px; color: #4b5563; font-family: ${fontFamily};">
+    ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a><br/>` : ''}
+    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="mailto:${data.email}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>` : ''}
   </td></tr>
   ${this._socialRow(data, iconStyle, primaryColor, 8)}
 </table>`;
@@ -572,12 +572,12 @@ const TEMPLATES = {
         </td></tr>
         <tr><td style="padding-bottom: 6px;">
           <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${data.title || ''}</span>
-          ${data.company ? `<br/><span style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">${data.company}</span>` : ''}
+          ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${data.company}</span>` : ''}
         </td></tr>
         <tr><td style="padding-bottom: 8px;">
           <table cellpadding="0" cellspacing="0" border="0" width="60"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
         </td></tr>
-        <tr><td style="font-size: 12px; color: #6b7280; font-family: ${fontFamily};">
+        <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -595,43 +595,65 @@ const TEMPLATES = {
 // Attached to every template via prototype-like injection
 
 const _helpers = {
+  // Gmail auto-inverts pure #000000 / #FFFFFF in dark mode (sometimes producing
+  // unreadable results inside our light-island wrapper). Nudging by one byte
+  // keeps the appearance identical to the user while opting the color out of
+  // Gmail's color-swap heuristic.
+  _safeColor(hex) {
+    if (!hex) return hex;
+    const h = String(hex).trim().toLowerCase();
+    if (h === '#000' || h === '#000000' || h === 'black') return '#111111';
+    if (h === '#fff' || h === '#ffffff' || h === 'white') return '#fefefe';
+    return hex;
+  },
+
+  // Wraps a rendered signature in an opaque "light island" table. Gmail
+  // preserves elements with explicit bgcolor + background-color, so recipients
+  // in dark mode see the signature as we designed it instead of getting
+  // unreadable dark-on-dark text after Gmail's auto color-swap.
+  _darkSafeWrap(innerHtml) {
+    return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff;border-collapse:collapse;"><tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0;">${innerHtml}</td></tr></table>`;
+  },
+
   _photoCell(data, radius, size = 90) {
     if (!data.photoUrl) return '';
-    return `<td style="vertical-align: top; padding-right: 18px;">
+    return `<td style="vertical-align: top; padding-right: 18px; background-color: #ffffff;" bgcolor="#ffffff">
       <img src="${data.photoUrl}" alt="${data.fullName}" width="${size}" height="${size}" style="border-radius: ${radius}; display: block; width: ${size}px; height: ${size}px; object-fit: cover; border: 0;" />
     </td>`;
   },
 
-  _contactLine(data, fontFamily, sep = '<span style="color: #d1d5db; padding: 0 8px;">|</span>') {
+  _contactLine(data, fontFamily, sep = '<span style="color: #9ca3af; padding: 0 8px;">|</span>') {
     const parts = [];
-    if (data.phone) parts.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
-    if (data.email) parts.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
-    if (data.website) parts.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
+    if (data.phone) parts.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
+    if (data.email) parts.push(`<a href="mailto:${data.email}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
+    if (data.website) parts.push(`<a href="${data.website}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
     return parts.join(sep);
   },
 
   _contactLineStacked(data, fontFamily) {
     let lines = [];
-    if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
-    if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
-    if (data.website) lines.push(`<a href="${data.website}" style="color: #6b7280; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
+    if (data.phone) lines.push(`<a href="tel:${data.phone.replace(/\s/g,'')}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.phone}</a>`);
+    if (data.email) lines.push(`<a href="mailto:${data.email}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.email}</a>`);
+    if (data.website) lines.push(`<a href="${data.website}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${data.website.replace(/^https?:\/\//, '')}</a>`);
     return lines.join('<br/>');
   },
 
   _divider(style, color) {
     if (style === 'none') return '';
+    const safe = this._safeColor(color);
     const styles = {
-      line: `border-top: 2px solid ${color}`,
-      thin: `border-top: 1px solid #e5e7eb`,
-      dot: `border-top: 2px dotted ${color}`,
-      double: `border-top: 3px double ${color}`,
+      line: `border-top: 2px solid ${safe}`,
+      thin: `border-top: 1px solid #d1d5db`,
+      dot: `border-top: 2px dotted ${safe}`,
+      double: `border-top: 3px double ${safe}`,
     };
     const borderStyle = styles[style] || styles.line;
-    return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="${borderStyle}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>`;
+    return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="${borderStyle}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>`;
   },
 
   _getIconSvg(platform, iconStyle, primaryColor, size = 22) {
-    const color = (iconStyle === 'color') ? primaryColor : '#6B6B6B';
+    const safePrimary = this._safeColor(primaryColor);
+    const color = (iconStyle === 'color') ? safePrimary : '#4b5563';
     const bg = (iconStyle === 'rounded' || iconStyle === 'square') ? color : 'none';
     const radius = iconStyle === 'rounded' ? '4' : '0';
     const iconPaths = {
@@ -662,6 +684,32 @@ const _helpers = {
     }).join('');
 
     return `<tr><td style="padding-top: ${topPad}px;"><table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table></td></tr>`;
+  },
+
+  // Renders an optional regulatory / compliance block beneath the main signature.
+  // `conf.fields` is an array of {label, value} licence identifiers; `conf.disclaimer`
+  // is plain text. Kept small (10px grey) and on an explicit white background so
+  // Gmail dark mode doesn't invert contrast against the light-island wrapper.
+  _complianceBlock(conf, fontFamily) {
+    if (!conf || (!conf.fields?.length && !conf.disclaimer)) return '';
+    const ff = fontFamily || 'Arial, Helvetica, sans-serif';
+    const esc = (s) => String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    let parts = '';
+    if (conf.fields?.length) {
+      const fieldLine = conf.fields
+        .map(f => `<strong style="color: #4b5563;">${esc(f.label)}:</strong> <span style="color: #4b5563;">${esc(f.value)}</span>`)
+        .join('<span style="color: #9ca3af; padding: 0 6px;">·</span>');
+      parts += `<tr><td bgcolor="#ffffff" style="background-color: #ffffff; padding: 8px 0 4px 0; font-size: 10px; font-family: ${ff}; color: #4b5563; line-height: 1.45;">${fieldLine}</td></tr>`;
+    }
+    if (conf.disclaimer) {
+      parts += `<tr><td bgcolor="#ffffff" style="background-color: #ffffff; padding: 4px 0 0 0; font-size: 10px; font-family: ${ff}; color: #6b7280; line-height: 1.5;">${esc(conf.disclaimer)}</td></tr>`;
+    }
+
+    return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 10px; background-color: #ffffff; border-top: 1px solid #e5e7eb; max-width: 600px;">${parts}</table>`;
   },
 
   _socialRowLarge(data, iconStyle, primaryColor) {

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Signature Health Check — Free Signature Auditor</title>
+  <meta name="description" content="Paste your existing email signature HTML and get an instant audit — contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and more. Free, runs in your browser.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/health-check">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Email Signature Health Check — Free Signature Auditor">
+  <meta property="og:description" content="Instantly audit any email signature HTML for dark-mode, contrast, Outlook, and tracker issues. No account. Free.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://emailsignaturegenerator.ai/health-check">
+  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:site_name" content="Email Signature Generator">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Email Signature Health Check — Free Auditor">
+  <meta name="twitter:description" content="Paste any signature HTML. Get a full audit in seconds. Runs in your browser, no data sent.">
+  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Email Signature Health Check",
+    "url": "https://emailsignaturegenerator.ai/health-check",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "AUD"
+    },
+    "featureList": [
+      "WCAG AA contrast ratio audit",
+      "Gmail dark-mode safety check",
+      "Outlook rendering compatibility linter",
+      "Tracker pixel detection",
+      "Responsive width check",
+      "Accessibility audit (alt text, table roles)",
+      "HTML validity check",
+      "Runs entirely in your browser"
+    ],
+    "description": "Free email signature auditor. Paste your signature HTML and get a prioritised report of every issue that would break it across email clients."
+  }
+  </script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <a href="#check-main" class="skip-link">Skip to content</a>
+
+  <!-- ── Header ── -->
+  <header class="site-header" role="banner">
+    <a href="index.html" class="site-logo" aria-label="Email Signature Generator home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      Email Signature Generator
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="index.html#templates">Templates</a>
+      <a href="health-check.html" aria-current="page">Health Check</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="generator.html" class="nav-cta">Create Signature</a>
+    </nav>
+  </header>
+
+  <main id="check-main" class="check-page">
+
+    <!-- Hero -->
+    <section class="check-hero" aria-label="Health check introduction">
+      <h1>Email Signature <span class="highlight">Health Check</span></h1>
+      <p class="check-sub">Paste your existing signature HTML or upload an email. Get a full audit in seconds — contrast, Gmail dark-mode safety, Outlook compatibility, trackers, accessibility, and more.</p>
+      <p class="check-privacy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Runs entirely in your browser. Your HTML is never sent to a server.
+      </p>
+    </section>
+
+    <!-- Input Card -->
+    <section class="check-input-card" aria-label="Signature input">
+      <div class="check-input-header">
+        <h2>Your signature HTML</h2>
+        <div class="check-input-actions">
+          <label for="fileUpload" class="btn btn-secondary btn-sm" style="cursor:pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload .html / .eml / .txt
+          </label>
+          <input type="file" id="fileUpload" accept=".html,.htm,.eml,.txt" style="display:none;" aria-label="Upload signature file">
+          <button type="button" class="btn btn-secondary btn-sm" id="loadSampleBtn">Load sample</button>
+        </div>
+      </div>
+      <textarea id="signatureInput" placeholder="Paste your email signature HTML here, e.g.:
+
+<table>
+  <tr>
+    <td><img src='photo.jpg' /></td>
+    <td>
+      <strong>Jane Smith</strong><br>
+      Marketing Manager<br>
+      jane@acme.com
+    </td>
+  </tr>
+</table>" spellcheck="false" aria-label="Signature HTML input"></textarea>
+      <div class="check-submit-row">
+        <button type="button" class="btn btn-primary" id="runCheckBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Run health check
+        </button>
+        <button type="button" class="btn btn-link" id="clearBtn">Clear</button>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="check-results" id="checkResults" hidden aria-live="polite" aria-label="Audit results">
+      <div class="check-score-card">
+        <div class="check-score-ring" id="scoreRing" role="img" aria-label="Overall score">
+          <div class="check-score-number" id="scoreNumber">—</div>
+          <div class="check-score-label">/ 100</div>
+        </div>
+        <div class="check-score-summary">
+          <h2 id="scoreTitle">—</h2>
+          <p id="scoreBlurb">—</p>
+          <div class="check-counts" role="list">
+            <span class="check-count critical" role="listitem">
+              <span class="dot"></span>
+              <span id="countCritical">0</span> critical
+            </span>
+            <span class="check-count warning" role="listitem">
+              <span class="dot"></span>
+              <span id="countWarning">0</span> warnings
+            </span>
+            <span class="check-count info" role="listitem">
+              <span class="dot"></span>
+              <span id="countInfo">0</span> info
+            </span>
+            <span class="check-count pass" role="listitem">
+              <span class="dot"></span>
+              <span id="countPass">0</span> passing
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-issues" id="issueList" role="list"></div>
+
+      <div class="check-cta-row">
+        <a href="generator.html" class="btn btn-primary">
+          Fix these in our generator &rarr;
+        </a>
+        <button type="button" class="btn btn-secondary" id="rerunBtn">Re-run audit</button>
+      </div>
+    </section>
+
+    <!-- Sub-hero info -->
+    <section class="check-info" aria-label="What we check">
+      <h2>What we audit</h2>
+      <div class="check-info-grid">
+        <div class="check-info-item">
+          <strong>Gmail dark-mode safety</strong>
+          <p>Flags pure blacks, missing backgrounds, and mid-tone grays that Gmail silently breaks in dark inboxes.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Contrast &amp; WCAG AA</strong>
+          <p>Calculates real contrast ratios between every text/background colour pair. Fails anything under 4.5:1.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Outlook linter</strong>
+          <p>Detects <code>display:flex</code>, <code>display:grid</code>, external stylesheets, and other patterns Outlook strips.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Tracker pixels</strong>
+          <p>Flags 1&times;1 images and known tracker domains — the stuff your recipients' filters block anyway.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Size &amp; weight</strong>
+          <p>Warns above 10KB, fails above 25KB. Oversized signatures get clipped by Gmail at 102KB per thread.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Accessibility</strong>
+          <p>Missing alt text, layout tables without <code>role="presentation"</code>, non-semantic link targets.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="generator.html">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="health-check.html">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="index.html#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@strata-reports.ai">Contact</a>
+    </p>
+  </footer>
+
+  <script src="js/health-check.js"></script>
+</body>
+</html>

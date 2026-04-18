@@ -19,6 +19,7 @@ const urls = [];
 // ─── Core pages ────────────────────────────────────────────────────────────
 urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly' });
 urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly' });
+urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly' });
 
 // ─── SEO programmatic pages ─────────────────────────────────────────────────
 const seoDir = path.join(__dirname, 'seo');

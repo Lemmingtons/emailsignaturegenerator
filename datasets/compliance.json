@@ -1,0 +1,238 @@
+{
+  "_note": "Short-form industry-standard email disclaimers and common regulatory identifiers. These are templates, not legal advice — users should verify current wording with their regulator or in-house counsel.",
+  "roles": {
+    "lawyers": {
+      "label": "Lawyer / Attorney",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_bar_number", "label": "Bar Number", "placeholder": "e.g. 123456" },
+            { "id": "comp_bar_state", "label": "State of Bar", "placeholder": "e.g. CA" }
+          ],
+          "disclaimer": "ATTORNEY-CLIENT PRIVILEGE / WORK PRODUCT: This email and any attachments are confidential and may be protected by attorney-client privilege or the attorney work-product doctrine. If you are not the intended recipient, please notify the sender and delete this message."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_sra_number", "label": "SRA Number", "placeholder": "e.g. 123456" }
+          ],
+          "disclaimer": "This email is confidential and may be legally privileged. It is intended solely for the addressee. If you have received this in error, please notify the sender immediately and delete all copies. Regulated by the Solicitors Regulation Authority."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_practitioner_id", "label": "Practitioner ID", "placeholder": "Australian legal practitioner number" }
+          ],
+          "disclaimer": "This email and any attachments are confidential and may be subject to legal professional privilege. If you are not the intended recipient, you must not use, copy or disclose this information. Please notify the sender and delete the email."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_lsc_number", "label": "Law Society Number", "placeholder": "e.g. 12345A" },
+            { "id": "comp_lsc_province", "label": "Province", "placeholder": "e.g. ON" }
+          ],
+          "disclaimer": "This communication is intended only for the named recipient and may contain information that is privileged or confidential. If you are not the intended recipient, please notify the sender and delete the message. Unauthorised use or disclosure is prohibited."
+        }
+      }
+    },
+    "financial-advisors": {
+      "label": "Financial Advisor",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_crd_number", "label": "CRD Number", "placeholder": "FINRA CRD #" },
+            { "id": "comp_firm", "label": "Firm / Broker-Dealer", "placeholder": "Registered firm name" }
+          ],
+          "disclaimer": "Securities and advisory services offered through a registered broker-dealer / investment adviser. This email is for information purposes only and does not constitute an offer, solicitation, or recommendation. Not FDIC insured. May lose value. Check broker background at brokercheck.finra.org."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_fca_number", "label": "FCA Reference Number", "placeholder": "e.g. 123456" }
+          ],
+          "disclaimer": "Authorised and regulated by the Financial Conduct Authority. This email does not constitute a personal recommendation or financial advice. The value of investments can fall as well as rise and you may get back less than you invest."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_afsl_number", "label": "AFSL Number", "placeholder": "e.g. 123456" },
+            { "id": "comp_ar_number", "label": "Authorised Rep Number", "placeholder": "Optional — if you operate under an AFSL" }
+          ],
+          "disclaimer": "This email contains general information only and does not consider your objectives, financial situation or needs. Before acting, consider whether it is appropriate for you and read any relevant PDS or TMD. Authorised under AFSL."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_ciro_id", "label": "CIRO Registration", "placeholder": "IIROC / MFDA reg #" },
+            { "id": "comp_firm", "label": "Dealer / Firm", "placeholder": "Registered firm name" }
+          ],
+          "disclaimer": "Registered with the Canadian Investment Regulatory Organization. This email is for informational purposes only and is not an offer to buy or sell, or a recommendation of, any security. Commissions, trailing commissions, and other fees may apply."
+        }
+      }
+    },
+    "doctors": {
+      "label": "Doctor / Physician",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_npi", "label": "NPI Number", "placeholder": "10-digit National Provider Identifier" },
+            { "id": "comp_med_state", "label": "State License", "placeholder": "e.g. CA MD 123456" }
+          ],
+          "disclaimer": "HIPAA NOTICE: This email may contain protected health information (PHI) that is confidential and intended only for the named recipient. Unauthorized review, use, or disclosure is prohibited. If you received this in error, please notify the sender and delete this message."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_gmc_number", "label": "GMC Number", "placeholder": "7-digit GMC reference" }
+          ],
+          "disclaimer": "This email may contain confidential patient information. If you are not the intended recipient, delete this message and notify the sender immediately. Registered with the General Medical Council."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_ahpra_number", "label": "AHPRA Registration", "placeholder": "e.g. MED0001234567" }
+          ],
+          "disclaimer": "This email may contain personal health information protected under the Privacy Act 1988 and the Australian Privacy Principles. If you are not the intended recipient, you must not use, copy or disclose this information. Please notify the sender and delete."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_college_number", "label": "Medical College #", "placeholder": "e.g. CPSO 12345 (ON)" },
+            { "id": "comp_province", "label": "Province", "placeholder": "e.g. ON" }
+          ],
+          "disclaimer": "This email may contain personal health information protected under PHIPA / applicable provincial health privacy law. If you are not the intended recipient, please notify the sender and securely delete this message."
+        }
+      }
+    },
+    "real-estate-agents": {
+      "label": "Real Estate Agent",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_re_license", "label": "Real Estate License #", "placeholder": "e.g. 01234567" },
+            { "id": "comp_re_state", "label": "State", "placeholder": "e.g. CA" },
+            { "id": "comp_brokerage", "label": "Brokerage", "placeholder": "Your brokerage / DRE name" }
+          ],
+          "disclaimer": "Equal Housing Opportunity. This email does not constitute a binding agreement or an offer to buy or sell real estate. All material is deemed reliable but is not guaranteed. Independently owned and operated."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_tpo_member", "label": "Redress Scheme Member", "placeholder": "e.g. The Property Ombudsman" },
+            { "id": "comp_company_number", "label": "Company Number", "placeholder": "Optional — Companies House #" }
+          ],
+          "disclaimer": "Property details are for guidance only and do not form part of any contract. Subject to contract and availability. Member of an approved property redress scheme as required by the Estate Agents Act 1979 and Consumer Rights Act 2015."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_re_license", "label": "Licence Number", "placeholder": "Real estate licence #" },
+            { "id": "comp_re_state", "label": "State / Territory", "placeholder": "e.g. NSW, VIC, QLD" },
+            { "id": "comp_agency", "label": "Agency", "placeholder": "Licensed agency name" }
+          ],
+          "disclaimer": "All information is provided in good faith. Prospective purchasers should make their own enquiries and rely on their own investigations. Price guide is subject to change without notice. Licensed real estate agency."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_re_license", "label": "RECO / Provincial Reg #", "placeholder": "Your registration number" },
+            { "id": "comp_brokerage", "label": "Brokerage", "placeholder": "Registered brokerage name" }
+          ],
+          "disclaimer": "Not intended to solicit buyers or sellers currently under contract. Information is believed to be accurate but is not warranted. Independently owned and operated."
+        }
+      }
+    },
+    "accountants": {
+      "label": "Accountant / CPA",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_cpa_state", "label": "CPA State Licence", "placeholder": "e.g. CA CPA 12345" }
+          ],
+          "disclaimer": "CIRCULAR 230 NOTICE: Any tax advice contained in this communication (including attachments) is not intended or written to be used, and cannot be used, for the purpose of avoiding tax-related penalties or promoting, marketing, or recommending any transaction to another party."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_accounting_body", "label": "Professional Body", "placeholder": "e.g. ICAEW / ACCA" },
+            { "id": "comp_member_number", "label": "Member Number", "placeholder": "Membership #" }
+          ],
+          "disclaimer": "This email is confidential and intended only for the named recipient. Any advice is based on the information you have supplied and is subject to our engagement letter. Regulated by our professional body for a range of investment business activities."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_accounting_body", "label": "Professional Body", "placeholder": "e.g. CPA Australia / CA ANZ / IPA" },
+            { "id": "comp_member_number", "label": "Member Number", "placeholder": "Membership #" },
+            { "id": "comp_tpb_number", "label": "Tax Agent Number", "placeholder": "TPB registration (if applicable)" }
+          ],
+          "disclaimer": "Liability limited by a scheme approved under Professional Standards Legislation. This advice is general only and does not consider your personal circumstances. Registered tax practitioner services are provided subject to the Tax Agent Services Act 2009 and TPB Code of Professional Conduct."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_cpa_province", "label": "CPA Provincial Body", "placeholder": "e.g. CPA Ontario" },
+            { "id": "comp_cpa_number", "label": "Member Number", "placeholder": "Membership #" }
+          ],
+          "disclaimer": "This email and any attachments are confidential. Any tax-related advice is based on current law and the facts you have provided; changes to either may alter the advice. Provided under engagement terms."
+        }
+      }
+    },
+    "insurance-agents": {
+      "label": "Insurance Agent / Broker",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_npn", "label": "NPN", "placeholder": "National Producer Number" },
+            { "id": "comp_ins_state", "label": "State Licence", "placeholder": "e.g. CA 0A12345" }
+          ],
+          "disclaimer": "This communication is for informational purposes only and is not a contract. Coverage is subject to the terms, conditions, limitations, and exclusions of the issued policy. Licensed insurance producer."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_fca_number", "label": "FCA Reference Number", "placeholder": "e.g. 123456" }
+          ],
+          "disclaimer": "Authorised and regulated by the Financial Conduct Authority. This email does not constitute a personal recommendation. Please refer to your policy documents for full terms and conditions."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_afsl_number", "label": "AFSL Number", "placeholder": "e.g. 123456" },
+            { "id": "comp_ar_number", "label": "Authorised Rep Number", "placeholder": "Optional" }
+          ],
+          "disclaimer": "This email contains general advice only and does not consider your objectives, financial situation or needs. Before deciding, read the relevant PDS and TMD. Authorised under AFSL."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_ins_council", "label": "Insurance Council Licence", "placeholder": "Provincial licence #" },
+            { "id": "comp_ins_province", "label": "Province", "placeholder": "e.g. ON, BC, AB" }
+          ],
+          "disclaimer": "This communication is general information only and is not a binder, policy, or offer of insurance. All coverage is subject to underwriting approval and issued policy terms. Licensed in the province indicated."
+        }
+      }
+    },
+    "nurses": {
+      "label": "Nurse (RN / NP)",
+      "countries": {
+        "US": {
+          "fields": [
+            { "id": "comp_npi", "label": "NPI Number", "placeholder": "10-digit NPI" },
+            { "id": "comp_rn_license", "label": "State RN / NP Licence", "placeholder": "e.g. CA RN 123456" }
+          ],
+          "disclaimer": "HIPAA NOTICE: This email may contain protected health information (PHI) that is confidential. If you are not the intended recipient, do not read, copy, or distribute this message. Notify the sender and delete immediately."
+        },
+        "UK": {
+          "fields": [
+            { "id": "comp_nmc_pin", "label": "NMC PIN", "placeholder": "Nursing and Midwifery Council PIN" }
+          ],
+          "disclaimer": "This email may contain confidential patient information. Unauthorised disclosure is prohibited. Registered with the Nursing and Midwifery Council."
+        },
+        "AU": {
+          "fields": [
+            { "id": "comp_ahpra_number", "label": "AHPRA Registration", "placeholder": "e.g. NMW0001234567" }
+          ],
+          "disclaimer": "This email may contain personal health information protected under the Privacy Act 1988 and Australian Privacy Principles. If received in error, notify the sender and delete."
+        },
+        "CA": {
+          "fields": [
+            { "id": "comp_rn_reg", "label": "Nursing College Reg #", "placeholder": "e.g. CNO 12345 (ON)" },
+            { "id": "comp_province", "label": "Province", "placeholder": "e.g. ON" }
+          ],
+          "disclaimer": "This email may contain personal health information protected under PHIPA / applicable provincial health privacy law. If received in error, please notify the sender and securely delete."
+        }
+      }
+    }
+  },
+  "countries": [
+    { "code": "US", "name": "United States" },
+    { "code": "UK", "name": "United Kingdom" },
+    { "code": "AU", "name": "Australia" },
+    { "code": "CA", "name": "Canada" },
+    { "code": "OTHER", "name": "Other / Not listed" }
+  ],
+  "defaultDisclaimer": "This email and any attachments are confidential and intended solely for the named recipient. If you are not the intended recipient, please notify the sender and delete this message. Any unauthorised use, copying, or disclosure is prohibited."
+}

@@ -6,6 +6,8 @@
 
 Email Signature Generator (emailsignaturegenerator.ai) lets professionals create HTML email signatures in under 2 minutes. Users pick a template, enter their contact details, customise colours and fonts, and copy the finished signature into Gmail, Outlook, Apple Mail, or any other email client.
 
+A companion **Email Signature Health Check** at /health-check audits any pasted signature HTML for contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and size. It runs entirely in the browser and is free.
+
 ## Pricing
 
 - **Free**: $0 — 6 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
@@ -15,6 +17,9 @@ No subscription. No recurring charges. No account needed.
 
 ## Key features
 
+- Free **signature health check** — paste any signature HTML, get a full audit (contrast, Gmail dark-mode, Outlook, trackers, accessibility) in seconds
+- Gmail dark-mode safe — every template renders correctly in both light and dark inboxes
+- **Jurisdiction-aware compliance** — auto-fills your regulatory licence number (bar, NPI, AFSL, CRD, GMC, AHPRA, SRA, etc.) and appends the correct country-specific disclaimer (HIPAA, Circular 230, FCA, FINRA Reg BI, Legal Professional Privilege, etc.) for 7 regulated professions across US, UK, AU, and CA
 - 18 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
 - 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
@@ -61,6 +66,7 @@ Yes. 30-day money-back guarantee. Email info@strata-reports.ai.
 
 - [Homepage](https://emailsignaturegenerator.ai/) — Product overview, templates, pricing, FAQ
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
+- [Health Check](https://emailsignaturegenerator.ai/health-check) — Free signature auditor: paste any HTML to test dark-mode, contrast, Outlook compat, trackers, and accessibility
 
 ## Competitor comparison
 

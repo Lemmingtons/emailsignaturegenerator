@@ -36,13 +36,15 @@
     "operatingSystem": "Web",
     "featureList": [
       "18 professional email signature templates",
+      "Gmail dark-mode safe — signatures stay legible in dark inboxes",
       "Custom colour picker with hex code input",
       "8 email-safe fonts",
       "Photo upload with circle, rounded, and square shapes",
       "Social icons for LinkedIn, Instagram, Facebook, website",
       "Call-to-action buttons",
       "One-click copy for Gmail and Outlook",
-      "Compatible with 50+ email clients"
+      "Compatible with 50+ email clients",
+      "Compliance auto-fill for regulated professions (lawyers, doctors, financial advisors, real estate, accountants, insurance, nurses) across US, UK, AU, CA — with jurisdiction-aware disclaimers"
     ],
     "offers": [
       {
@@ -194,6 +196,59 @@
           </div>
         </div>
 
+        <!-- Compliance (optional, regulated professions) -->
+        <details class="card compliance-card" id="complianceCard" style="margin-top: 16px;">
+          <summary class="card-header compliance-summary">
+            <span class="compliance-summary-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <span class="compliance-summary-title">Compliance &amp; Disclaimer</span>
+            <span class="compliance-summary-badge">Optional</span>
+            <span class="compliance-summary-chevron" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </summary>
+          <div class="card-body">
+            <p class="compliance-help">
+              For regulated professions (lawyer, doctor, financial advisor, real estate, etc.) —
+              auto-add the required licence fields and a standard disclaimer to your signature.
+            </p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="complianceCountry">Country</label>
+                <select id="complianceCountry" aria-label="Country for compliance">
+                  <option value="">Select country…</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="complianceRole">Profession</label>
+                <select id="complianceRole" aria-label="Regulated profession" disabled>
+                  <option value="">Select country first…</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="complianceFields" class="compliance-fields" hidden></div>
+
+            <div id="complianceDisclaimerRow" class="compliance-disclaimer-row" hidden>
+              <label class="compliance-toggle">
+                <input type="checkbox" id="complianceIncludeDisclaimer" checked>
+                <span>Include regulatory disclaimer in signature</span>
+              </label>
+              <details class="compliance-preview-details">
+                <summary>Preview disclaimer text</summary>
+                <p class="compliance-disclaimer-preview" id="complianceDisclaimerPreview"></p>
+              </details>
+            </div>
+
+            <p class="compliance-legal-note">
+              <strong>Important:</strong> These are standard industry templates, not legal advice.
+              Verify the exact wording required with your regulator or in-house counsel before sending.
+            </p>
+          </div>
+        </details>
+
         <!-- Customisation -->
         <div class="card" style="margin-top: 16px;">
           <div class="card-header">
@@ -290,6 +345,14 @@
               Live Preview
             </div>
             <div class="card-body">
+              <div class="preview-toolbar">
+                <span class="preview-toolbar-label">Recipient view:</span>
+                <div class="toggle-group preview-bg-toggle" role="radiogroup" aria-label="Preview background">
+                  <button class="toggle-option active" data-preview-bg="light" role="radio" aria-checked="true">Light inbox</button>
+                  <button class="toggle-option" data-preview-bg="dark" role="radio" aria-checked="false">Dark inbox</button>
+                </div>
+                <span class="preview-toolbar-note" aria-live="polite">Signatures are Gmail dark-mode safe</span>
+              </div>
               <div id="signature-preview" class="preview-area empty">
                 Start typing to preview your signature
               </div>

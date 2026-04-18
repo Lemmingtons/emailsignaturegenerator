@@ -7,6 +7,7 @@
   let currentTemplate = 'classic';
   let currentCategory = 'all';
   let isPro = false; // Set to true after Stripe payment
+  let darkPreview = false; // Toggles the preview container's background to simulate recipient dark mode
 
   const defaultStyle = {
     primaryColor: '#0891B2',
@@ -22,6 +23,15 @@
 
   let style = { ...defaultStyle };
 
+  // Compliance state — populated after compliance.json loads
+  let complianceData = null;
+  const complianceState = {
+    country: '',
+    role: '',
+    fieldValues: {},
+    includeDisclaimer: true,
+  };
+
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function() {
     renderCategoryTabs();
@@ -29,6 +39,7 @@
     bindFormInputs();
     bindStyleControls();
     bindButtons();
+    initCompliance();
     renderPreview();
 
     // Check for pro unlock via URL param (post-Stripe redirect)
@@ -74,6 +85,7 @@
         ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
         <div class="template-preview">${t.icon}</div>
         <div class="template-name">${t.name}</div>
+        <span class="dark-safe-badge" title="Renders correctly in Gmail dark mode">Dark-safe</span>
       </button>`
     ).join('');
 
@@ -136,6 +148,20 @@
     bindToggleGroup('divider-toggles', 'dividerStyle');
     bindToggleGroup('photo-shape-toggles', 'photoShape');
     bindToggleGroup('icon-style-toggles', 'iconStyle');
+
+    // Preview background toggle (simulates recipient's light vs dark inbox)
+    document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(o => {
+          o.classList.remove('active');
+          o.setAttribute('aria-checked', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-checked', 'true');
+        darkPreview = this.dataset.previewBg === 'dark';
+        applyDarkPreviewClass();
+      });
+    });
 
     // CTA fields
     const ctaText = document.getElementById('ctaText');
@@ -293,15 +319,230 @@
     const template = TEMPLATES[currentTemplate];
     if (!template) return;
 
-    let html = template.render(data, style);
-
-    // Add free branding if not pro
-    if (!isPro) {
-      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
-    }
+    const html = buildSignatureHtml(template, data, style);
 
     preview.innerHTML = html;
     preview.classList.remove('empty');
+    applyDarkPreviewClass();
+  }
+
+  // Wraps the rendered template + optional compliance block + optional branding
+  // in a Gmail-dark-mode-safe light island. Used by both renderPreview and
+  // copyHTML so what the user sees is exactly what recipients get.
+  function buildSignatureHtml(template, data, style) {
+    let inner = template.render(data, style);
+
+    const complianceHtml = buildComplianceForTemplate(template);
+    if (complianceHtml) inner += complianceHtml;
+
+    if (!isPro) {
+      inner += `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 8px; background-color: #ffffff;"><tr><td bgcolor="#ffffff" style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif; background-color: #ffffff;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
+    }
+    return template._darkSafeWrap(inner);
+  }
+
+  function buildComplianceForTemplate(template) {
+    const conf = getActiveCompliance();
+    if (!conf) return '';
+    return template._complianceBlock(conf, style.fontFamily);
+  }
+
+  function getActiveCompliance() {
+    if (!complianceData) return null;
+    const country = complianceState.country;
+    const role = complianceState.role;
+    if (!country || country === 'OTHER') {
+      // Fall back to generic confidentiality disclaimer if user opted in without a regulated role
+      if (country === 'OTHER' && complianceState.includeDisclaimer) {
+        return {
+          fields: [],
+          disclaimer: complianceData.defaultDisclaimer || '',
+        };
+      }
+      return null;
+    }
+    if (!role) return null;
+
+    const roleEntry = complianceData.roles[role];
+    if (!roleEntry) return null;
+    const countryEntry = roleEntry.countries[country];
+    if (!countryEntry) return null;
+
+    const filledFields = (countryEntry.fields || []).map(f => ({
+      label: f.label,
+      value: (complianceState.fieldValues[f.id] || '').trim(),
+    })).filter(f => f.value);
+
+    const disclaimer = complianceState.includeDisclaimer ? (countryEntry.disclaimer || '') : '';
+
+    if (!filledFields.length && !disclaimer) return null;
+
+    return { fields: filledFields, disclaimer };
+  }
+
+  // ── Compliance Module ──
+  function initCompliance() {
+    const countrySel = document.getElementById('complianceCountry');
+    const roleSel = document.getElementById('complianceRole');
+    if (!countrySel || !roleSel) return;
+
+    fetch('datasets/compliance.json')
+      .then(r => {
+        if (!r.ok) throw new Error('compliance.json fetch failed: ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        complianceData = data;
+        populateComplianceCountries();
+        bindComplianceInputs();
+      })
+      .catch(err => {
+        console.warn('Compliance data unavailable:', err.message);
+      });
+  }
+
+  function populateComplianceCountries() {
+    const sel = document.getElementById('complianceCountry');
+    if (!sel || !complianceData) return;
+    const opts = complianceData.countries.map(c =>
+      `<option value="${c.code}">${c.name}</option>`).join('');
+    sel.innerHTML = '<option value="">Select country…</option>' + opts;
+  }
+
+  function populateComplianceRoles() {
+    const sel = document.getElementById('complianceRole');
+    if (!sel || !complianceData) return;
+    const country = complianceState.country;
+
+    if (!country) {
+      sel.innerHTML = '<option value="">Select country first…</option>';
+      sel.disabled = true;
+      return;
+    }
+
+    if (country === 'OTHER') {
+      sel.innerHTML = '<option value="">Generic confidentiality only</option>';
+      sel.disabled = true;
+      return;
+    }
+
+    const roles = Object.entries(complianceData.roles)
+      .filter(([, r]) => r.countries[country])
+      .map(([slug, r]) => `<option value="${slug}">${r.label}</option>`)
+      .join('');
+    sel.innerHTML = '<option value="">Select profession…</option>' + roles;
+    sel.disabled = false;
+  }
+
+  function renderComplianceFields() {
+    const container = document.getElementById('complianceFields');
+    const discRow = document.getElementById('complianceDisclaimerRow');
+    const discPreview = document.getElementById('complianceDisclaimerPreview');
+    if (!container || !discRow) return;
+
+    const { country, role } = complianceState;
+
+    // Hide everything if country not chosen
+    if (!country) {
+      container.innerHTML = '';
+      container.hidden = true;
+      discRow.hidden = true;
+      renderPreview();
+      return;
+    }
+
+    // "Other" country — just a generic disclaimer toggle, no fields
+    if (country === 'OTHER') {
+      container.innerHTML = '';
+      container.hidden = true;
+      discRow.hidden = false;
+      if (discPreview) discPreview.textContent = complianceData.defaultDisclaimer || '';
+      renderPreview();
+      return;
+    }
+
+    if (!role) {
+      container.innerHTML = '';
+      container.hidden = true;
+      discRow.hidden = true;
+      renderPreview();
+      return;
+    }
+
+    const roleEntry = complianceData.roles[role];
+    const countryEntry = roleEntry && roleEntry.countries[country];
+    if (!countryEntry) {
+      container.innerHTML = '';
+      container.hidden = true;
+      discRow.hidden = true;
+      renderPreview();
+      return;
+    }
+
+    const fieldsHtml = (countryEntry.fields || []).map(f => `
+      <div class="form-group">
+        <label for="${f.id}">${escapeAttr(f.label)}</label>
+        <input type="text" id="${f.id}" data-compliance-field="${escapeAttr(f.id)}" placeholder="${escapeAttr(f.placeholder || '')}" value="${escapeAttr(complianceState.fieldValues[f.id] || '')}">
+      </div>`).join('');
+
+    container.innerHTML = fieldsHtml
+      ? `<div class="compliance-fields-grid">${fieldsHtml}</div>`
+      : '';
+    container.hidden = !fieldsHtml;
+
+    // Bind field inputs
+    container.querySelectorAll('[data-compliance-field]').forEach(input => {
+      input.addEventListener('input', function() {
+        complianceState.fieldValues[this.dataset.complianceField] = this.value;
+        renderPreview();
+      });
+    });
+
+    discRow.hidden = false;
+    if (discPreview) discPreview.textContent = countryEntry.disclaimer || '';
+
+    renderPreview();
+  }
+
+  function bindComplianceInputs() {
+    const countrySel = document.getElementById('complianceCountry');
+    const roleSel = document.getElementById('complianceRole');
+    const disclaimerChk = document.getElementById('complianceIncludeDisclaimer');
+
+    if (countrySel) {
+      countrySel.addEventListener('change', function() {
+        complianceState.country = this.value;
+        complianceState.role = '';
+        complianceState.fieldValues = {};
+        populateComplianceRoles();
+        renderComplianceFields();
+      });
+    }
+
+    if (roleSel) {
+      roleSel.addEventListener('change', function() {
+        complianceState.role = this.value;
+        complianceState.fieldValues = {};
+        renderComplianceFields();
+      });
+    }
+
+    if (disclaimerChk) {
+      disclaimerChk.addEventListener('change', function() {
+        complianceState.includeDisclaimer = this.checked;
+        renderPreview();
+      });
+    }
+  }
+
+  function escapeAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function applyDarkPreviewClass() {
+    const preview = document.getElementById('signature-preview');
+    if (!preview) return;
+    preview.classList.toggle('dark-preview', darkPreview);
   }
 
   // ── Copy Functions ──
@@ -313,11 +554,7 @@
     }
 
     const template = TEMPLATES[currentTemplate];
-    let html = template.render(data, style);
-
-    if (!isPro) {
-      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
-    }
+    const html = buildSignatureHtml(template, data, style);
 
     // Plain text fallback
     const plain = [data.fullName, data.title, data.phone, data.email, data.website].filter(Boolean).join('\n');
