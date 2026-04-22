@@ -674,6 +674,10 @@ body {
   color: #9ca3af;
 }
 
+.preview-area.dark-preview img[src^="data:image/svg+xml;base64,"] {
+  filter: brightness(1.8);
+}
+
 .preview-sticky {
   position: sticky;
   top: 80px;
