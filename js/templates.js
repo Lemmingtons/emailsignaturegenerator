@@ -607,6 +607,44 @@ const _helpers = {
     return hex;
   },
 
+  escapeAttr(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  },
+
+  preview(style) {
+    const sampleData = {
+      fullName: 'Jane Smith',
+      title: 'Marketing Manager',
+      company: 'Acme Corp',
+      phone: '0400 000 000',
+      email: 'jane@acme.com',
+      website: 'https://acme.com',
+      instagram: 'https://instagram.com/acme',
+      facebook: 'https://facebook.com/acme',
+      linkedin: 'https://linkedin.com/in/janesmith',
+      photoUrl: '',
+    };
+    const sampleStyle = {
+      primaryColor: '#0891B2',
+      secondaryColor: '#7c3aed',
+      textColor: '#1e293b',
+      fontFamily: 'Arial, Helvetica, sans-serif',
+      dividerStyle: 'line',
+      photoShape: 'circle',
+      iconStyle: 'mono',
+      ctaText: 'Book a Meeting',
+      ctaUrl: 'https://calendly.com',
+      ...style,
+    };
+    const html = this.render(sampleData, sampleStyle);
+    return `<div class="preview-inner" style="transform:scale(0.28);transform-origin:top left;width:360px;">${html}</div>`;
+  },
+
   // Wraps a rendered signature in an opaque "light island" table. Gmail
   // preserves elements with explicit bgcolor + background-color, so recipients
   // in dark mode see the signature as we designed it instead of getting
@@ -617,8 +655,10 @@ const _helpers = {
 
   _photoCell(data, radius, size = 90) {
     if (!data.photoUrl) return '';
+    const safeUrl = this.escapeAttr(data.photoUrl);
+    const safeName = this.escapeAttr(data.fullName || '');
     return `<td style="vertical-align: top; padding-right: 18px; background-color: #ffffff;" bgcolor="#ffffff">
-      <img src="${data.photoUrl}" alt="${data.fullName}" width="${size}" height="${size}" style="border-radius: ${radius}; display: block; width: ${size}px; height: ${size}px; object-fit: cover; border: 0;" />
+      <img src="${safeUrl}" alt="${safeName}" width="${size}" height="${size}" style="border-radius: ${radius}; display: block; width: ${size}px; height: ${size}px; object-fit: cover; border: 0;" />
     </td>`;
   },
 
@@ -664,7 +704,7 @@ const _helpers = {
     };
     const path = iconPaths[platform] || iconPaths.website;
     const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">${path}</svg>`;
-    const encoded = 'data:image/svg+xml;base64,' + btoa(svgContent);
+    const encoded = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgContent)));
     return encoded;
   },
 
@@ -680,7 +720,8 @@ const _helpers = {
 
     const cells = socials.map(s => {
       const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 22);
-      return `<td style="padding-right: 8px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
+      const safeUrl = this.escapeAttr(s.url);
+      return `<td style="padding-right: 8px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
     }).join('');
 
     return `<tr><td style="padding-top: ${topPad}px;"><table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table></td></tr>`;
@@ -724,7 +765,8 @@ const _helpers = {
 
     const cells = socials.map(s => {
       const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 30);
-      return `<td style="padding-right: 10px;"><a href="${s.url}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
+      const safeUrl = this.escapeAttr(s.url);
+      return `<td style="padding-right: 10px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
     }).join('');
 
     return `<table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`;

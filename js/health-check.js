@@ -299,8 +299,11 @@
     id: 'valid',
     label: 'Valid HTML',
     run(ctx) {
-      const errs = ctx.doc.querySelectorAll('parsererror');
-      if (errs.length) return { severity: 'critical', message: 'Parser errors detected — the HTML is malformed and will render unpredictably.', fix: 'Close every tag, escape & characters as &amp;, and quote attribute values.' };
+      // Parse as XML to actually catch unclosed tags and malformed markup
+      const xmlParser = new DOMParser();
+      const xmlDoc = xmlParser.parseFromString(ctx.html, 'application/xml');
+      const xmlErrs = xmlDoc.querySelectorAll('parsererror');
+      if (xmlErrs.length) return { severity: 'critical', message: 'Parser errors detected — the HTML is malformed and will render unpredictably.', fix: 'Close every tag, escape & characters as &amp;, and quote attribute values.' };
       return { severity: 'pass', message: 'HTML parses cleanly.' };
     },
   });

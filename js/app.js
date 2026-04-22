@@ -39,19 +39,20 @@
     bindFormInputs();
     bindStyleControls();
     bindButtons();
+    bindValidation();
     initCompliance();
     renderPreview();
 
-    // Check for pro unlock via URL param (post-Stripe redirect)
+    // Check for pro unlock via URL param (post-Stripe redirect with token)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('pro') === 'true' || localStorage.getItem('sig_pro') === 'true') {
-      unlockPro();
-    }
-
-    // Clean up URL params after processing
-    if (params.has('pro')) {
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('sig_pro_token', token);
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    // Verify Pro status (new token-based or legacy fallback)
+    checkProStatus();
   });
 
   // ── Category Tabs ──
@@ -80,14 +81,29 @@
       currentCategory === 'all' || t.category === currentCategory
     );
 
-    container.innerHTML = entries.map(([id, t]) =>
-      `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
+    const previewStyle = {
+      primaryColor: '#0891B2',
+      secondaryColor: '#7c3aed',
+      textColor: '#1e293b',
+      fontFamily: 'Arial, Helvetica, sans-serif',
+      dividerStyle: 'line',
+      photoShape: 'circle',
+      iconStyle: 'mono',
+      ctaText: 'Book a Meeting',
+      ctaUrl: 'https://calendly.com',
+    };
+
+    container.innerHTML = entries.map(([id, t]) => {
+      if (!t._previewHtml) {
+        t._previewHtml = t.preview(previewStyle);
+      }
+      return `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
         ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
-        <div class="template-preview">${t.icon}</div>
+        <div class="template-preview">${t._previewHtml}</div>
         <div class="template-name">${t.name}</div>
         <span class="dark-safe-badge" title="Renders correctly in Gmail dark mode">Dark-safe</span>
-      </button>`
-    ).join('');
+      </button>`;
+    }).join('');
 
     container.querySelectorAll('.template-card').forEach(card => {
       card.addEventListener('click', function() {
@@ -216,10 +232,23 @@
     const copyHtmlBtn = document.getElementById('copyHtmlBtn');
     const copyTextBtn = document.getElementById('copyTextBtn');
     const buyProBtn = document.getElementById('buyProBtn');
+    const mobilePreviewFab = document.getElementById('mobilePreviewFab');
+    const mobileBackToForm = document.getElementById('mobileBackToForm');
 
     if (copyHtmlBtn) copyHtmlBtn.addEventListener('click', function() { copyHTML(this); });
     if (copyTextBtn) copyTextBtn.addEventListener('click', function() { copyPlainText(this); });
     if (buyProBtn) buyProBtn.addEventListener('click', handleProPurchase);
+
+    if (mobilePreviewFab) {
+      mobilePreviewFab.addEventListener('click', () => {
+        document.querySelector('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    if (mobileBackToForm) {
+      mobileBackToForm.addEventListener('click', () => {
+        document.querySelector('.controls-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   }
 
   // ── Pro Purchase ──
@@ -536,7 +565,67 @@
   }
 
   function escapeAttr(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // ── Validation ──
+  const validators = {
+    fullName: { validate: (val) => val.trim() ? '' : 'Please enter your full name.' },
+    email: {
+      validate: (val) => {
+        if (!val.trim()) return '';
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ? '' : 'Please enter a valid email address.';
+      },
+    },
+    website: { validate: urlValidator },
+    linkedin: { validate: urlValidator },
+    instagram: { validate: urlValidator },
+    facebook: { validate: urlValidator },
+  };
+
+  function urlValidator(val) {
+    if (!val.trim()) return '';
+    return /^https?:\/\//.test(val) ? '' : 'URL must start with http:// or https://';
+  }
+
+  function validateField(id) {
+    const el = document.getElementById(id);
+    const errorEl = document.getElementById(id + '-error');
+    const validator = validators[id];
+    if (!el || !validator) return true;
+
+    const msg = validator.validate(el.value);
+    if (msg) {
+      el.classList.add('input-error');
+      if (errorEl) errorEl.textContent = msg;
+      return false;
+    } else {
+      el.classList.remove('input-error');
+      if (errorEl) errorEl.textContent = '';
+      return true;
+    }
+  }
+
+  function clearFieldError(id) {
+    const el = document.getElementById(id);
+    const errorEl = document.getElementById(id + '-error');
+    if (el) el.classList.remove('input-error');
+    if (errorEl) errorEl.textContent = '';
+  }
+
+  function bindValidation() {
+    const fields = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', () => validateField(id));
+      el.addEventListener('input', () => clearFieldError(id));
+    });
   }
 
   function applyDarkPreviewClass() {
@@ -549,9 +638,11 @@
   async function copyHTML(btn) {
     const data = getFormData();
     if (!data.fullName) {
+      validateField('fullName');
       alert('Please enter your name to generate a signature.');
       return;
     }
+    ['email', 'website', 'linkedin', 'instagram', 'facebook'].forEach(validateField);
 
     const template = TEMPLATES[currentTemplate];
     const html = buildSignatureHtml(template, data, style);
@@ -587,9 +678,11 @@
   async function copyPlainText(btn) {
     const data = getFormData();
     if (!data.fullName) {
+      validateField('fullName');
       alert('Please enter your name.');
       return;
     }
+    ['email', 'website', 'linkedin', 'instagram', 'facebook'].forEach(validateField);
 
     const lines = [data.fullName, data.title, data.company, data.phone, data.email, data.website].filter(Boolean);
 
@@ -607,17 +700,81 @@
   }
 
   // ── Pro Unlock ──
+  async function checkProStatus() {
+    // 1. Try new token-based verification first
+    const token = localStorage.getItem('sig_pro_token');
+    if (token) {
+      const result = await verifyToken(token);
+      if (result.valid) {
+        unlockPro();
+        return;
+      }
+      // Token invalid or expired — clear it
+      localStorage.removeItem('sig_pro_token');
+    }
+
+    // 2. Legacy fallback for existing customers (30-day grace period)
+    // TODO: Remove this block after 2026-05-22 (30 days from deploy)
+    const legacy = localStorage.getItem('sig_pro');
+    if (legacy === 'true') {
+      showLegacyMigrationBanner();
+    }
+  }
+
+  async function verifyToken(token) {
+    try {
+      const res = await fetch('/api/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token })
+      });
+      return await res.json();
+    } catch (e) {
+      return { valid: false };
+    }
+  }
+
   function unlockPro() {
     isPro = true;
-    localStorage.setItem('sig_pro', 'true');
 
     // Hide pro banner
     const banner = document.getElementById('pro-banner');
     if (banner) banner.style.display = 'none';
 
+    // Show success toast
+    showProSuccessToast();
+
     // Re-render to remove badges and branding
     renderTemplateGrid();
     renderPreview();
+  }
+
+  function showProSuccessToast() {
+    var toast = document.createElement('div');
+    toast.textContent = 'Welcome to Pro! You now have access to all 18 templates.';
+    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; }, 3000);
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
+  }
+
+  function showLegacyMigrationBanner() {
+    // Don't show if already dismissed
+    if (localStorage.getItem('sig_pro_migration_dismissed') === 'true') return;
+
+    var banner = document.createElement('div');
+    banner.id = 'legacy-migration-banner';
+    banner.innerHTML = '<strong>Security upgrade:</strong> We\'ve strengthened Pro verification. ' +
+      '<a href="https://buy.stripe.com/6oUeVc0ET92yauBf1sf7i00" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
+      '(no charge if you already paid). ' +
+      '<button id="dismiss-migration" style="margin-left:12px;background:#0f766e;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">Dismiss</button>';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ccfbf1;color:#115e59;padding:12px 16px;text-align:center;font-size:13px;z-index:10000;border-bottom:1px solid #99f6e4;';
+    document.body.appendChild(banner);
+
+    document.getElementById('dismiss-migration').addEventListener('click', function() {
+      localStorage.setItem('sig_pro_migration_dismissed', 'true');
+      banner.remove();
+    });
   }
 
   function showProPrompt() {
@@ -629,8 +786,5 @@
       banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
-
-  // ── Expose for Stripe callback ──
-  window.unlockPro = unlockPro;
 
 })();

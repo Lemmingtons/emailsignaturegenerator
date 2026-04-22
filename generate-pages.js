@@ -16,6 +16,15 @@
 const fs = require('fs');
 const path = require('path');
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 const SEO_DIR = path.join(__dirname, 'seo');
 const SITE_URL = 'https://emailsignaturegenerator.ai';
 
@@ -143,16 +152,16 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
   const installHTML = installInstructions ? `
     <section class="install-section">
-      <h2>How to add your signature to ${seoLabel}</h2>
+      <h2>How to add your signature to ${escapeHtml(seoLabel)}</h2>
       <ol class="install-steps">
-        ${installInstructions.map(step => `<li>${step}</li>`).join('\n        ')}
+        ${installInstructions.map(step => `<li>${escapeHtml(step)}</li>`).join('\n        ')}
       </ol>
     </section>` : '';
 
   const faqHTML = faqs.map(f => `
         <details class="instructions">
-          <summary>${f.q}</summary>
-          <p>${f.a}</p>
+          <summary>${escapeHtml(f.q)}</summary>
+          <p>${escapeHtml(f.a)}</p>
         </details>`).join('');
 
   return `<!DOCTYPE html>
@@ -160,15 +169,15 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-  <meta name="description" content="${metaDesc}">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(metaDesc)}">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="canonical" href="${url}">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${metaDesc}">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${url}">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -176,8 +185,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${metaDesc}">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Breadcrumb Schema -->
@@ -233,16 +242,16 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
   <main id="main-content" class="seo-page">
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../index.html">Home</a> › ${h1}
+      <a href="../index.html">Home</a> › ${escapeHtml(h1)}
     </nav>
 
-    <h1>${h1}</h1>
-    <p class="intro">${intro}</p>
+    <h1>${escapeHtml(h1)}</h1>
+    <p class="intro">${escapeHtml(intro)}</p>
 
     <div class="seo-cta-box">
-      <h2>${ctaText} — Free</h2>
+      <h2>${escapeHtml(ctaText)} — Free</h2>
       <p>18 templates. Full customisation. Works with Gmail and Outlook.<br>Pay $5 once for Pro, or use 6 templates free forever.</p>
-      <a href="../generator.html" class="btn btn-primary" aria-label="${ctaText}">${ctaText}</a>
+      <a href="../generator.html" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
     </div>
 
     <section aria-label="Features">
