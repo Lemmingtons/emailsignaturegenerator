@@ -627,6 +627,7 @@ const _helpers = {
       instagram: 'https://instagram.com/acme',
       facebook: 'https://facebook.com/acme',
       linkedin: 'https://linkedin.com/in/janesmith',
+      google: 'https://g.co/acme',
       photoUrl: '',
     };
     const sampleStyle = {
@@ -701,6 +702,7 @@ const _helpers = {
       linkedin: `<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" fill="${color}"/><rect x="2" y="9" width="4" height="12" fill="${color}"/><circle cx="4" cy="4" r="2" fill="${color}"/>`,
       instagram: `<rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="${color}" stroke-width="1.8" fill="none"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`,
       facebook: `<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="${color}"/>`,
+      google: `<circle cx="11" cy="11" r="8" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`,
     };
     const path = iconPaths[platform] || iconPaths.website;
     const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">${path}</svg>`;
@@ -714,6 +716,7 @@ const _helpers = {
       { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
       { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
       { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
+      { url: data.google, platform: 'google', alt: 'Google' },
     ].filter(s => s.url);
 
     if (!socials.length) return '';
@@ -759,6 +762,7 @@ const _helpers = {
       { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
       { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
       { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
+      { url: data.google, platform: 'google', alt: 'Google' },
     ].filter(s => s.url);
 
     if (!socials.length) return '';

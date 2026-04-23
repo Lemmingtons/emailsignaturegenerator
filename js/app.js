@@ -124,7 +124,7 @@
 
   // ── Form Binding ──
   function bindFormInputs() {
-    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'photoUrl'];
+    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'google', 'photoUrl'];
     fields.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderPreview);
@@ -330,6 +330,7 @@
       instagram: get('instagram'),
       facebook: get('facebook'),
       linkedin: get('linkedin'),
+      google: get('google'),
     };
   }
 
@@ -663,6 +664,7 @@
     linkedin: { validate: urlValidator },
     instagram: { validate: urlValidator },
     facebook: { validate: urlValidator },
+    google: { validate: urlValidator },
   };
 
   function urlValidator(val) {
@@ -696,7 +698,7 @@
   }
 
   function bindValidation() {
-    const fields = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook'];
+    const fields = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook', 'google'];
     fields.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -726,7 +728,7 @@
       alert('Please enter your name to generate a signature.');
       return;
     }
-    ['email', 'website', 'linkedin', 'instagram', 'facebook'].forEach(validateField);
+    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     const template = TEMPLATES[currentTemplate];
     const html = buildSignatureHtml(template, data, style);
@@ -766,7 +768,7 @@
       alert('Please enter your name.');
       return;
     }
-    ['email', 'website', 'linkedin', 'instagram', 'facebook'].forEach(validateField);
+    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     const lines = [data.fullName, data.title, data.company, data.phone, data.email, data.website].filter(Boolean);
 
