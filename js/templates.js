@@ -281,7 +281,7 @@ const TEMPLATES = {
     pro: false,
     icon: '&#9723;',
     render(data, style) {
-      const { primaryColor, textColor, fontFamily, dividerStyle } = style;
+      const { primaryColor, textColor, fontFamily, dividerStyle, iconStyle } = style;
       const sep = dividerStyle === 'pipe' ? ' | ' : dividerStyle === 'dot' ? ' \u00b7 ' : ' \u2014 ';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.6;">
@@ -294,6 +294,7 @@ const TEMPLATES = {
   <tr><td style="font-size: 12px; color: #4b5563; padding-top: 4px; font-family: ${fontFamily};">
     ${this._contactLine(data, fontFamily, sep)}
   </td></tr>
+  ${this._socialRow(data, iconStyle, primaryColor)}
 </table>`;
     }
   },
@@ -313,6 +314,18 @@ const TEMPLATES = {
       if (data.email) lines.push(`<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #4b5563; text-decoration: none;">${this.escapeAttr(data.email)}</a>`);
       if (data.website) { const h = this.escapeUrl(data.website, 'href'); if (h) lines.push(`<a href="${h}" style="color: #4b5563; text-decoration: none;">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`); }
 
+      const socialLabels = [
+        { url: data.linkedin, label: 'LinkedIn' },
+        { url: data.instagram, label: 'Instagram' },
+        { url: data.facebook, label: 'Facebook' },
+        { url: data.google, label: 'Google' },
+      ];
+      socialLabels.forEach(s => {
+        if (!s.url) return;
+        const h = this.escapeUrl(s.url, 'href');
+        if (h) lines.push(`<a href="${h}" style="color: #4b5563; text-decoration: none;">${s.label}</a>`);
+      });
+
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; line-height: 1.7;">
   ${this._logoRow(data, primaryColor, 'left')}
   <tr><td>${lines.join('<br/>')}</td></tr>
@@ -326,7 +339,7 @@ const TEMPLATES = {
     pro: true,
     icon: '&#8212;',
     render(data, style) {
-      const { primaryColor, textColor, fontFamily } = style;
+      const { primaryColor, textColor, fontFamily, iconStyle } = style;
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
@@ -338,6 +351,7 @@ const TEMPLATES = {
     <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
       ${this._contactLine(data, fontFamily, ' | ')}
     </span>
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tbody>${this._socialRow(data, iconStyle, primaryColor, 0)}</tbody></table>
   </td></tr>
 </table>`;
     }

@@ -320,6 +320,7 @@ body {
   overflow: hidden;
   position: relative;
   border: 1px solid var(--border-light);
+  pointer-events: none;
 }
 
 .template-preview .preview-inner {
