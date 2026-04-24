@@ -23,13 +23,13 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}</span>
           ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
         </td></tr>
-        <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
+        ${data.logoUrl ? '' : `<tr><td style="padding-bottom: 8px;">${divider}</td></tr>`}
         <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
@@ -55,7 +55,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius, 100)}
     <td style="vertical-align: top; ${data.photoUrl ? 'border-left: 3px solid ' + primaryColor + '; padding-left: 18px;' : ''}">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 17px; color: ${textColor}; font-family: ${fontFamily}; letter-spacing: 0.3px;">${this.escapeAttr(String(data.fullName || '').toUpperCase())}</strong><br/>
           <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
@@ -86,7 +86,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 10px;">
           <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}${data.title && data.company ? ' | ' : ''}${this.escapeAttr(data.company || '')}</span>
@@ -116,7 +116,7 @@ const TEMPLATES = {
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
-  ${this._logoRow(data)}
+  ${this._logoRow(data, primaryColor)}
   <tr><td style="padding-bottom: 12px;">
     <table cellpadding="0" cellspacing="0" border="0"><tr>
       ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<td style="vertical-align: middle; padding-right: 14px;"><img src="${this.escapeUrl(data.photoUrl, 'src')}" width="60" height="60" style="border-radius: ${photoRadius}; display: block; width: 60px; height: 60px; object-fit: cover; border: 0;" alt="${this.escapeAttr(data.fullName || '')}" /></td>` : ''}
@@ -150,12 +150,12 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius, 90)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}</span>
         </td></tr>
-        <tr><td style="padding-bottom: 10px;">${divider}</td></tr>
+        ${data.logoUrl ? '' : `<tr><td style="padding-bottom: 10px;">${divider}</td></tr>`}
         <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
@@ -186,7 +186,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius, 90)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 18px; color: ${primaryColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: ${secondary}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
@@ -220,7 +220,7 @@ const TEMPLATES = {
     ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<td style="vertical-align: top; padding-right: 18px;"><img src="${this.escapeUrl(data.photoUrl, 'src')}" width="90" height="90" style="border-radius: ${photoRadius}; display: block; width: 90px; height: 90px; object-fit: cover; border: 3px solid ${primaryColor};" alt="${this.escapeAttr(data.fullName || '')}" /></td>` : ''}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 20px; color: ${primaryColor}; font-family: ${fontFamily}; letter-spacing: -0.5px;">${this.escapeAttr(data.fullName)}</strong>
         </td></tr>
@@ -249,7 +249,7 @@ const TEMPLATES = {
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; background: #fafafa; border-radius: 8px; padding: 16px;">
-  ${this._logoRow(data)}
+  ${this._logoRow(data, primaryColor)}
   <tr><td>
     <table cellpadding="0" cellspacing="0" border="0"><tr>
       ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<td style="vertical-align: top; padding-right: 16px;"><img src="${this.escapeUrl(data.photoUrl, 'src')}" width="80" height="80" style="border-radius: ${photoRadius}; display: block; width: 80px; height: 80px; object-fit: cover; border: 0;" alt="${this.escapeAttr(data.fullName || '')}" /></td>` : ''}
@@ -260,9 +260,9 @@ const TEMPLATES = {
       </td>
     </tr></table>
   </td></tr>
-  <tr><td style="padding-top: 10px; padding-bottom: 6px;">
+  ${data.logoUrl ? '' : `<tr><td style="padding-top: 10px; padding-bottom: 6px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
-  </td></tr>
+  </td></tr>`}
   <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
     ${this._contactLine(data, fontFamily)}
   </td></tr>
@@ -285,7 +285,7 @@ const TEMPLATES = {
       const sep = dividerStyle === 'pipe' ? ' | ' : dividerStyle === 'dot' ? ' \u00b7 ' : ' \u2014 ';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.6;">
-  ${this._logoRow(data, 'left')}
+  ${this._logoRow(data, primaryColor, 'left')}
   <tr><td>
     <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong>
     ${data.title ? `<span style="color: #9ca3af;">${sep}</span><span style="font-size: 13px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title)}</span>` : ''}
@@ -304,7 +304,7 @@ const TEMPLATES = {
     pro: false,
     icon: '&#9776;',
     render(data, style) {
-      const { textColor, fontFamily } = style;
+      const { primaryColor, textColor, fontFamily } = style;
 
       let lines = [`<strong style="color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong>`];
       if (data.title) lines.push(`<span style="color: #4b5563;">${this.escapeAttr(data.title)}</span>`);
@@ -314,7 +314,7 @@ const TEMPLATES = {
       if (data.website) { const h = this.escapeUrl(data.website, 'href'); if (h) lines.push(`<a href="${h}" style="color: #4b5563; text-decoration: none;">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`); }
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; line-height: 1.7;">
-  ${this._logoRow(data, 'left')}
+  ${this._logoRow(data, primaryColor, 'left')}
   <tr><td>${lines.join('<br/>')}</td></tr>
 </table>`;
     }
@@ -330,7 +330,8 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
-    ${data.logoUrl && this.escapeUrl(data.logoUrl, 'src') ? `<img src="${this.escapeUrl(data.logoUrl, 'src')}" alt="${this.escapeAttr(data.company || 'Company logo')}" style="max-height: 40px; max-width: 180px; display: block; margin-bottom: 10px; border: 0;" />` : ''}
+    ${data.logoUrl && this.escapeUrl(data.logoUrl, 'src') ? `<img src="${this.escapeUrl(data.logoUrl, 'src')}" alt="${this.escapeAttr(data.company || 'Company logo')}" style="max-height: 40px; max-width: 180px; display: block; margin-bottom: 8px; border: 0;" />
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 10px;"><tr><td style="border-top: 2px solid ${this._safeColor(primaryColor)}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>` : ''}
     <strong style="font-size: 14px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
     ${data.title ? `<span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title)}</span><br/>` : ''}
     ${data.company ? `<span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span><br/>` : ''}
@@ -360,7 +361,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius, 80)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 16px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
@@ -388,7 +389,7 @@ const TEMPLATES = {
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; text-align: center;">
-  ${this._logoRow(data, 'center')}
+  ${this._logoRow(data, primaryColor, 'center')}
   <tr><td style="padding-bottom: 10px;">
     ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<img src="${this.escapeUrl(data.photoUrl, 'src')}" width="70" height="70" style="border-radius: ${photoRadius}; display: inline-block; width: 70px; height: 70px; object-fit: cover; border: 0;" alt="${this.escapeAttr(data.fullName || '')}" />` : ''}
   </td></tr>
@@ -433,7 +434,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${nameSafe}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${titleSafe}${data.title && data.company ? ' \u2014 ' : ''}${companySafe}</span>
@@ -468,7 +469,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 6px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}</span>
@@ -510,13 +511,13 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 8px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong><br/>
           <span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}</span>
           ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
         </td></tr>
-        <tr><td style="padding-bottom: 8px;">${divider}</td></tr>
+        ${data.logoUrl ? '' : `<tr><td style="padding-bottom: 8px;">${divider}</td></tr>`}
         <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
@@ -551,7 +552,7 @@ const TEMPLATES = {
     ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<td style="vertical-align: top; padding-right: 18px;"><img src="${this.escapeUrl(data.photoUrl, 'src')}" width="100" height="100" style="border-radius: ${photoRadius}; display: block; width: 100px; height: 100px; object-fit: cover; border: 0;" alt="${this.escapeAttr(data.fullName || '')}" /></td>` : ''}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 4px;">
           <strong style="font-size: 17px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong>
         </td></tr>
@@ -559,9 +560,9 @@ const TEMPLATES = {
           <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || 'Licensed Agent')}</span>
           ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
         </td></tr>
-        <tr><td style="padding-bottom: 8px;">
+        ${data.logoUrl ? '' : `<tr><td style="padding-bottom: 8px;">
           <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
-        </td></tr>
+        </td></tr>`}
         <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
@@ -586,7 +587,7 @@ const TEMPLATES = {
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; border-left: 5px solid ${primaryColor}; padding-left: 14px;">
-  ${this._logoRow(data, 'left')}
+  ${this._logoRow(data, primaryColor, 'left')}
   <tr><td>
     <table cellpadding="0" cellspacing="0" border="0"><tr>
       ${data.photoUrl && this.escapeUrl(data.photoUrl, 'src') ? `<td style="vertical-align: middle; padding-right: 14px;"><img src="${this.escapeUrl(data.photoUrl, 'src')}" width="65" height="65" style="border-radius: ${photoRadius}; display: block; width: 65px; height: 65px; object-fit: cover; border: 0;" alt="${this.escapeAttr(data.fullName || '')}" /></td>` : ''}
@@ -620,7 +621,7 @@ const TEMPLATES = {
     ${this._photoCell(data, photoRadius, 80)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data)}
+        ${this._logoRow(data, primaryColor)}
         <tr><td style="padding-bottom: 2px;">
           <strong style="font-size: 15px; color: ${textColor}; font-family: ${fontFamily};">${this.escapeAttr(data.fullName)}</strong>
         </td></tr>
@@ -628,9 +629,9 @@ const TEMPLATES = {
           <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${this.escapeAttr(data.title || '')}</span>
           ${data.company ? `<br/><span style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
         </td></tr>
-        <tr><td style="padding-bottom: 8px;">
+        ${data.logoUrl ? '' : `<tr><td style="padding-bottom: 8px;">
           <table cellpadding="0" cellspacing="0" border="0" width="60"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
-        </td></tr>
+        </td></tr>`}
         <tr><td style="font-size: 12px; color: #4b5563; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
@@ -735,16 +736,23 @@ const _helpers = {
   },
 
   // Company logo row — drop-in for the first row of any template's inner or
-  // outer table. Right-aligned by default; pass 'center' for centered layouts.
+  // outer table. Renders the logo + a primary-color accent line underneath,
+  // left-aligned by default. Pass 'center' for centered layouts.
+  // When a logo is present, templates with an existing info/contact divider
+  // should suppress it (the under-logo line takes its place).
   // Returns '' when no logo is set or the URL fails the scheme check.
-  _logoRow(data, align) {
+  _logoRow(data, primaryColor, align) {
     if (!data.logoUrl) return '';
     const safeSrc = this.escapeUrl(data.logoUrl, 'src');
     if (!safeSrc) return '';
     const safeAlt = this.escapeAttr(data.company || 'Company logo');
-    const a = align || 'right';
-    return `<tr><td style="padding-bottom: 10px; text-align: ${a};">
+    const a = align || 'left';
+    const color = this._safeColor(primaryColor || '#0891B2');
+    return `<tr><td style="text-align: ${a}; padding-bottom: 8px;">
           <img src="${safeSrc}" alt="${safeAlt}" style="max-height: 40px; max-width: 180px; display: inline-block; border: 0;" />
+        </td></tr>
+        <tr><td style="padding-bottom: 10px;">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${color}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>
         </td></tr>`;
   },
 
