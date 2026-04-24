@@ -124,7 +124,7 @@
 
   // ── Form Binding ──
   function bindFormInputs() {
-    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'google', 'photoUrl'];
+    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'google', 'photoUrl', 'logoUrl'];
     fields.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderPreview);
@@ -141,6 +141,19 @@
     const photoRemoveBtn = document.getElementById('photoRemoveBtn');
     if (photoRemoveBtn) {
       photoRemoveBtn.addEventListener('click', removePhoto);
+    }
+
+    // Logo upload
+    const logoFile = document.getElementById('logoFile');
+    if (logoFile) {
+      logoFile.addEventListener('change', function() {
+        handleLogoUpload(this);
+      });
+    }
+
+    const logoRemoveBtn = document.getElementById('logoRemoveBtn');
+    if (logoRemoveBtn) {
+      logoRemoveBtn.addEventListener('click', removeLogo);
     }
   }
 
@@ -306,6 +319,48 @@
     renderPreview();
   }
 
+  // ── Logo Handling ──
+  function handleLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUri = e.target.result;
+      const thumb = document.getElementById('logoPreviewThumb');
+      if (!thumb) return;
+      const img = document.createElement('img');
+      img.src = dataUri;
+      img.alt = 'Logo';
+      thumb.replaceChildren(img);
+      thumb.classList.add('has-logo');
+
+      const removeBtn = document.getElementById('logoRemoveBtn');
+      if (removeBtn) removeBtn.style.display = '';
+
+      if (!document.getElementById('logoUrl').value.trim()) {
+        thumb.dataset.previewOnly = dataUri;
+      }
+      renderPreview();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeLogo() {
+    document.getElementById('logoUrl').value = '';
+    document.getElementById('logoFile').value = '';
+
+    const thumb = document.getElementById('logoPreviewThumb');
+    thumb.innerHTML = '<span class="logo-placeholder">No logo</span>';
+    thumb.classList.remove('has-logo');
+    delete thumb.dataset.previewOnly;
+
+    const removeBtn = document.getElementById('logoRemoveBtn');
+    if (removeBtn) removeBtn.style.display = 'none';
+
+    renderPreview();
+  }
+
   // ── Get Form Data ──
   function getFormData() {
     const get = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -319,6 +374,14 @@
       }
     }
 
+    let logoUrl = get('logoUrl');
+    if (!logoUrl) {
+      const thumb = document.getElementById('logoPreviewThumb');
+      if (thumb && thumb.dataset.previewOnly) {
+        logoUrl = thumb.dataset.previewOnly;
+      }
+    }
+
     return {
       fullName: get('fullName'),
       title: get('title'),
@@ -326,6 +389,7 @@
       email: get('email'),
       company: get('company'),
       photoUrl: photoUrl,
+      logoUrl: logoUrl,
       website: get('website'),
       instagram: get('instagram'),
       facebook: get('facebook'),
@@ -422,9 +486,9 @@
       '#4b5563': '#9ca3af',
       '#6b7280': '#9ca3af',
       '#374151': '#d1d5db',
-      '#e5e7eb': '#6b7280',
-      '#d1d5db': '#6b7280',
-      '#9ca3af': '#6b7280',
+      '#e5e7eb': '#9ca3af',
+      '#d1d5db': '#9ca3af',
+      '#9ca3af': '#9ca3af',
     };
 
     Object.entries(colorMap).forEach(([from, to]) => {
@@ -837,7 +901,7 @@
 
   function showProSuccessToast() {
     var toast = document.createElement('div');
-    toast.textContent = 'Welcome to Pro! You now have access to all 18 templates.';
+    toast.textContent = 'Welcome to Pro! You now have access to all 19 templates.';
     toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);

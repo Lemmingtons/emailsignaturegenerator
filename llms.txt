@@ -11,7 +11,7 @@ A companion **Email Signature Health Check** at /health-check audits any pasted 
 ## Pricing
 
 - **Free**: $0 — 6 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
-- **Pro**: $5 AUD, one-time payment — All 18 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
+- **Pro**: $5 AUD, one-time payment — All 19 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
 
 No subscription. No recurring charges. No account needed.
 

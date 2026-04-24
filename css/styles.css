@@ -533,6 +533,53 @@ body {
 }
 
 /* ══════════════════════════════════════
+   LOGO UPLOAD
+   ══════════════════════════════════════ */
+
+.logo-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-preview {
+  width: 120px;
+  height: 56px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  border: 2px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+
+.logo-preview.has-logo {
+  border: 2px solid var(--accent);
+}
+
+.logo-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  font-size: 8px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.logo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ══════════════════════════════════════
    BUTTONS
    ══════════════════════════════════════ */
 

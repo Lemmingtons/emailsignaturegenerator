@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Signature Generator | Create Professional Signatures Free</title>
-  <meta name="description" content="Create a professional email signature in minutes. 18 templates, full customisation, no subscription. Pay once, use forever.">
+  <meta name="description" content="Create a professional email signature in minutes. 19 templates, full customisation, no subscription. Pay once, use forever.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/generator">
@@ -22,7 +22,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Create Your Professional Email Signature — Free">
-  <meta name="twitter:description" content="18 templates, full customisation, works with Gmail and Outlook. Pay once, no subscription.">
+  <meta name="twitter:description" content="19 templates, full customisation, works with Gmail and Outlook. Pay once, no subscription.">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Structured Data -->
@@ -59,10 +59,10 @@
         "name": "Pro",
         "price": "5.00",
         "priceCurrency": "AUD",
-        "description": "All 18 templates, no branding, CTA buttons, premium designs, lifetime access"
+        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access"
       }
     ],
-    "description": "Professional email signature generator. 18 templates, full customisation, works with Gmail and Outlook. Pay $5 once, no subscription."
+    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Pay $5 once, no subscription."
   }
   </script>
 
@@ -99,7 +99,7 @@
     <!-- Pro Banner -->
     <div class="pro-banner" id="pro-banner" role="region" aria-label="Upgrade to Pro">
       <div class="pro-banner-text">
-        <h3>Unlock all 18 templates</h3>
+        <h3>Unlock all 19 templates</h3>
         <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
       </div>
       <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $5">Unlock Pro &mdash; $5</button>
@@ -174,6 +174,29 @@
                   </label>
                   <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo for preview">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
+                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Company Logo -->
+            <div class="section-label">Company Logo</div>
+            <div class="form-group">
+              <label for="logoUrl">Logo URL</label>
+              <input type="url" id="logoUrl" placeholder="https://example.com/logo.png">
+              <span class="photo-hint">Paste a publicly hosted logo URL for email clients</span>
+            </div>
+            <div class="form-group">
+              <div class="logo-upload-area">
+                <div class="logo-preview" id="logoPreviewThumb">
+                  <span class="logo-placeholder">No logo</span>
+                </div>
+                <div class="logo-controls">
+                  <label class="btn btn-secondary btn-sm" for="logoFile" style="cursor: pointer;">
+                    Upload preview
+                  </label>
+                  <input type="file" id="logoFile" accept="image/*" style="display: none;" aria-label="Upload company logo for preview">
+                  <button class="btn btn-secondary btn-sm" id="logoRemoveBtn" style="display: none;" aria-label="Remove logo">Remove</button>
                   <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
