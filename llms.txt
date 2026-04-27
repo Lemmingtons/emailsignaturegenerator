@@ -1,6 +1,6 @@
 # Email Signature Generator
 
-> A browser-based email signature generator with 18 professional templates. One-time payment of $5 AUD for Pro. No subscription, no account required.
+> A browser-based email signature generator with 18 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
 
 ## What this tool does
 
@@ -11,7 +11,7 @@ A companion **Email Signature Health Check** at /health-check audits any pasted 
 ## Pricing
 
 - **Free**: $0 — 6 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
-- **Pro**: $5 AUD, one-time payment — All 19 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
+- **Pro**: $9 AUD, one-time payment — All 19 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
 
 No subscription. No recurring charges. No account needed.
 
@@ -43,7 +43,7 @@ No subscription. No recurring charges. No account needed.
 ## Frequently asked questions
 
 **Is this a one-time payment?**
-Yes. Pay $5 AUD once and get lifetime access to all Pro templates, including future templates. No subscription, no recurring charges.
+Yes. Pay $9 AUD once and get lifetime access to all Pro templates, including future templates. No subscription, no recurring charges.
 
 **Does it work in Gmail and Outlook?**
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
@@ -70,4 +70,4 @@ Yes. 30-day money-back guarantee. Email info@strata-reports.ai.
 
 ## Competitor comparison
 
-Unlike subscription-based tools (typically $9/month = $108/year), Email Signature Generator charges a single $5 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.
+Unlike subscription-based tools (typically $9/month = $108/year), Email Signature Generator charges a single $9 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.

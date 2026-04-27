@@ -4,3 +4,18 @@ compatibility_date = "2025-04-01"
 
 [assets]
 directory = "."
+
+# ── Pro hosted photo upload bindings ──
+# UNCOMMENT both blocks below AFTER you've done the manual steps:
+#   1. Cloudflare R2 → Create bucket "esg-user-uploads" (public access OFF)
+#   2. Workers & Pages → KV → Create namespace "esg-rate-limit", paste its id below
+# Until then, the /api/upload-image endpoint returns 500 "storage_not_configured"
+# (the rest of the site works normally).
+#
+# [[r2_buckets]]
+# binding = "UPLOADS"
+# bucket_name = "esg-user-uploads"
+#
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "PASTE_KV_NAMESPACE_ID_HERE"

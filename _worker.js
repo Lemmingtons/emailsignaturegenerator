@@ -97,6 +97,28 @@ async function verifyJwt(token, secret) {
   }
 }
 
+// ── Image helpers ────────────────────────────────────────────────────────────
+
+function sniffImage(buf) {
+  // Detect JPG / PNG / WebP from the first 12 bytes. Returns null if no match.
+  const b = new Uint8Array(buf);
+  if (b.length < 12) return null;
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return { ext: 'jpg', mime: 'image/jpeg' };
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 &&
+      b[4] === 0x0D && b[5] === 0x0A && b[6] === 0x1A && b[7] === 0x0A) return { ext: 'png', mime: 'image/png' };
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+      b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return { ext: 'webp', mime: 'image/webp' };
+  return null;
+}
+
+function apiError(status, code, detail) {
+  const body = detail ? { error: code, code, detail } : { error: code, code };
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 // ── Stripe API Helper ────────────────────────────────────────────────────────
 
 async function verifyStripeSession(sessionId, stripeSecretKey) {
@@ -125,7 +147,7 @@ function addSecurityHeaders(response) {
   newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   newHeaders.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://js.stripe.com; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://js.stripe.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.stripe.com"
   );
   return newHeaders;
 }
@@ -202,6 +224,91 @@ export default {
           headers: { 'Content-Type': 'application/json' },
         });
       }
+    }
+
+    // ── API: Upload Image (Pro only) ─────────────────────────────────────────
+    if (url.pathname === '/api/upload-image') {
+      if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+      if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
+      if (!env.UPLOADS) return apiError(500, 'storage_not_configured');
+
+      // Auth
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) return apiError(401, 'invalid_token', 'missing');
+      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
+      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const sub = verified.payload && verified.payload.sub;
+      if (!sub || !/^cus_[A-Za-z0-9]+$/.test(sub)) return apiError(401, 'invalid_token', 'bad_subject');
+
+      // Slot type (only photo in v1)
+      const imageType = request.headers.get('X-Image-Type') || '';
+      if (imageType !== 'photo') return apiError(400, 'invalid_type');
+
+      // Size pre-check via Content-Length
+      const MAX_BYTES = 2_000_000;
+      const declaredLen = parseInt(request.headers.get('Content-Length') || '0', 10);
+      if (!declaredLen) return apiError(400, 'empty_body');
+      if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
+
+      // Rate limit: 10 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable)
+      if (env.RATE_LIMIT) {
+        const hourBucket = Math.floor(Date.now() / 3_600_000);
+        const rlKey = `rl:upload:${sub}:${hourBucket}`;
+        const current = parseInt((await env.RATE_LIMIT.get(rlKey)) || '0', 10);
+        if (current >= 10) return apiError(429, 'rate_limited');
+        await env.RATE_LIMIT.put(rlKey, String(current + 1), { expirationTtl: 7200 });
+      }
+
+      // Read body and re-check actual size
+      const buf = await request.arrayBuffer();
+      if (buf.byteLength === 0) return apiError(400, 'empty_body');
+      if (buf.byteLength > MAX_BYTES) return apiError(413, 'too_large');
+
+      // Magic-byte sniff (authoritative — ignore client-declared MIME)
+      const sniffed = sniffImage(buf);
+      if (!sniffed) return apiError(415, 'unsupported_format');
+
+      // Best-effort delete other-extension siblings so each user has at most one photo file
+      const allExts = ['jpg', 'png', 'webp'];
+      await Promise.all(
+        allExts
+          .filter((e) => e !== sniffed.ext)
+          .map((e) => env.UPLOADS.delete(`users/${sub}/photo.${e}`).catch(() => {}))
+      );
+
+      // Store
+      const key = `users/${sub}/photo.${sniffed.ext}`;
+      await env.UPLOADS.put(key, buf, {
+        httpMetadata: {
+          contentType: sniffed.mime,
+          cacheControl: 'public, max-age=31536000, immutable',
+        },
+        customMetadata: { sub, uploadedAt: String(Date.now()) },
+      });
+
+      const publicUrl = `${url.origin}/u/${sub}/photo.${sniffed.ext}?v=${Date.now()}`;
+      return new Response(
+        JSON.stringify({ url: publicUrl, bytes: buf.byteLength, contentType: sniffed.mime }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ── Public: Serve uploaded image ─────────────────────────────────────────
+    if (url.pathname.startsWith('/u/')) {
+      if (!env.UPLOADS) return new Response('Storage not configured', { status: 500 });
+      const match = url.pathname.match(/^\/u\/(cus_[A-Za-z0-9]+)\/photo\.(jpg|png|webp)$/);
+      if (!match) return new Response('Not found', { status: 404 });
+      const key = `users/${match[1]}/photo.${match[2]}`;
+      const obj = await env.UPLOADS.get(key);
+      if (!obj) return new Response('Not found', { status: 404 });
+
+      const headers = new Headers();
+      headers.set('Content-Type', (obj.httpMetadata && obj.httpMetadata.contentType) || 'application/octet-stream');
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      headers.set('Access-Control-Allow-Origin', '*');
+      headers.set('X-Content-Type-Options', 'nosniff');
+      return new Response(obj.body, { headers });
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────

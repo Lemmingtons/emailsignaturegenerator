@@ -282,26 +282,130 @@
   }
 
   // ── Photo Handling ──
-  function handlePhotoUpload(input) {
+
+  // Default hint copy when the user hasn't done anything yet — restored on remove.
+  const PHOTO_STATUS_DEFAULT_FREE = 'Upload for preview only. Use a hosted URL for Gmail.';
+  const PHOTO_STATUS_DEFAULT_PRO = 'Upload — we\'ll host it for Gmail-ready use.';
+
+  function setPhotoStatus(text, kind) {
+    const el = document.getElementById('photoStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function defaultPhotoStatus() {
+    setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PRO : PHOTO_STATUS_DEFAULT_FREE);
+  }
+
+  // Resize an image File to fit within maxDim x maxDim, returning a Blob.
+  // JPEG output (re-encoded) for opaque images — strips EXIF and shrinks size.
+  // PNG passthrough only when source is PNG (logos may need transparency, but for photos
+  // we still re-encode to JPEG to keep payload small).
+  async function resizeImage(file, maxDim) {
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * ratio));
+    const h = Math.max(1, Math.round(bitmap.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close && bitmap.close();
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('canvas_encode_failed'))),
+        'image/jpeg',
+        0.88
+      );
+    });
+  }
+
+  function describeUploadError(code) {
+    switch (code) {
+      case 'rate_limited': return 'Too many uploads this hour — try again later.';
+      case 'too_large': return 'Image too large (max 2 MB after resize).';
+      case 'unsupported_format': return 'JPG, PNG, or WebP only.';
+      case 'invalid_token': return 'Pro session expired — please reconnect.';
+      case 'storage_not_configured': return 'Hosting is offline right now — try again shortly.';
+      default: return 'Upload failed — please try again.';
+    }
+  }
+
+  async function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
+    const thumb = document.getElementById('photoPreviewThumb');
+    const removeBtn = document.getElementById('photoRemoveBtn');
+
+    setPhotoStatus('Processing image…');
+
+    let blob;
+    try {
+      blob = await resizeImage(file, 400);
+    } catch (e) {
+      setPhotoStatus('Could not read that image — try a JPG or PNG.', 'error');
+      return;
+    }
+
+    // Local preview (works for Free + Pro). Use object URL for the thumb img.
+    const previewUrl = URL.createObjectURL(blob);
+    thumb.innerHTML = `<img src="${previewUrl}" alt="Photo">`;
+    thumb.classList.add('has-photo');
+    if (removeBtn) removeBtn.style.display = '';
+
+    // Read as data URI for previewOnly fallback (used in getFormData when no hosted URL exists).
     const reader = new FileReader();
     reader.onload = function(e) {
-      const dataUri = e.target.result;
-      const thumb = document.getElementById('photoPreviewThumb');
-      thumb.innerHTML = `<img src="${dataUri}" alt="Photo">`;
-      thumb.classList.add('has-photo');
-
-      const removeBtn = document.getElementById('photoRemoveBtn');
-      if (removeBtn) removeBtn.style.display = '';
-
       if (!document.getElementById('photoUrl').value.trim()) {
-        thumb.dataset.previewOnly = dataUri;
+        thumb.dataset.previewOnly = e.target.result;
       }
       renderPreview();
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
+
+    if (!isPro) {
+      setPhotoStatus('Preview only — upgrade to Pro for permanent hosting.');
+      return;
+    }
+
+    // Pro path — upload to Worker, replace #photoUrl with the hosted URL.
+    const token = localStorage.getItem('sig_pro_token');
+    if (!token) {
+      setPhotoStatus('Pro session missing — please reconnect.', 'error');
+      return;
+    }
+
+    setPhotoStatus('Saving to your Pro account…');
+    try {
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'image/jpeg',
+          'X-Image-Type': 'photo',
+        },
+        body: blob,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (json.code === 'invalid_token') {
+          isPro = false;
+          showProPrompt();
+        }
+        setPhotoStatus(describeUploadError(json.code), 'error');
+        return;
+      }
+      const photoInput = document.getElementById('photoUrl');
+      photoInput.value = json.url;
+      delete thumb.dataset.previewOnly;
+      setPhotoStatus('Saved ✓ Hosted URL ready for Gmail.', 'success');
+      renderPreview();
+    } catch (e) {
+      setPhotoStatus('Upload failed — please try again.', 'error');
+    }
   }
 
   function removePhoto() {
@@ -316,6 +420,7 @@
     const removeBtn = document.getElementById('photoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
 
+    defaultPhotoStatus();
     renderPreview();
   }
 
@@ -893,6 +998,9 @@
 
     // Show success toast
     showProSuccessToast();
+
+    // Refresh upload hint copy now that hosting is unlocked
+    defaultPhotoStatus();
 
     // Re-render to remove badges and branding
     renderTemplateGrid();

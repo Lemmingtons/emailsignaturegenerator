@@ -11,7 +11,7 @@
 
   <!-- Open Graph -->
   <meta property="og:title" content="Email Signature Generator | Create Professional Signatures Free">
-  <meta property="og:description" content="Professional email signatures for $5. No subscription. Pay once, use forever.">
+  <meta property="og:description" content="Professional email signatures for $9. No subscription. Pay once, use forever.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/generator">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -57,12 +57,12 @@
       {
         "@type": "Offer",
         "name": "Pro",
-        "price": "5.00",
+        "price": "9.00",
         "priceCurrency": "AUD",
-        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access"
+        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access, hosted photo upload"
       }
     ],
-    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Pay $5 once, no subscription."
+    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Pay $9 once, no subscription."
   }
   </script>
 
@@ -102,7 +102,7 @@
         <h3>Unlock all 19 templates</h3>
         <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
       </div>
-      <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $5">Unlock Pro &mdash; $5</button>
+      <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $9">Unlock Pro &mdash; $9</button>
     </div>
 
     <div class="generator-grid">
@@ -161,7 +161,7 @@
             <div class="form-group">
               <label for="photoUrl">Photo URL</label>
               <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
-              <span class="photo-hint">Paste a publicly hosted image URL for email clients</span>
+              <span class="photo-hint">Paste a publicly hosted image URL — or upload below (Pro hosts it for you).</span>
             </div>
             <div class="form-group">
               <div class="photo-upload-area">
@@ -170,11 +170,11 @@
                 </div>
                 <div class="photo-controls">
                   <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
-                    Upload preview
+                    Upload photo
                   </label>
-                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo for preview">
+                  <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload photo">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
-                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint" id="photoStatusHint">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
             </div>
@@ -447,6 +447,13 @@
   <!-- ── Footer ── -->
   <footer class="site-footer" role="contentinfo">
     <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="index.html">Home</a>
+      &nbsp;&middot;&nbsp;
+      <a href="privacy.html">Privacy &amp; Terms</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@emailsignaturegenerator.ai">Contact</a>
+    </p>
   </footer>
 
   <button class="mobile-preview-fab" id="mobilePreviewFab" aria-label="Jump to preview">👁 Preview</button>
