@@ -408,5 +408,22 @@
 
   <script src="js/templates.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- Photo Crop Modal -->
+  <div id="cropModal" class="crop-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Adjust photo">
+    <div class="crop-modal-inner">
+      <div class="crop-modal-header">
+        <span>Adjust your photo</span>
+      </div>
+      <div class="crop-viewport" id="cropViewport">
+        <img id="cropImage" alt="" draggable="false">
+      </div>
+      <p class="crop-hint">Drag to reposition &middot; Scroll or pinch to zoom</p>
+      <div class="crop-actions">
+        <button class="btn btn-secondary" id="cropCancel">Cancel</button>
+        <button class="btn btn-primary" id="cropApply">Use this photo</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

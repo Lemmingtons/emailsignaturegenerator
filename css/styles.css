@@ -2083,3 +2083,39 @@ body {
 .compliance-legal-note strong {
   color: #92400e;
 }
+
+/* ── Photo Crop Modal ── */
+.crop-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+.crop-modal-inner {
+  background: #fff; border-radius: 16px; padding: 24px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  max-width: 360px; width: calc(100% - 32px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.crop-modal-header {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+}
+.crop-modal-header span { font-weight: 600; font-size: 15px; }
+.crop-viewport {
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  overflow: hidden; position: relative;
+  cursor: grab; user-select: none;
+  background: #e5e7eb;
+  box-shadow: 0 0 0 3px var(--accent, #2563eb), 0 0 0 7px rgba(37,99,235,0.12);
+  touch-action: none;
+}
+.crop-viewport.dragging { cursor: grabbing; }
+#cropImage {
+  position: absolute;
+  pointer-events: none;
+  display: block;
+}
+.crop-hint { font-size: 12px; color: #6b7280; margin: 0; text-align: center; }
+.crop-actions { display: flex; gap: 10px; width: 100%; }
+.crop-actions .btn { flex: 1; }

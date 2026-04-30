@@ -240,40 +240,10 @@
   }
 
   // ── Photo Handling ──
-  async function handlePhotoUpload(input) {
+  function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
-
-    // Immediate local preview while upload is in flight
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const thumb = document.getElementById('photoPreviewThumb');
-      thumb.innerHTML = `<img src="${e.target.result}" alt="Photo preview">`;
-      thumb.classList.add('has-photo');
-      thumb.dataset.previewOnly = e.target.result;
-      const removeBtn = document.getElementById('photoRemoveBtn');
-      if (removeBtn) removeBtn.style.display = '';
-      renderPreview();
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to get a stable hosted URL for email clients
-    setPhotoStatus('uploading');
-    try {
-      const fd = new FormData();
-      fd.append('photo', file);
-      const resp = await fetch('/api/upload', { method: 'POST', body: fd });
-      if (!resp.ok) throw new Error(await resp.text());
-      const { url } = await resp.json();
-      document.getElementById('photoUrl').value = url;
-      const thumb = document.getElementById('photoPreviewThumb');
-      delete thumb.dataset.previewOnly;
-      setPhotoStatus('done');
-      renderPreview();
-    } catch {
-      // Preview still works via data URI — just won't render in most email clients
-      setPhotoStatus('error');
-    }
+    showCropUI(file);
   }
 
   function setPhotoStatus(state) {
@@ -302,6 +272,193 @@
 
     setPhotoStatus('idle');
     renderPreview();
+  }
+
+  // ── Photo Crop ──
+  const cropState = { file: null, scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, naturalW: 0, naturalH: 0 };
+  let cropHandlersReady = false;
+
+  function showCropUI(file) {
+    if (!cropHandlersReady) { initCropHandlers(); cropHandlersReady = true; }
+    cropState.file = file;
+
+    const img = document.getElementById('cropImage');
+    const viewport = document.getElementById('cropViewport');
+    const blobUrl = URL.createObjectURL(file);
+
+    img.onload = function() {
+      cropState.naturalW = img.naturalWidth;
+      cropState.naturalH = img.naturalHeight;
+      const viewSize = viewport.offsetWidth;
+      // Scale so the shorter side fills the viewport
+      cropState.scale = viewSize / Math.min(img.naturalWidth, img.naturalHeight);
+      // Center the image
+      cropState.x = (viewSize - img.naturalWidth * cropState.scale) / 2;
+      cropState.y = (viewSize - img.naturalHeight * cropState.scale) / 2;
+      updateCropTransform();
+    };
+    img.src = blobUrl;
+    document.getElementById('cropModal').style.display = 'flex';
+  }
+
+  function updateCropTransform() {
+    const img = document.getElementById('cropImage');
+    const viewport = document.getElementById('cropViewport');
+    const viewSize = viewport.offsetWidth;
+    const scaledW = cropState.naturalW * cropState.scale;
+    const scaledH = cropState.naturalH * cropState.scale;
+    // Clamp so image always covers the viewport
+    cropState.x = Math.min(0, Math.max(viewSize - scaledW, cropState.x));
+    cropState.y = Math.min(0, Math.max(viewSize - scaledH, cropState.y));
+    img.style.width = scaledW + 'px';
+    img.style.height = scaledH + 'px';
+    img.style.left = cropState.x + 'px';
+    img.style.top = cropState.y + 'px';
+  }
+
+  function closeCropUI() {
+    const modal = document.getElementById('cropModal');
+    modal.style.display = 'none';
+    const img = document.getElementById('cropImage');
+    if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+    // Reset file input so re-selecting the same file triggers change again
+    document.getElementById('photoFile').value = '';
+  }
+
+  async function applyCrop() {
+    const viewport = document.getElementById('cropViewport');
+    const img = document.getElementById('cropImage');
+    const viewSize = viewport.offsetWidth;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewSize;
+    canvas.height = viewSize;
+    const ctx = canvas.getContext('2d');
+    const sx = -cropState.x / cropState.scale;
+    const sy = -cropState.y / cropState.scale;
+    const sw = viewSize / cropState.scale;
+    const sh = viewSize / cropState.scale;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, viewSize, viewSize);
+
+    closeCropUI();
+
+    // Show preview immediately from canvas
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const thumb = document.getElementById('photoPreviewThumb');
+    thumb.innerHTML = `<img src="${dataUrl}" alt="Photo preview">`;
+    thumb.classList.add('has-photo');
+    document.getElementById('photoRemoveBtn').style.display = '';
+    renderPreview();
+
+    // Upload the cropped image
+    setPhotoStatus('uploading');
+    canvas.toBlob(async function(blob) {
+      try {
+        const fd = new FormData();
+        fd.append('photo', new File([blob], cropState.file.name, { type: 'image/jpeg' }));
+        const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+        if (!resp.ok) throw new Error(await resp.text());
+        const { url } = await resp.json();
+        document.getElementById('photoUrl').value = url;
+        setPhotoStatus('done');
+        renderPreview();
+      } catch {
+        setPhotoStatus('error');
+      }
+    }, 'image/jpeg', 0.92);
+  }
+
+  function initCropHandlers() {
+    const viewport = document.getElementById('cropViewport');
+
+    document.getElementById('cropCancel').addEventListener('click', closeCropUI);
+    document.getElementById('cropApply').addEventListener('click', applyCrop);
+
+    // Mouse drag
+    viewport.addEventListener('mousedown', function(e) {
+      cropState.dragging = true;
+      cropState.lastX = e.clientX;
+      cropState.lastY = e.clientY;
+      viewport.classList.add('dragging');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!cropState.dragging) return;
+      cropState.x += e.clientX - cropState.lastX;
+      cropState.y += e.clientY - cropState.lastY;
+      cropState.lastX = e.clientX;
+      cropState.lastY = e.clientY;
+      updateCropTransform();
+    });
+    document.addEventListener('mouseup', function() {
+      cropState.dragging = false;
+      viewport.classList.remove('dragging');
+    });
+
+    // Scroll to zoom
+    viewport.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.92 : 1.08;
+      const viewSize = viewport.offsetWidth;
+      const cx = viewSize / 2;
+      const cy = viewSize / 2;
+      cropState.x = cx - (cx - cropState.x) * delta;
+      cropState.y = cy - (cy - cropState.y) * delta;
+      cropState.scale *= delta;
+      const minScale = Math.max(viewSize / cropState.naturalW, viewSize / cropState.naturalH);
+      if (cropState.scale < minScale) cropState.scale = minScale;
+      updateCropTransform();
+    }, { passive: false });
+
+    // Touch drag + pinch zoom
+    let lastTouchDist = null;
+    viewport.addEventListener('touchstart', function(e) {
+      if (e.touches.length === 1) {
+        cropState.dragging = true;
+        cropState.lastX = e.touches[0].clientX;
+        cropState.lastY = e.touches[0].clientY;
+      } else if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    viewport.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      const viewSize = viewport.offsetWidth;
+      if (e.touches.length === 1 && cropState.dragging) {
+        cropState.x += e.touches[0].clientX - cropState.lastX;
+        cropState.y += e.touches[0].clientY - cropState.lastY;
+        cropState.lastX = e.touches[0].clientX;
+        cropState.lastY = e.touches[0].clientY;
+        updateCropTransform();
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (lastTouchDist) {
+          const delta = dist / lastTouchDist;
+          const cx = viewSize / 2;
+          const cy = viewSize / 2;
+          cropState.x = cx - (cx - cropState.x) * delta;
+          cropState.y = cy - (cy - cropState.y) * delta;
+          cropState.scale *= delta;
+          const minScale = Math.max(viewSize / cropState.naturalW, viewSize / cropState.naturalH);
+          if (cropState.scale < minScale) cropState.scale = minScale;
+          updateCropTransform();
+        }
+        lastTouchDist = dist;
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', function() {
+      cropState.dragging = false;
+      lastTouchDist = null;
+    });
   }
 
   // ── Get Form Data ──
