@@ -240,26 +240,52 @@
   }
 
   // ── Photo Handling ──
-  function handlePhotoUpload(input) {
+  async function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
+    // Immediate local preview while upload is in flight
     const reader = new FileReader();
     reader.onload = function(e) {
-      const dataUri = e.target.result;
       const thumb = document.getElementById('photoPreviewThumb');
-      thumb.innerHTML = `<img src="${dataUri}" alt="Photo">`;
+      thumb.innerHTML = `<img src="${e.target.result}" alt="Photo preview">`;
       thumb.classList.add('has-photo');
-
+      thumb.dataset.previewOnly = e.target.result;
       const removeBtn = document.getElementById('photoRemoveBtn');
       if (removeBtn) removeBtn.style.display = '';
-
-      if (!document.getElementById('photoUrl').value.trim()) {
-        thumb.dataset.previewOnly = dataUri;
-      }
       renderPreview();
     };
     reader.readAsDataURL(file);
+
+    // Upload to get a stable hosted URL for email clients
+    setPhotoStatus('uploading');
+    try {
+      const fd = new FormData();
+      fd.append('photo', file);
+      const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!resp.ok) throw new Error(await resp.text());
+      const { url } = await resp.json();
+      document.getElementById('photoUrl').value = url;
+      const thumb = document.getElementById('photoPreviewThumb');
+      delete thumb.dataset.previewOnly;
+      setPhotoStatus('done');
+      renderPreview();
+    } catch {
+      // Preview still works via data URI — just won't render in most email clients
+      setPhotoStatus('error');
+    }
+  }
+
+  function setPhotoStatus(state) {
+    const hint = document.getElementById('photoUploadHint');
+    if (!hint) return;
+    const msgs = {
+      idle: 'Drop or click to upload. We host it for you.',
+      uploading: 'Uploading…',
+      done: 'Photo hosted — ready for Gmail and Outlook.',
+      error: 'Upload failed. Preview only — paste a URL above for email clients.',
+    };
+    hint.textContent = msgs[state] || '';
   }
 
   function removePhoto() {
@@ -274,6 +300,7 @@
     const removeBtn = document.getElementById('photoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
 
+    setPhotoStatus('idle');
     renderPreview();
   }
 

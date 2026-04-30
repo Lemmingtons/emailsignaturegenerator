@@ -11,7 +11,7 @@
 
   <!-- Open Graph -->
   <meta property="og:title" content="Email Signature Generator | Create Professional Signatures Free">
-  <meta property="og:description" content="Professional email signatures for $5. No subscription. Pay once, use forever.">
+  <meta property="og:description" content="Professional email signatures for $9. No subscription. Pay once, use forever.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/generator">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -62,7 +62,7 @@
         "description": "All 18 templates, no branding, CTA buttons, premium designs, lifetime access"
       }
     ],
-    "description": "Professional email signature generator. 18 templates, full customisation, works with Gmail and Outlook. Pay $5 once, no subscription."
+    "description": "Professional email signature generator. 18 templates, full customisation, works with Gmail and Outlook. Pay $9 once, no subscription."
   }
   </script>
 
@@ -96,7 +96,7 @@
         <h3>Unlock all 18 templates</h3>
         <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
       </div>
-      <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $5">Unlock Pro &mdash; $5</button>
+      <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $9">Unlock Pro &mdash; $9</button>
     </div>
 
     <div class="generator-grid">
@@ -151,9 +151,9 @@
             <!-- Photo -->
             <div class="section-label">Photo</div>
             <div class="form-group">
-              <label for="photoUrl">Photo URL</label>
-              <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
-              <span class="photo-hint">Paste a publicly hosted image URL for email clients</span>
+              <label for="photoUrl">Photo URL <span style="font-weight:400;color:var(--text-secondary)">(auto-filled on upload)</span></label>
+              <input type="url" id="photoUrl" placeholder="https://…">
+              <span class="photo-hint">Override: paste your own hosted URL directly</span>
             </div>
             <div class="form-group">
               <div class="photo-upload-area">
@@ -162,11 +162,11 @@
                 </div>
                 <div class="photo-controls">
                   <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
-                    Upload preview
+                    Upload photo
                   </label>
-                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo for preview">
+                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
-                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint" id="photoUploadHint">Drop or click to upload. We host it for you.</span>
                 </div>
               </div>
             </div>

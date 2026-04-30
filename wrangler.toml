@@ -4,3 +4,7 @@ compatibility_date = "2024-01-01"
 
 [assets]
 directory = "."
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "email-sig-photos"

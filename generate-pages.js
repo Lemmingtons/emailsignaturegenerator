@@ -54,7 +54,7 @@ function rolePageHTML({ slug, label, singular, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()}?`,
-        a: `Yes. The free plan includes 6 professional templates with full customisation of colours, fonts, photos, and social links. The Pro plan costs $5 AUD (one-time payment) and unlocks all 18 templates, removes branding, and adds CTA buttons. No subscription required.`
+        a: `Yes. The free plan includes 6 professional templates with full customisation of colours, fonts, photos, and social links. The Pro plan costs $9 AUD (one-time payment) and unlocks all 18 templates, removes branding, and adds CTA buttons. No subscription required.`
       }
     ]
   });
@@ -85,7 +85,7 @@ function platformPageHTML({ slug, label, description, installInstructions, keywo
       },
       {
         q: `Is there a free email signature generator for ${label}?`,
-        a: `Yes. Our free plan includes 6 professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs $5 AUD as a one-time payment and unlocks all 18 templates with no branding.`
+        a: `Yes. Our free plan includes 6 professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs $9 AUD as a one-time payment and unlocks all 18 templates with no branding.`
       }
     ]
   });
@@ -115,7 +115,7 @@ function industryPageHTML({ slug, label, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()} professionals?`,
-        a: `Yes. The free plan includes 6 templates with full customisation. The Pro plan costs $5 AUD as a one-time payment and unlocks all 18 templates, removes branding, and adds CTA buttons. No subscription, no recurring charges.`
+        a: `Yes. The free plan includes 6 templates with full customisation. The Pro plan costs $9 AUD as a one-time payment and unlocks all 18 templates, removes branding, and adds CTA buttons. No subscription, no recurring charges.`
       }
     ]
   });
@@ -241,7 +241,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     <div class="seo-cta-box">
       <h2>${ctaText} — Free</h2>
-      <p>18 templates. Full customisation. Works with Gmail and Outlook.<br>Pay $5 once for Pro, or use 6 templates free forever.</p>
+      <p>18 templates. Full customisation. Works with Gmail and Outlook.<br>Pay $9 once for Pro, or use 6 templates free forever.</p>
       <a href="../generator.html" class="btn btn-primary" aria-label="${ctaText}">${ctaText}</a>
     </div>
 
@@ -261,7 +261,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
           <p>Gmail, Outlook, Apple Mail, Yahoo, and 50+ other email clients.</p>
         </div>
         <div class="feature-item">
-          <h3>$5 One-Time</h3>
+          <h3>$9 One-Time</h3>
           <p>No subscription. Pay once, use forever. 30-day money-back guarantee.</p>
         </div>
         <div class="feature-item">
@@ -284,7 +284,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     <div class="seo-cta-box" style="margin-top: 48px;">
       <h2>Ready to create your professional email signature?</h2>
-      <p>Join thousands of professionals who've ditched the $108/year subscription for a $5 one-time tool.</p>
+      <p>Join thousands of professionals who've ditched the $108/year subscription for a $9 one-time tool.</p>
       <a href="../generator.html" class="btn btn-primary">Create Free Signature</a>
     </div>
 
