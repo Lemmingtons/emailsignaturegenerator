@@ -1138,7 +1138,7 @@
     var banner = document.createElement('div');
     banner.id = 'legacy-migration-banner';
     banner.innerHTML = '<strong>Security upgrade:</strong> We\'ve strengthened Pro verification. ' +
-      '<a href="https://buy.stripe.com/6oUeVc0ET92yauBf1sf7i00" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
+      '<a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
       '(no charge if you already paid). ' +
       '<button id="dismiss-migration" style="margin-left:12px;background:#0f766e;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">Dismiss</button>';
     banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ccfbf1;color:#115e59;padding:12px 16px;text-align:center;font-size:13px;z-index:10000;border-bottom:1px solid #99f6e4;';
