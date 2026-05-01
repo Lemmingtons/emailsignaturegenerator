@@ -226,7 +226,7 @@
   // TODO: Replace this URL with your actual Stripe Payment Link once created.
   // Create one at https://dashboard.stripe.com/payment-links
   // Set the success URL to: https://emailsignaturegenerator.ai/generator.html?pro=true
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/6oUeVc0ET92yauBf1sf7i00';
+  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01';
 
   function handleProPurchase() {
     if (STRIPE_PAYMENT_LINK) {
