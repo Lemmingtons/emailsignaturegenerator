@@ -7,7 +7,6 @@
   let currentTemplate = 'classic';
   let currentCategory = 'all';
   let isPro = false; // Set to true after Stripe payment
-  let darkPreview = false; // Toggles the preview container's background to simulate recipient dark mode
 
   const defaultStyle = {
     primaryColor: '#0891B2',
@@ -101,7 +100,6 @@
         ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
         <div class="template-preview">${t._previewHtml}</div>
         <div class="template-name">${t.name}</div>
-        <span class="dark-safe-badge" title="Renders correctly in Gmail dark mode">Dark-safe</span>
       </button>`;
     }).join('');
 
@@ -177,20 +175,6 @@
     bindToggleGroup('divider-toggles', 'dividerStyle');
     bindToggleGroup('photo-shape-toggles', 'photoShape');
     bindToggleGroup('icon-style-toggles', 'iconStyle');
-
-    // Preview background toggle (simulates recipient's light vs dark inbox)
-    document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(o => {
-          o.classList.remove('active');
-          o.setAttribute('aria-checked', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-checked', 'true');
-        darkPreview = this.dataset.previewBg === 'dark';
-        renderPreview();
-      });
-    });
 
     // CTA fields
     const ctaText = document.getElementById('ctaText');
@@ -518,18 +502,12 @@
     const template = TEMPLATES[currentTemplate];
     if (!template) return;
 
-    const html = darkPreview
-      ? buildDarkPreviewHtml(template, data, style)
-      : buildSignatureHtml(template, data, style);
+    const html = buildSignatureHtml(template, data, style);
 
     preview.innerHTML = html;
     preview.classList.remove('empty');
-    applyDarkPreviewClass();
   }
 
-  // Wraps the rendered template + optional compliance block + optional branding
-  // in a Gmail-dark-mode-safe light island. Used by both renderPreview and
-  // copyHTML so what the user sees is exactly what recipients get.
   function buildSignatureHtml(template, data, style) {
     let inner = template.render(data, style);
 
@@ -540,81 +518,6 @@
       inner += `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 8px; background-color: #ffffff;"><tr><td bgcolor="#ffffff" style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif; background-color: #ffffff;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
     }
     return template._darkSafeWrap(inner);
-  }
-
-  function isDarkColor(hex) {
-    const h = hex.replace('#', '');
-    let r, g, b;
-    if (h.length === 3) {
-      r = parseInt(h[0] + h[0], 16);
-      g = parseInt(h[1] + h[1], 16);
-      b = parseInt(h[2] + h[2], 16);
-    } else {
-      r = parseInt(h.substr(0, 2), 16);
-      g = parseInt(h.substr(2, 2), 16);
-      b = parseInt(h.substr(4, 2), 16);
-    }
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance < 0.5;
-  }
-
-  function buildDarkPreviewHtml(template, data, style) {
-    let html = template.render(data, style);
-
-    const complianceHtml = buildComplianceForTemplate(template);
-    if (complianceHtml) html += complianceHtml;
-
-    if (!isPro) {
-      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
-    }
-
-    // Build a list of colour swaps for the dark preview.
-    const swaps = [];
-
-    // Replace the user's chosen text colour if it's dark.
-    const textLower = style.textColor.toLowerCase();
-    if (isDarkColor(textLower)) {
-      swaps.push({ from: textLower, to: '#e5e7eb' });
-    }
-
-    // General light → dark map.
-    const colorMap = {
-      '#ffffff': '#1f1f1f',
-      '#fefefe': '#1f1f1f',
-      '#fafafa': '#2d2d2d',
-      '#f3f4f6': '#2d2d2d',
-      '#f9fafb': '#2d2d2d',
-      '#1e293b': '#e5e7eb',
-      '#111111': '#eeeeee',
-      '#000000': '#e5e7eb',
-      '#000': '#e5e7eb',
-      '#4b5563': '#9ca3af',
-      '#6b7280': '#9ca3af',
-      '#374151': '#d1d5db',
-      '#e5e7eb': '#9ca3af',
-      '#d1d5db': '#9ca3af',
-      '#9ca3af': '#9ca3af',
-    };
-
-    Object.entries(colorMap).forEach(([from, to]) => {
-      // Skip if the user's text colour already covers this source colour
-      // so we don't create duplicate/conflicting swaps.
-      if (from !== textLower) {
-        swaps.push({ from, to });
-      }
-    });
-
-    // Two-pass replacement using unique placeholders so destination colours
-    // that also appear as source colours don't chain-replace.
-    swaps.forEach((swap, i) => {
-      const regex = new RegExp(swap.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      html = html.replace(regex, '__DARK_PREVIEW_COLOR_' + i + '__');
-    });
-    swaps.forEach((swap, i) => {
-      html = html.replace(new RegExp('__DARK_PREVIEW_COLOR_' + i + '__', 'g'), swap.to);
-    });
-
-    return html;
   }
 
   function buildComplianceForTemplate(template) {
@@ -874,19 +777,6 @@
       el.addEventListener('blur', () => validateField(id));
       el.addEventListener('input', () => clearFieldError(id));
     });
-  }
-
-  function applyDarkPreviewClass() {
-    const preview = document.getElementById('signature-preview');
-    if (!preview) return;
-    preview.classList.toggle('dark-preview', darkPreview);
-
-    const note = document.querySelector('.preview-toolbar-note');
-    if (note) {
-      note.textContent = darkPreview
-        ? 'Copied HTML stays Gmail dark-mode safe'
-        : 'Signatures are Gmail dark-mode safe';
-    }
   }
 
   // ── Copy Functions ──
