@@ -151,24 +151,24 @@
             <!-- Photo -->
             <div class="section-label">Photo</div>
             <div class="form-group">
-              <label for="photoUrl">Photo URL</label>
-              <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
-              <span class="photo-hint">Paste a publicly hosted image URL for email clients</span>
-            </div>
-            <div class="form-group">
               <div class="photo-upload-area">
                 <div class="photo-preview" id="photoPreviewThumb">
                   <span class="photo-placeholder">No photo</span>
                 </div>
                 <div class="photo-controls">
                   <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
-                    Upload preview
+                    Upload photo
                   </label>
-                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo for preview">
+                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
-                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint">Auto-cropped to a square and embedded at 2x for sharp Retina display. Works in Gmail, Apple Mail, and Outlook on the web. Outlook desktop on Windows does not render embedded images — paste a hosted URL below if your team uses it.</span>
                 </div>
               </div>
+            </div>
+            <div class="form-group">
+              <label for="photoUrl">Or paste a hosted image URL</label>
+              <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
+              <span class="photo-hint">Optional. Use this if you already host headshots somewhere.</span>
             </div>
 
             <!-- Social Links -->

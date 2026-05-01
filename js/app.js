@@ -240,26 +240,86 @@
   }
 
   // ── Photo Handling ──
+  // Photos are processed client-side: centred-square crop, downscaled to a 2x retina source,
+  // re-encoded as JPEG with adaptive quality. Targets a ~5500-char data URI so the rest of
+  // the signature still fits under Gmail's 10k limit even after Gmail re-renders it.
+  let photoUploadToken = 0;
+  const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+  const PHOTO_BUDGET_CHARS = 5500;
+
   function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert('That image is over 10 MB. Please use a smaller file.');
+      input.value = '';
+      return;
+    }
+
+    const token = ++photoUploadToken;
     const reader = new FileReader();
     reader.onload = function(e) {
-      const dataUri = e.target.result;
-      const thumb = document.getElementById('photoPreviewThumb');
-      thumb.innerHTML = `<img src="${dataUri}" alt="Photo">`;
-      thumb.classList.add('has-photo');
+      processPhoto(e.target.result).then(dataUri => {
+        if (token !== photoUploadToken) return;
+        const thumb = document.getElementById('photoPreviewThumb');
+        thumb.innerHTML = `<img src="${dataUri}" alt="Photo">`;
+        thumb.classList.add('has-photo');
 
-      const removeBtn = document.getElementById('photoRemoveBtn');
-      if (removeBtn) removeBtn.style.display = '';
+        const removeBtn = document.getElementById('photoRemoveBtn');
+        if (removeBtn) removeBtn.style.display = '';
 
-      if (!document.getElementById('photoUrl').value.trim()) {
-        thumb.dataset.previewOnly = dataUri;
-      }
-      renderPreview();
+        if (!document.getElementById('photoUrl').value.trim()) {
+          thumb.dataset.previewOnly = dataUri;
+        }
+        renderPreview();
+      }).catch(() => {
+        if (token !== photoUploadToken) return;
+        alert('Could not process that image. Try a JPG or PNG (HEIC files from iPhone may not work — convert first).');
+      });
     };
+    reader.onerror = () => alert('Could not read that file. Please try another image.');
     reader.readAsDataURL(file);
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function processPhoto(srcDataUri) {
+    const img = await loadImage(srcDataUri);
+    const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+    const sx = (img.naturalWidth - minDim) / 2;
+    const sy = (img.naturalHeight - minDim) / 2;
+
+    const attempts = [
+      { size: 200, quality: 0.85 },
+      { size: 200, quality: 0.72 },
+      { size: 180, quality: 0.72 },
+      { size: 160, quality: 0.7 },
+      { size: 140, quality: 0.65 },
+      { size: 120, quality: 0.6 },
+    ];
+
+    let best = null;
+    for (const { size, quality } of attempts) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+      const dataUri = canvas.toDataURL('image/jpeg', quality);
+      best = dataUri;
+      if (dataUri.length <= PHOTO_BUDGET_CHARS) break;
+    }
+    return best;
   }
 
   function removePhoto() {
