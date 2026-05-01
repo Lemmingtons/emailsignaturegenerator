@@ -6,8 +6,9 @@ _worker.js
 .claude/**
 .wrangler
 .wrangler/**
-datasets
-datasets/**
+datasets/industries.json
+datasets/platforms.json
+datasets/roles.json
 automation
 automation/**
 generate-pages.js

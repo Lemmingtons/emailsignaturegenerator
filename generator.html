@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Signature Generator | Create Professional Signatures Free</title>
-  <meta name="description" content="Create a professional email signature in minutes. 18 templates, full customisation, no subscription. Pay once, use forever.">
+  <meta name="description" content="Create a professional email signature in minutes. 19 templates, full customisation, no subscription. Pay once, use forever.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/generator">
@@ -22,7 +22,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Create Your Professional Email Signature — Free">
-  <meta name="twitter:description" content="18 templates, full customisation, works with Gmail and Outlook. Pay once, no subscription.">
+  <meta name="twitter:description" content="19 templates, full customisation, works with Gmail and Outlook. Pay once, no subscription.">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Structured Data -->
@@ -59,16 +59,22 @@
         "name": "Pro",
         "price": "9.00",
         "priceCurrency": "AUD",
-        "description": "All 18 templates, no branding, CTA buttons, premium designs, lifetime access"
+        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access, hosted photo upload"
       }
     ],
-    "description": "Professional email signature generator. 18 templates, full customisation, works with Gmail and Outlook. Pay $9 once, no subscription."
+    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Pay $9 once, no subscription."
   }
   </script>
 
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+
+  <noscript>
+    <div style="background:#fef3c7;color:#92400e;padding:12px 16px;text-align:center;font-size:14px;border-bottom:1px solid #f59e0b;">
+      <strong>JavaScript is required.</strong> The signature generator runs entirely in your browser and needs JavaScript to work.
+    </div>
+  </noscript>
 
   <a href="#generator-main" class="skip-link">Skip to content</a>
 
@@ -93,7 +99,7 @@
     <!-- Pro Banner -->
     <div class="pro-banner" id="pro-banner" role="region" aria-label="Upgrade to Pro">
       <div class="pro-banner-text">
-        <h3>Unlock all 18 templates</h3>
+        <h3>Unlock all 19 templates</h3>
         <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
       </div>
       <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $9">Unlock Pro &mdash; $9</button>
@@ -127,6 +133,7 @@
               <div class="form-group">
                 <label for="fullName">Full Name</label>
                 <input type="text" id="fullName" placeholder="Jane Smith" autocomplete="name">
+                <span class="error-message" id="fullName-error"></span>
               </div>
               <div class="form-group">
                 <label for="title">Job Title</label>
@@ -145,15 +152,16 @@
               <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email">
+                <span class="error-message" id="email-error"></span>
               </div>
             </div>
 
             <!-- Photo -->
             <div class="section-label">Photo</div>
             <div class="form-group">
-              <label for="photoUrl">Photo URL <span style="font-weight:400;color:var(--text-secondary)">(auto-filled on upload)</span></label>
-              <input type="url" id="photoUrl" placeholder="https://…">
-              <span class="photo-hint">Override: paste your own hosted URL directly</span>
+              <label for="photoUrl">Photo URL</label>
+              <input type="url" id="photoUrl" placeholder="https://example.com/photo.jpg">
+              <span class="photo-hint">Paste a publicly hosted image URL — or upload below (Pro hosts it for you).</span>
             </div>
             <div class="form-group">
               <div class="photo-upload-area">
@@ -164,9 +172,32 @@
                   <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
                     Upload photo
                   </label>
-                  <input type="file" id="photoFile" accept="image/*" style="display: none;" aria-label="Upload photo">
+                  <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload photo">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
-                  <span class="photo-hint" id="photoUploadHint">Drop or click to upload. We host it for you.</span>
+                  <span class="photo-hint" id="photoStatusHint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Company Logo -->
+            <div class="section-label">Company Logo</div>
+            <div class="form-group">
+              <label for="logoUrl">Logo URL</label>
+              <input type="url" id="logoUrl" placeholder="https://example.com/logo.png">
+              <span class="photo-hint">Paste a publicly hosted logo URL for email clients</span>
+            </div>
+            <div class="form-group">
+              <div class="logo-upload-area">
+                <div class="logo-preview" id="logoPreviewThumb">
+                  <span class="logo-placeholder">No logo</span>
+                </div>
+                <div class="logo-controls">
+                  <label class="btn btn-secondary btn-sm" for="logoFile" style="cursor: pointer;">
+                    Upload preview
+                  </label>
+                  <input type="file" id="logoFile" accept="image/*" style="display: none;" aria-label="Upload company logo for preview">
+                  <button class="btn btn-secondary btn-sm" id="logoRemoveBtn" style="display: none;" aria-label="Remove logo">Remove</button>
+                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
             </div>
@@ -177,20 +208,31 @@
               <div class="form-group">
                 <label for="website">Website</label>
                 <input type="url" id="website" placeholder="https://acme.com">
+                <span class="error-message" id="website-error"></span>
               </div>
               <div class="form-group">
                 <label for="linkedin">LinkedIn</label>
                 <input type="url" id="linkedin" placeholder="https://linkedin.com/in/...">
+                <span class="error-message" id="linkedin-error"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="instagram">Instagram</label>
                 <input type="url" id="instagram" placeholder="https://instagram.com/...">
+                <span class="error-message" id="instagram-error"></span>
               </div>
               <div class="form-group">
                 <label for="facebook">Facebook</label>
                 <input type="url" id="facebook" placeholder="https://facebook.com/...">
+                <span class="error-message" id="facebook-error"></span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="google">Google</label>
+                <input type="url" id="google" placeholder="https://g.co/...">
+                <span class="error-message" id="google-error"></span>
               </div>
             </div>
           </div>
@@ -350,9 +392,9 @@
               </div>
 
               <div class="btn-row">
-                <button class="btn btn-primary" id="copyHtmlBtn" aria-label="Copy signature for Gmail">
+                <button class="btn btn-primary" id="copyHtmlBtn" aria-label="Copy signature as HTML">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  <span class="btn-label">Copy for Gmail</span>
+                  <span class="btn-label">Copy HTML</span>
                   <span class="btn-feedback">Copied!</span>
                 </button>
                 <button class="btn btn-secondary" id="copyTextBtn" aria-label="Copy as plain text">
@@ -360,11 +402,12 @@
                   <span class="btn-feedback">Copied!</span>
                 </button>
               </div>
+              <button class="mobile-back-to-form" id="mobileBackToForm" aria-label="Back to form">↑ Back to form</button>
 
               <details class="instructions">
                 <summary>How to add this signature to Gmail</summary>
                 <ol>
-                  <li>Click <strong>"Copy for Gmail"</strong> above</li>
+                  <li>Click <strong>"Copy HTML"</strong> above</li>
                   <li>Open <strong>Gmail</strong> and click the gear icon (top right)</li>
                   <li>Click <strong>"See all settings"</strong></li>
                   <li>Scroll to the <strong>"Signature"</strong> section</li>
@@ -378,7 +421,7 @@
               <details class="instructions">
                 <summary>How to add this signature to Outlook</summary>
                 <ol>
-                  <li>Click <strong>"Copy for Gmail"</strong> above (works for Outlook too)</li>
+                  <li>Click <strong>"Copy HTML"</strong> above (works for Outlook too)</li>
                   <li>Open <strong>Outlook</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Compose and reply</strong></li>
                   <li>Under <strong>Email signature</strong>, click <strong>"+ New signature"</strong></li>
                   <li>Paste with <code>Ctrl+V</code> (<code>Cmd+V</code>)</li>
@@ -396,7 +439,16 @@
   <!-- ── Footer ── -->
   <footer class="site-footer" role="contentinfo">
     <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="index.html">Home</a>
+      &nbsp;&middot;&nbsp;
+      <a href="privacy.html">Privacy &amp; Terms</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@emailsignaturegenerator.ai">Contact</a>
+    </p>
   </footer>
+
+  <button class="mobile-preview-fab" id="mobilePreviewFab" aria-label="Jump to preview">👁 Preview</button>
 
   <script src="js/templates.js"></script>
   <script src="js/app.js"></script>

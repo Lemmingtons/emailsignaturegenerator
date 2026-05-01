@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy & Terms — Email Signature Generator</title>
+  <meta name="description" content="How emailsignaturegenerator.ai handles your data, including hosted Pro photo uploads.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/privacy">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <a href="#privacy-main" class="skip-link">Skip to content</a>
+
+  <header class="site-header" role="banner">
+    <a href="index.html" class="site-logo" aria-label="Email Signature Generator home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      Email Signature Generator
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="generator.html">Generator</a>
+      <a href="index.html#pricing">Pricing</a>
+    </nav>
+  </header>
+
+  <main id="privacy-main" style="max-width: 760px; margin: 40px auto; padding: 0 24px; line-height: 1.7; color: var(--text-primary, #1f2937);">
+
+    <h1 style="font-size: 32px; margin-bottom: 8px;">Privacy &amp; Terms</h1>
+    <p style="color: var(--text-secondary, #6b7280); margin-top: 0;">Last updated: 28 April 2026</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">What we store</h2>
+    <p>The signature generator runs entirely in your browser. The form fields you fill in (name, title, contact details, social links, colour preferences) never leave your device unless you copy or download your signature. We do not have user accounts.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Pro purchases</h2>
+    <p>Pro is sold as a one-time payment via Stripe. We receive a Stripe checkout session ID and your Stripe customer ID, which we use to issue a signed access token (JWT) that is stored in your browser's <code>localStorage</code>. We do not see or store your card details — Stripe handles all payment information.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Hosted photo upload (Pro)</h2>
+    <p>When you upload a photo as a Pro user, we store the image on Cloudflare R2 keyed to your Stripe customer ID and serve it from <code>emailsignaturegenerator.ai/u/&hellip;</code>. Before upload, your browser resizes the image to 400&times;400 pixels and re-encodes it as JPEG, which strips EXIF metadata (including any embedded location data).</p>
+    <p>Only your most recent uploaded photo is retained — re-uploading replaces the previous file. Hosted photos are publicly accessible by URL (this is intentional, so any recipient's email client can fetch them).</p>
+    <p><strong>Acceptable use.</strong> Uploaded images must be your own content or content you are licensed to use. Prohibited content — illegal material, content that infringes others' rights, or child sexual abuse material (CSAM) — will be removed and the associated Pro access may be terminated without refund. We may report illegal content to law enforcement.</p>
+    <p><strong>Deletion.</strong> To delete your hosted photo, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> from the address associated with your Stripe purchase, or simply re-upload to overwrite the previous file.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Cookies and analytics</h2>
+    <p>We use only first-party storage (<code>localStorage</code>) to remember your Pro access token. We do not run third-party analytics or advertising trackers.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Refunds</h2>
+    <p>Because Pro is a one-time digital purchase that grants immediate access to all templates and hosted photo storage, refunds are handled case-by-case. Email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> within 14 days of purchase if Pro doesn't work for you.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Contact</h2>
+    <p>Questions, deletion requests, or content reports: <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a>.</p>
+
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="index.html">Home</a>
+      &nbsp;&middot;&nbsp;
+      <a href="generator.html">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="privacy.html">Privacy &amp; Terms</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@emailsignaturegenerator.ai">Contact</a>
+    </p>
+  </footer>
+
+</body>
+</html>

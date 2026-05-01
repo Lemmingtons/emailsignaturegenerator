@@ -38,19 +38,20 @@
     bindFormInputs();
     bindStyleControls();
     bindButtons();
+    bindValidation();
     initCompliance();
     renderPreview();
 
-    // Check for pro unlock via URL param (post-Stripe redirect)
+    // Check for pro unlock via URL param (post-Stripe redirect with token)
     const params = new URLSearchParams(window.location.search);
-    if (params.get('pro') === 'true' || localStorage.getItem('sig_pro') === 'true') {
-      unlockPro();
-    }
-
-    // Clean up URL params after processing
-    if (params.has('pro')) {
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('sig_pro_token', token);
       window.history.replaceState({}, '', window.location.pathname);
     }
+
+    // Verify Pro status (new token-based or legacy fallback)
+    checkProStatus();
   });
 
   // ── Category Tabs ──
@@ -79,13 +80,29 @@
       currentCategory === 'all' || t.category === currentCategory
     );
 
-    container.innerHTML = entries.map(([id, t]) =>
-      `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
+    const previewStyle = {
+      primaryColor: '#0891B2',
+      secondaryColor: '#7c3aed',
+      textColor: '#1e293b',
+      fontFamily: 'Arial, Helvetica, sans-serif',
+      dividerStyle: 'line',
+      photoShape: 'circle',
+      iconStyle: 'mono',
+      ctaText: 'Book a Meeting',
+      ctaUrl: 'https://calendly.com',
+    };
+
+    container.innerHTML = entries.map(([id, t]) => {
+      if (!t._previewHtml) {
+        t._previewHtml = t.preview(previewStyle);
+      }
+      return `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
         ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
-        <div class="template-preview">${t.icon}</div>
+        <div class="template-preview">${t._previewHtml}</div>
         <div class="template-name">${t.name}</div>
-      </button>`
-    ).join('');
+        <span class="dark-safe-badge" title="Renders correctly in Gmail dark mode">Dark-safe</span>
+      </button>`;
+    }).join('');
 
     container.querySelectorAll('.template-card').forEach(card => {
       card.addEventListener('click', function() {
@@ -106,7 +123,7 @@
 
   // ── Form Binding ──
   function bindFormInputs() {
-    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'photoUrl'];
+    const fields = ['fullName', 'title', 'email', 'phone', 'company', 'website', 'instagram', 'facebook', 'linkedin', 'google', 'photoUrl', 'logoUrl'];
     fields.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderPreview);
@@ -123,6 +140,19 @@
     const photoRemoveBtn = document.getElementById('photoRemoveBtn');
     if (photoRemoveBtn) {
       photoRemoveBtn.addEventListener('click', removePhoto);
+    }
+
+    // Logo upload
+    const logoFile = document.getElementById('logoFile');
+    if (logoFile) {
+      logoFile.addEventListener('change', function() {
+        handleLogoUpload(this);
+      });
+    }
+
+    const logoRemoveBtn = document.getElementById('logoRemoveBtn');
+    if (logoRemoveBtn) {
+      logoRemoveBtn.addEventListener('click', removeLogo);
     }
   }
 
@@ -146,6 +176,20 @@
     bindToggleGroup('divider-toggles', 'dividerStyle');
     bindToggleGroup('photo-shape-toggles', 'photoShape');
     bindToggleGroup('icon-style-toggles', 'iconStyle');
+
+    // Preview background toggle (simulates recipient's light vs dark inbox)
+    document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(o => {
+          o.classList.remove('active');
+          o.setAttribute('aria-checked', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-checked', 'true');
+        darkPreview = this.dataset.previewBg === 'dark';
+        renderPreview();
+      });
+    });
 
     // CTA fields
     const ctaText = document.getElementById('ctaText');
@@ -200,10 +244,23 @@
     const copyHtmlBtn = document.getElementById('copyHtmlBtn');
     const copyTextBtn = document.getElementById('copyTextBtn');
     const buyProBtn = document.getElementById('buyProBtn');
+    const mobilePreviewFab = document.getElementById('mobilePreviewFab');
+    const mobileBackToForm = document.getElementById('mobileBackToForm');
 
     if (copyHtmlBtn) copyHtmlBtn.addEventListener('click', function() { copyHTML(this); });
     if (copyTextBtn) copyTextBtn.addEventListener('click', function() { copyPlainText(this); });
     if (buyProBtn) buyProBtn.addEventListener('click', handleProPurchase);
+
+    if (mobilePreviewFab) {
+      mobilePreviewFab.addEventListener('click', () => {
+        document.querySelector('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    if (mobileBackToForm) {
+      mobileBackToForm.addEventListener('click', () => {
+        document.querySelector('.controls-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   }
 
   // ── Pro Purchase ──
@@ -224,22 +281,63 @@
   }
 
   // ── Photo Handling ──
-  function handlePhotoUpload(input) {
+
+  // Default hint copy when the user hasn't done anything yet — restored on remove.
+  const PHOTO_STATUS_DEFAULT_FREE = 'Upload for preview only. Use a hosted URL for Gmail.';
+  const PHOTO_STATUS_DEFAULT_PRO = 'Upload — we\'ll host it for Gmail-ready use.';
+
+  function setPhotoStatus(text, kind) {
+    const el = document.getElementById('photoStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function defaultPhotoStatus() {
+    setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PRO : PHOTO_STATUS_DEFAULT_FREE);
+  }
+
+  // Resize an image File to fit within maxDim x maxDim, returning a Blob.
+  // JPEG output (re-encoded) for opaque images — strips EXIF and shrinks size.
+  // PNG passthrough only when source is PNG (logos may need transparency, but for photos
+  // we still re-encode to JPEG to keep payload small).
+  async function resizeImage(file, maxDim) {
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * ratio));
+    const h = Math.max(1, Math.round(bitmap.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close && bitmap.close();
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('canvas_encode_failed'))),
+        'image/jpeg',
+        0.88
+      );
+    });
+  }
+
+  function describeUploadError(code) {
+    switch (code) {
+      case 'rate_limited': return 'Too many uploads this hour — try again later.';
+      case 'too_large': return 'Image too large (max 2 MB after resize).';
+      case 'unsupported_format': return 'JPG, PNG, or WebP only.';
+      case 'invalid_token': return 'Pro session expired — please reconnect.';
+      case 'storage_not_configured': return 'Hosting is offline right now — try again shortly.';
+      default: return 'Upload failed — please try again.';
+    }
+  }
+
+  async function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
     showCropUI(file);
   }
 
-  function setPhotoStatus(state) {
-    const hint = document.getElementById('photoUploadHint');
-    if (!hint) return;
-    const msgs = {
-      idle: 'Drop or click to upload. We host it for you.',
-      uploading: 'Uploading…',
-      done: 'Photo hosted — ready for Gmail and Outlook.',
-      error: 'Upload failed. Preview only — paste a URL above for email clients.',
-    };
-    hint.textContent = msgs[state] || '';
   }
 
   function removePhoto() {
@@ -254,7 +352,49 @@
     const removeBtn = document.getElementById('photoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
 
-    setPhotoStatus('idle');
+    defaultPhotoStatus();
+    renderPreview();
+  }
+
+  // ── Logo Handling ──
+  function handleLogoUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUri = e.target.result;
+      const thumb = document.getElementById('logoPreviewThumb');
+      if (!thumb) return;
+      const img = document.createElement('img');
+      img.src = dataUri;
+      img.alt = 'Logo';
+      thumb.replaceChildren(img);
+      thumb.classList.add('has-logo');
+
+      const removeBtn = document.getElementById('logoRemoveBtn');
+      if (removeBtn) removeBtn.style.display = '';
+
+      if (!document.getElementById('logoUrl').value.trim()) {
+        thumb.dataset.previewOnly = dataUri;
+      }
+      renderPreview();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeLogo() {
+    document.getElementById('logoUrl').value = '';
+    document.getElementById('logoFile').value = '';
+
+    const thumb = document.getElementById('logoPreviewThumb');
+    thumb.innerHTML = '<span class="logo-placeholder">No logo</span>';
+    thumb.classList.remove('has-logo');
+    delete thumb.dataset.previewOnly;
+
+    const removeBtn = document.getElementById('logoRemoveBtn');
+    if (removeBtn) removeBtn.style.display = 'none';
+
     renderPreview();
   }
 
@@ -458,6 +598,14 @@
       }
     }
 
+    let logoUrl = get('logoUrl');
+    if (!logoUrl) {
+      const thumb = document.getElementById('logoPreviewThumb');
+      if (thumb && thumb.dataset.previewOnly) {
+        logoUrl = thumb.dataset.previewOnly;
+      }
+    }
+
     return {
       fullName: get('fullName'),
       title: get('title'),
@@ -465,10 +613,12 @@
       email: get('email'),
       company: get('company'),
       photoUrl: photoUrl,
+      logoUrl: logoUrl,
       website: get('website'),
       instagram: get('instagram'),
       facebook: get('facebook'),
       linkedin: get('linkedin'),
+      google: get('google'),
     };
   }
 
@@ -487,7 +637,9 @@
     const template = TEMPLATES[currentTemplate];
     if (!template) return;
 
-    const html = buildSignatureHtml(template, data, style);
+    const html = darkPreview
+      ? buildDarkPreviewHtml(template, data, style)
+      : buildSignatureHtml(template, data, style);
 
     preview.innerHTML = html;
     preview.classList.remove('empty');
@@ -503,6 +655,81 @@
       inner += `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 8px; background-color: #ffffff;"><tr><td bgcolor="#ffffff" style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif; background-color: #ffffff;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
     }
     return template._darkSafeWrap(inner);
+  }
+
+  function isDarkColor(hex) {
+    const h = hex.replace('#', '');
+    let r, g, b;
+    if (h.length === 3) {
+      r = parseInt(h[0] + h[0], 16);
+      g = parseInt(h[1] + h[1], 16);
+      b = parseInt(h[2] + h[2], 16);
+    } else {
+      r = parseInt(h.substr(0, 2), 16);
+      g = parseInt(h.substr(2, 2), 16);
+      b = parseInt(h.substr(4, 2), 16);
+    }
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.5;
+  }
+
+  function buildDarkPreviewHtml(template, data, style) {
+    let html = template.render(data, style);
+
+    const complianceHtml = buildComplianceForTemplate(template);
+    if (complianceHtml) html += complianceHtml;
+
+    if (!isPro) {
+      html += `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tr><td style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
+    }
+
+    // Build a list of colour swaps for the dark preview.
+    const swaps = [];
+
+    // Replace the user's chosen text colour if it's dark.
+    const textLower = style.textColor.toLowerCase();
+    if (isDarkColor(textLower)) {
+      swaps.push({ from: textLower, to: '#e5e7eb' });
+    }
+
+    // General light → dark map.
+    const colorMap = {
+      '#ffffff': '#1f1f1f',
+      '#fefefe': '#1f1f1f',
+      '#fafafa': '#2d2d2d',
+      '#f3f4f6': '#2d2d2d',
+      '#f9fafb': '#2d2d2d',
+      '#1e293b': '#e5e7eb',
+      '#111111': '#eeeeee',
+      '#000000': '#e5e7eb',
+      '#000': '#e5e7eb',
+      '#4b5563': '#9ca3af',
+      '#6b7280': '#9ca3af',
+      '#374151': '#d1d5db',
+      '#e5e7eb': '#9ca3af',
+      '#d1d5db': '#9ca3af',
+      '#9ca3af': '#9ca3af',
+    };
+
+    Object.entries(colorMap).forEach(([from, to]) => {
+      // Skip if the user's text colour already covers this source colour
+      // so we don't create duplicate/conflicting swaps.
+      if (from !== textLower) {
+        swaps.push({ from, to });
+      }
+    });
+
+    // Two-pass replacement using unique placeholders so destination colours
+    // that also appear as source colours don't chain-replace.
+    swaps.forEach((swap, i) => {
+      const regex = new RegExp(swap.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      html = html.replace(regex, '__DARK_PREVIEW_COLOR_' + i + '__');
+    });
+    swaps.forEach((swap, i) => {
+      html = html.replace(new RegExp('__DARK_PREVIEW_COLOR_' + i + '__', 'g'), swap.to);
+    });
+
+    return html;
   }
 
   function buildComplianceForTemplate(template) {
@@ -700,16 +927,92 @@
   }
 
   function escapeAttr(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // ── Validation ──
+  const validators = {
+    fullName: { validate: (val) => val.trim() ? '' : 'Please enter your full name.' },
+    email: {
+      validate: (val) => {
+        if (!val.trim()) return '';
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ? '' : 'Please enter a valid email address.';
+      },
+    },
+    website: { validate: urlValidator },
+    linkedin: { validate: urlValidator },
+    instagram: { validate: urlValidator },
+    facebook: { validate: urlValidator },
+    google: { validate: urlValidator },
+  };
+
+  function urlValidator(val) {
+    if (!val.trim()) return '';
+    return /^https?:\/\//.test(val) ? '' : 'URL must start with http:// or https://';
+  }
+
+  function validateField(id) {
+    const el = document.getElementById(id);
+    const errorEl = document.getElementById(id + '-error');
+    const validator = validators[id];
+    if (!el || !validator) return true;
+
+    const msg = validator.validate(el.value);
+    if (msg) {
+      el.classList.add('input-error');
+      if (errorEl) errorEl.textContent = msg;
+      return false;
+    } else {
+      el.classList.remove('input-error');
+      if (errorEl) errorEl.textContent = '';
+      return true;
+    }
+  }
+
+  function clearFieldError(id) {
+    const el = document.getElementById(id);
+    const errorEl = document.getElementById(id + '-error');
+    if (el) el.classList.remove('input-error');
+    if (errorEl) errorEl.textContent = '';
+  }
+
+  function bindValidation() {
+    const fields = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook', 'google'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', () => validateField(id));
+      el.addEventListener('input', () => clearFieldError(id));
+    });
+  }
+
+  function applyDarkPreviewClass() {
+    const preview = document.getElementById('signature-preview');
+    if (!preview) return;
+    preview.classList.toggle('dark-preview', darkPreview);
+
+    const note = document.querySelector('.preview-toolbar-note');
+    if (note) {
+      note.textContent = darkPreview
+        ? 'Copied HTML stays Gmail dark-mode safe'
+        : 'Signatures are Gmail dark-mode safe';
+    }
   }
 
   // ── Copy Functions ──
   async function copyHTML(btn) {
     const data = getFormData();
     if (!data.fullName) {
+      validateField('fullName');
       alert('Please enter your name to generate a signature.');
       return;
     }
+    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     const template = TEMPLATES[currentTemplate];
     const html = buildSignatureHtml(template, data, style);
@@ -745,9 +1048,11 @@
   async function copyPlainText(btn) {
     const data = getFormData();
     if (!data.fullName) {
+      validateField('fullName');
       alert('Please enter your name.');
       return;
     }
+    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     const lines = [data.fullName, data.title, data.company, data.phone, data.email, data.website].filter(Boolean);
 
@@ -765,17 +1070,84 @@
   }
 
   // ── Pro Unlock ──
+  async function checkProStatus() {
+    // 1. Try new token-based verification first
+    const token = localStorage.getItem('sig_pro_token');
+    if (token) {
+      const result = await verifyToken(token);
+      if (result.valid) {
+        unlockPro();
+        return;
+      }
+      // Token invalid or expired — clear it
+      localStorage.removeItem('sig_pro_token');
+    }
+
+    // 2. Legacy fallback for existing customers (30-day grace period)
+    // TODO: Remove this block after 2026-05-22 (30 days from deploy)
+    const legacy = localStorage.getItem('sig_pro');
+    if (legacy === 'true') {
+      showLegacyMigrationBanner();
+    }
+  }
+
+  async function verifyToken(token) {
+    try {
+      const res = await fetch('/api/verify-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token })
+      });
+      return await res.json();
+    } catch (e) {
+      return { valid: false };
+    }
+  }
+
   function unlockPro() {
     isPro = true;
-    localStorage.setItem('sig_pro', 'true');
 
     // Hide pro banner
     const banner = document.getElementById('pro-banner');
     if (banner) banner.style.display = 'none';
 
+    // Show success toast
+    showProSuccessToast();
+
+    // Refresh upload hint copy now that hosting is unlocked
+    defaultPhotoStatus();
+
     // Re-render to remove badges and branding
     renderTemplateGrid();
     renderPreview();
+  }
+
+  function showProSuccessToast() {
+    var toast = document.createElement('div');
+    toast.textContent = 'Welcome to Pro! You now have access to all 19 templates.';
+    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; }, 3000);
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
+  }
+
+  function showLegacyMigrationBanner() {
+    // Don't show if already dismissed
+    if (localStorage.getItem('sig_pro_migration_dismissed') === 'true') return;
+
+    var banner = document.createElement('div');
+    banner.id = 'legacy-migration-banner';
+    banner.innerHTML = '<strong>Security upgrade:</strong> We\'ve strengthened Pro verification. ' +
+      '<a href="https://buy.stripe.com/6oUeVc0ET92yauBf1sf7i00" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
+      '(no charge if you already paid). ' +
+      '<button id="dismiss-migration" style="margin-left:12px;background:#0f766e;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">Dismiss</button>';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ccfbf1;color:#115e59;padding:12px 16px;text-align:center;font-size:13px;z-index:10000;border-bottom:1px solid #99f6e4;';
+    document.body.appendChild(banner);
+
+    document.getElementById('dismiss-migration').addEventListener('click', function() {
+      localStorage.setItem('sig_pro_migration_dismissed', 'true');
+      banner.remove();
+    });
   }
 
   function showProPrompt() {
@@ -787,8 +1159,5 @@
       banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
-
-  // ── Expose for Stripe callback ──
-  window.unlockPro = unlockPro;
 
 })();

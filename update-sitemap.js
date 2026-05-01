@@ -12,14 +12,30 @@ const fs = require('fs');
 const path = require('path');
 
 const SITE_URL = 'https://emailsignaturegenerator.ai';
-const TODAY = new Date().toISOString().split('T')[0];
+
+function xmlEscape(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fileLastmod(filePath) {
+  try {
+    const stat = fs.statSync(filePath);
+    return stat.mtime.toISOString().split('T')[0];
+  } catch {
+    return new Date().toISOString().split('T')[0];
+  }
+}
 
 const urls = [];
 
 // ─── Core pages ────────────────────────────────────────────────────────────
-urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly' });
-urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly' });
-urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly' });
+urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly', file: path.join(__dirname, 'index.html') });
+urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'generator.html') });
+urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
 
 // ─── SEO programmatic pages ─────────────────────────────────────────────────
 const seoDir = path.join(__dirname, 'seo');
@@ -30,7 +46,8 @@ if (fs.existsSync(seoDir)) {
     urls.push({
       loc: `${SITE_URL}/seo/${slug}`,
       priority: '0.7',
-      changefreq: 'monthly'
+      changefreq: 'monthly',
+      file: path.join(seoDir, file)
     });
   }
   console.log(`  Found ${seoFiles.length} SEO pages`);
@@ -42,10 +59,10 @@ if (fs.existsSync(blogDir)) {
   const blogFiles = fs.readdirSync(blogDir).filter(f => f.endsWith('.html'));
   for (const file of blogFiles) {
     if (file === 'index.html') {
-      urls.push({ loc: `${SITE_URL}/blog/`, priority: '0.8', changefreq: 'weekly' });
+      urls.push({ loc: `${SITE_URL}/blog/`, priority: '0.8', changefreq: 'weekly', file: path.join(blogDir, file) });
     } else {
       const slug = file.replace('.html', '');
-      urls.push({ loc: `${SITE_URL}/blog/${slug}`, priority: '0.7', changefreq: 'monthly' });
+      urls.push({ loc: `${SITE_URL}/blog/${slug}`, priority: '0.7', changefreq: 'monthly', file: path.join(blogDir, file) });
     }
   }
   console.log(`  Found ${blogFiles.length} blog pages`);
@@ -53,8 +70,8 @@ if (fs.existsSync(blogDir)) {
 
 // ─── Generate XML ───────────────────────────────────────────────────────────
 const urlEntries = urls.map(u => `  <url>
-    <loc>${u.loc}</loc>
-    <lastmod>${TODAY}</lastmod>
+    <loc>${xmlEscape(u.loc)}</loc>
+    <lastmod>${fileLastmod(u.file)}</lastmod>
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
   </url>`).join('\n');
@@ -66,4 +83,4 @@ ${urlEntries}
 `;
 
 fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), xml, 'utf8');
-console.log(`✅ sitemap.xml updated — ${urls.length} URLs, lastmod: ${TODAY}`);
+console.log(`✅ sitemap.xml updated — ${urls.length} URLs`);

@@ -1,6 +1,6 @@
 name = "emailsignaturegenerator"
 main = "_worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-04-01"
 
 [assets]
 directory = "."
@@ -8,3 +8,8 @@ directory = "."
 [[r2_buckets]]
 binding = "PHOTOS"
 bucket_name = "email-sig-photos"
+
+# ── KV rate limiting (add once KV namespace is created) ──
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "PASTE_KV_NAMESPACE_ID_HERE"
