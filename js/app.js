@@ -7,7 +7,6 @@
   let currentTemplate = 'classic';
   let currentCategory = 'all';
   let isPro = false; // Set to true after Stripe payment
-  let darkPreview = false; // Toggles the preview container's background to simulate recipient dark mode
 
   const defaultStyle = {
     primaryColor: '#0891B2',
@@ -85,7 +84,6 @@
         ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
         <div class="template-preview">${t.icon}</div>
         <div class="template-name">${t.name}</div>
-        <span class="dark-safe-badge" title="Renders correctly in Gmail dark mode">Dark-safe</span>
       </button>`
     ).join('');
 
@@ -148,20 +146,6 @@
     bindToggleGroup('divider-toggles', 'dividerStyle');
     bindToggleGroup('photo-shape-toggles', 'photoShape');
     bindToggleGroup('icon-style-toggles', 'iconStyle');
-
-    // Preview background toggle (simulates recipient's light vs dark inbox)
-    document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(btn => {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.preview-bg-toggle .toggle-option').forEach(o => {
-          o.classList.remove('active');
-          o.setAttribute('aria-checked', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-checked', 'true');
-        darkPreview = this.dataset.previewBg === 'dark';
-        applyDarkPreviewClass();
-      });
-    });
 
     // CTA fields
     const ctaText = document.getElementById('ctaText');
@@ -507,12 +491,8 @@
 
     preview.innerHTML = html;
     preview.classList.remove('empty');
-    applyDarkPreviewClass();
   }
 
-  // Wraps the rendered template + optional compliance block + optional branding
-  // in a Gmail-dark-mode-safe light island. Used by both renderPreview and
-  // copyHTML so what the user sees is exactly what recipients get.
   function buildSignatureHtml(template, data, style) {
     let inner = template.render(data, style);
 
@@ -721,12 +701,6 @@
 
   function escapeAttr(str) {
     return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function applyDarkPreviewClass() {
-    const preview = document.getElementById('signature-preview');
-    if (!preview) return;
-    preview.classList.toggle('dark-preview', darkPreview);
   }
 
   // ── Copy Functions ──
