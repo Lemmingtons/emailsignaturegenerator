@@ -15,6 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const SITE_FACTS = require('./js/site-facts');
 
 function escapeHtml(str) {
   return String(str)
@@ -26,11 +27,34 @@ function escapeHtml(str) {
 }
 
 const SEO_DIR = path.join(__dirname, 'seo');
-const SITE_URL = 'https://emailsignaturegenerator.ai';
+const SITE_URL = SITE_FACTS.origin;
+const PRICE = SITE_FACTS.proPrice.displayWithCurrency;
+const PRICE_SHORT = SITE_FACTS.proPrice.display;
+const TEMPLATE_COUNT = SITE_FACTS.templateCount;
+const FREE_TEMPLATE_COUNT = SITE_FACTS.freeTemplateCount;
 
-// Ensure output directory exists
-if (!fs.existsSync(SEO_DIR)) {
-  fs.mkdirSync(SEO_DIR, { recursive: true });
+function readDataset(name) {
+  const filePath = path.join(__dirname, 'datasets', name);
+  const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!Array.isArray(data)) {
+    throw new Error(`${name} must contain an array`);
+  }
+  data.forEach((entry, index) => {
+    for (const field of ['slug', 'label', 'description', 'keywords']) {
+      if (!entry[field]) throw new Error(`${name}[${index}] missing ${field}`);
+    }
+  });
+  return data;
+}
+
+function dedupeBySlug(entries) {
+  return entries.filter((entry, index, all) => all.findIndex(x => x.slug === entry.slug) === index);
+}
+
+function ensureOutputDir() {
+  if (!fs.existsSync(SEO_DIR)) {
+    fs.mkdirSync(SEO_DIR, { recursive: true });
+  }
 }
 
 // ─── Templates ─────────────────────────────────────────────────────────────
@@ -63,7 +87,7 @@ function rolePageHTML({ slug, label, singular, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()}?`,
-        a: `Yes. The free plan includes 6 professional templates with full customisation of colours, fonts, photos, and social links. The Pro plan costs $9 AUD (one-time payment) and unlocks all 19 templates, removes branding, and adds CTA buttons. No subscription required.`
+        a: `Yes. The free plan includes ${FREE_TEMPLATE_COUNT} professional templates with full customisation of colours, fonts, photos, and social links. The Pro plan costs ${PRICE} (one-time payment) and unlocks all ${TEMPLATE_COUNT} templates, removes branding, and adds CTA buttons. No subscription required.`
       }
     ]
   });
@@ -94,7 +118,7 @@ function platformPageHTML({ slug, label, description, installInstructions, keywo
       },
       {
         q: `Is there a free email signature generator for ${label}?`,
-        a: `Yes. Our free plan includes 6 professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs $9 AUD as a one-time payment and unlocks all 19 templates with no branding.`
+        a: `Yes. Our free plan includes ${FREE_TEMPLATE_COUNT} professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs ${PRICE} as a one-time payment and unlocks all ${TEMPLATE_COUNT} templates with no branding.`
       }
     ]
   });
@@ -124,7 +148,7 @@ function industryPageHTML({ slug, label, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()} professionals?`,
-        a: `Yes. The free plan includes 6 templates with full customisation. The Pro plan costs $9 AUD as a one-time payment and unlocks all 19 templates, removes branding, and adds CTA buttons. No subscription, no recurring charges.`
+        a: `Yes. The free plan includes ${FREE_TEMPLATE_COUNT} templates with full customisation. The Pro plan costs ${PRICE} as a one-time payment and unlocks all ${TEMPLATE_COUNT} templates, removes branding, and adds CTA buttons. No subscription, no recurring charges.`
       }
     ]
   });
@@ -250,7 +274,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
-      <p>19 templates. Full customisation. Works with Gmail and Outlook.<br>Pay $9 once for Pro, or use 6 templates free forever.</p>
+      <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Pay ${PRICE_SHORT} once for Pro, or use ${FREE_TEMPLATE_COUNT} templates free forever.</p>
       <a href="../generator.html" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
     </div>
 
@@ -258,7 +282,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
       <h2>Everything you need in an email signature</h2>
       <div class="features-grid">
         <div class="feature-item">
-          <h3>18 Templates</h3>
+          <h3>${TEMPLATE_COUNT} Templates</h3>
           <p>Professional, Creative, Minimal, Social-First, Sales, and Industry designs.</p>
         </div>
         <div class="feature-item">
@@ -293,7 +317,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     <div class="seo-cta-box" style="margin-top: 48px;">
       <h2>Ready to create your professional email signature?</h2>
-      <p>Join thousands of professionals who've ditched the $108/year subscription for a $9 one-time tool.</p>
+      <p>Join thousands of professionals who've ditched the $108/year subscription for a ${PRICE_SHORT} one-time tool.</p>
       <a href="../generator.html" class="btn btn-primary">Create Free Signature</a>
     </div>
 
@@ -307,7 +331,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
       &nbsp;&middot;&nbsp;
       <a href="../index.html#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
-      <a href="mailto:info@strata-reports.ai">Contact</a>
+      <a href="mailto:${SITE_FACTS.contactEmail}">Contact</a>
     </p>
   </footer>
 
@@ -315,44 +339,52 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 </html>`;
 }
 
-// ─── Generate Pages ─────────────────────────────────────────────────────────
-
-let generated = 0;
-
-// Role pages
-const roles = JSON.parse(fs.readFileSync(path.join(__dirname, 'datasets/roles.json'), 'utf8'));
-// Deduplicate by slug
-const uniqueRoles = roles.filter((r, i, a) => a.findIndex(x => x.slug === r.slug) === i);
-for (const role of uniqueRoles) {
-  const filename = `email-signature-for-${role.slug}.html`;
-  const html = rolePageHTML(role);
+function writePage(filename, html) {
   fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
-  generated++;
 }
-console.log(`✓ Generated ${uniqueRoles.length} role pages`);
 
-// Platform pages
-const platforms = JSON.parse(fs.readFileSync(path.join(__dirname, 'datasets/platforms.json'), 'utf8'));
-for (const platform of platforms) {
-  const filename = `email-signature-generator-for-${platform.slug}.html`;
-  const html = platformPageHTML(platform);
-  fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
-  generated++;
+function generatePages() {
+  ensureOutputDir();
+
+  let generated = 0;
+
+  const roles = dedupeBySlug(readDataset('roles.json'));
+  for (const role of roles) {
+    writePage(`email-signature-for-${role.slug}.html`, rolePageHTML(role));
+    generated++;
+  }
+  console.log(`Generated ${roles.length} role pages`);
+
+  const platforms = readDataset('platforms.json');
+  for (const platform of platforms) {
+    writePage(`email-signature-generator-for-${platform.slug}.html`, platformPageHTML(platform));
+    generated++;
+  }
+  console.log(`Generated ${platforms.length} platform pages`);
+
+  const industries = readDataset('industries.json');
+  for (const industry of industries) {
+    writePage(`email-signature-for-${industry.slug}.html`, industryPageHTML(industry));
+    generated++;
+  }
+  console.log(`Total pages generated: ${generated}`);
+  console.log('Output directory: ./seo/');
+  return { generated, roles: roles.length, platforms: platforms.length, industries: industries.length };
 }
-console.log(`✓ Generated ${platforms.length} platform pages`);
 
-// Industry pages
-const industries = JSON.parse(fs.readFileSync(path.join(__dirname, 'datasets/industries.json'), 'utf8'));
-for (const industry of industries) {
-  const filename = `email-signature-for-${industry.slug}.html`;
-  const html = industryPageHTML(industry);
-  fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
-  generated++;
+if (require.main === module) {
+  generatePages();
+  console.log('\nNext steps:');
+  console.log('  1. Run: node update-sitemap.js');
+  console.log('  2. Deploy to Cloudflare: npx wrangler pages deploy .');
 }
-console.log(`✓ Generated ${industries.length} industry pages`);
 
-console.log(`\n✅ Total pages generated: ${generated}`);
-console.log(`   Output directory: ./seo/`);
-console.log('\nNext steps:');
-console.log('  1. Run: node update-sitemap.js  (adds new pages to sitemap.xml)');
-console.log('  2. Deploy to Cloudflare: npx wrangler pages deploy .');
+module.exports = {
+  generatePages,
+  pageHTML,
+  rolePageHTML,
+  platformPageHTML,
+  industryPageHTML,
+  readDataset,
+  dedupeBySlug,
+};

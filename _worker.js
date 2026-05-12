@@ -119,6 +119,16 @@ function apiError(status, code, detail) {
   });
 }
 
+function uploadBucket(env) {
+  return env.UPLOADS || env.PHOTOS;
+}
+
+async function publicUploadId(sub, secret) {
+  const key = await importKey(secret);
+  const signature = await crypto.subtle.sign('HMAC', key, textToUint8Array(`upload-public-url:${sub}`));
+  return base64url(signature).slice(0, 32);
+}
+
 // ── Stripe API Helper ────────────────────────────────────────────────────────
 
 async function verifyStripeSession(sessionId, stripeSecretKey) {
@@ -230,7 +240,8 @@ export default {
     if (url.pathname === '/api/upload-image') {
       if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
       if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
-      if (!env.UPLOADS) return apiError(500, 'storage_not_configured');
+      const bucket = uploadBucket(env);
+      if (!bucket) return apiError(500, 'storage_not_configured');
 
       // Auth
       const authHeader = request.headers.get('Authorization') || '';
@@ -247,8 +258,7 @@ export default {
 
       // Size pre-check via Content-Length
       const MAX_BYTES = 2_000_000;
-      const declaredLen = parseInt(request.headers.get('Content-Length') || '0', 10);
-      if (!declaredLen) return apiError(400, 'empty_body');
+      const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
       if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
 
       // Rate limit: 10 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable)
@@ -269,25 +279,27 @@ export default {
       const sniffed = sniffImage(buf);
       if (!sniffed) return apiError(415, 'unsupported_format');
 
+      const uploadId = await publicUploadId(sub, env.PRO_SIGNING_SECRET);
+
       // Best-effort delete other-extension siblings so each user has at most one photo file
       const allExts = ['jpg', 'png', 'webp'];
       await Promise.all(
         allExts
           .filter((e) => e !== sniffed.ext)
-          .map((e) => env.UPLOADS.delete(`users/${sub}/photo.${e}`).catch(() => {}))
+          .map((e) => bucket.delete(`users/${uploadId}/photo.${e}`).catch(() => {}))
       );
 
       // Store
-      const key = `users/${sub}/photo.${sniffed.ext}`;
-      await env.UPLOADS.put(key, buf, {
+      const key = `users/${uploadId}/photo.${sniffed.ext}`;
+      await bucket.put(key, buf, {
         httpMetadata: {
           contentType: sniffed.mime,
           cacheControl: 'public, max-age=31536000, immutable',
         },
-        customMetadata: { sub, uploadedAt: String(Date.now()) },
+        customMetadata: { uploadedAt: String(Date.now()) },
       });
 
-      const publicUrl = `${url.origin}/u/${sub}/photo.${sniffed.ext}?v=${Date.now()}`;
+      const publicUrl = `${url.origin}/u/${uploadId}/photo.${sniffed.ext}?v=${Date.now()}`;
       return new Response(
         JSON.stringify({ url: publicUrl, bytes: buf.byteLength, contentType: sniffed.mime }),
         { headers: { 'Content-Type': 'application/json' } }
@@ -296,11 +308,12 @@ export default {
 
     // ── Public: Serve uploaded image ─────────────────────────────────────────
     if (url.pathname.startsWith('/u/')) {
-      if (!env.UPLOADS) return new Response('Storage not configured', { status: 500 });
-      const match = url.pathname.match(/^\/u\/(cus_[A-Za-z0-9]+)\/photo\.(jpg|png|webp)$/);
+      const bucket = uploadBucket(env);
+      if (!bucket) return new Response('Storage not configured', { status: 500 });
+      const match = url.pathname.match(/^\/u\/([A-Za-z0-9_-]{16,64}|cus_[A-Za-z0-9]+)\/photo\.(jpg|png|webp)$/);
       if (!match) return new Response('Not found', { status: 404 });
       const key = `users/${match[1]}/photo.${match[2]}`;
-      const obj = await env.UPLOADS.get(key);
+      const obj = await bucket.get(key);
       if (!obj) return new Response('Not found', { status: 404 });
 
       const headers = new Headers();
@@ -311,14 +324,12 @@ export default {
       return new Response(obj.body, { headers });
     }
 
-    // ── Image Upload (live bucket: email-sig-photos) ─────────────────────────
     if (request.method === 'POST' && url.pathname === '/api/upload') {
-      return handleUpload(request, env, url);
+      return apiError(410, 'legacy_upload_removed', 'Use /api/upload-image with a Pro token.');
     }
 
-    // ── Image Serve (live bucket: email-sig-photos) ──────────────────────────
     if (request.method === 'GET' && url.pathname.startsWith('/photos/')) {
-      return handlePhoto(request, env, url);
+      return handleLegacyPhoto(env, url);
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
@@ -345,44 +356,14 @@ export default {
   },
 };
 
-async function handleUpload(request, env, url) {
-  let formData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return jsonError('Invalid form data', 400);
-  }
+async function handleLegacyPhoto(env, url) {
+  const bucket = uploadBucket(env);
+  if (!bucket) return new Response('Storage not configured', { status: 500 });
 
-  const file = formData.get('photo');
-  if (!file || typeof file.arrayBuffer !== 'function') {
-    return jsonError('No photo field', 400);
-  }
-
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    return jsonError('Only JPEG, PNG, GIF and WebP images are allowed', 415);
-  }
-
-  const buf = await file.arrayBuffer();
-  if (buf.byteLength > 5 * 1024 * 1024) {
-    return jsonError('Image must be under 5 MB', 413);
-  }
-
-  const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' };
-  const key = `${crypto.randomUUID()}.${extMap[file.type]}`;
-
-  await env.PHOTOS.put(key, buf, { httpMetadata: { contentType: file.type } });
-
-  return new Response(JSON.stringify({ url: `${url.origin}/photos/${key}` }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-async function handlePhoto(request, env, url) {
   const key = url.pathname.slice('/photos/'.length);
   if (!key) return new Response('Not Found', { status: 404 });
 
-  const object = await env.PHOTOS.get(key);
+  const object = await bucket.get(key);
   if (!object) return new Response('Not Found', { status: 404 });
 
   const headers = new Headers();
@@ -391,11 +372,4 @@ async function handlePhoto(request, env, url) {
   headers.set('ETag', object.httpEtag);
 
   return new Response(object.body, { headers });
-}
-
-function jsonError(message, status) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
 }

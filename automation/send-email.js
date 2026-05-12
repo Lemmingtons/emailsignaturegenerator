@@ -1,25 +1,24 @@
 #!/usr/bin/env node
 /**
  * Email Report Sender — emailsignaturegenerator.ai
- * Sends a report file to info@strata-reports.ai via Resend API.
+ * Sends a report file via Resend API.
  *
  * Usage:
  *   node automation/send-email.js <report-file-path> <subject>
  *
- * Requires RESEND_API_KEY environment variable (add to ~/.zshenv or .env file).
- * Free Resend account: https://resend.com — 3,000 emails/month free.
+ * Requires RESEND_API_KEY in the environment. For Ryan's machines, run via Doppler.
  */
 
 const https = require('https');
 const fs = require('fs');
-const path = require('path');
+const SITE_FACTS = require('../js/site-facts');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const TO_EMAIL = 'info@strata-reports.ai';
+const TO_EMAIL = process.env.SEO_REPORT_TO || SITE_FACTS.reportEmail;
 const FROM_EMAIL = 'seo-reports@emailsignaturegenerator.ai';
 
 if (!RESEND_API_KEY) {
-  console.error('❌ RESEND_API_KEY not set. Add it to ~/.zshenv:\n   export RESEND_API_KEY=re_xxxxx');
+  console.error('RESEND_API_KEY not set. Run with Doppler or provide RESEND_API_KEY in the environment.');
   process.exit(1);
 }
 
@@ -93,16 +92,16 @@ const req = https.request(options, (res) => {
   res.on('data', chunk => data += chunk);
   res.on('end', () => {
     if (res.statusCode === 200 || res.statusCode === 201) {
-      console.log(`✅ Report emailed to ${TO_EMAIL}`);
+      console.log(`Report emailed to ${TO_EMAIL}`);
     } else {
-      console.error(`❌ Resend API error ${res.statusCode}: ${data}`);
+      console.error(`Resend API error ${res.statusCode}: ${data}`);
       process.exit(1);
     }
   });
 });
 
 req.on('error', (err) => {
-  console.error(`❌ Network error: ${err.message}`);
+  console.error(`Network error: ${err.message}`);
   process.exit(1);
 });
 

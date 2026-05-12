@@ -36,11 +36,11 @@
   <rect x="380" y="336" width="440" height="2" rx="1" fill="#1e293b"/>
 
   <!-- Value prop -->
-  <text x="380" y="380" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="26" fill="#94a3b8" letter-spacing="0">18 templates · Full customisation · No subscription</text>
+  <text x="380" y="380" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="26" fill="#94a3b8" letter-spacing="0">19 templates · Full customisation · No subscription</text>
 
   <!-- Price badge -->
   <rect x="380" y="412" width="188" height="52" rx="10" fill="#4F46E5"/>
-  <text x="474" y="445" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">$5 one-time</text>
+  <text x="474" y="445" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">$9 one-time</text>
 
   <!-- Domain -->
   <text x="380" y="540" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="20" fill="#475569" letter-spacing="0.5">emailsignaturegenerator.ai</text>

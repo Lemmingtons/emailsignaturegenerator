@@ -421,7 +421,7 @@
           }
 
           // 11. Social icons present
-          const socialCount = (html.match(/icons8\.com/g) || []).length;
+          const socialCount = (html.match(/data:image\/svg\+xml/g) || []).length;
           if (socialCount >= 3) {
             pass('Social icons present (' + socialCount + ' found)');
           } else if (socialCount > 0) {

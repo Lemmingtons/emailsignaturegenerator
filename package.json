@@ -1,0 +1,11 @@
+{
+  "name": "email-signature-generator",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-pages.js",
+    "sitemap": "node update-sitemap.js",
+    "validate": "node scripts/validate-site.js",
+    "check": "npm run validate"
+  }
+}

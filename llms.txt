@@ -1,6 +1,6 @@
 # Email Signature Generator
 
-> A browser-based email signature generator with 18 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
+> A browser-based email signature generator with 19 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
 
 ## What this tool does
 
@@ -10,7 +10,7 @@ A companion **Email Signature Health Check** at /health-check audits any pasted 
 
 ## Pricing
 
-- **Free**: $0 — 6 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
+- **Free**: $0 — 8 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
 - **Pro**: $9 AUD, one-time payment — All 19 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
 
 No subscription. No recurring charges. No account needed.
@@ -20,7 +20,7 @@ No subscription. No recurring charges. No account needed.
 - Free **signature health check** — paste any signature HTML, get a full audit (contrast, Gmail dark-mode, Outlook, trackers, accessibility) in seconds
 - Gmail dark-mode safe — every template renders correctly in both light and dark inboxes
 - **Jurisdiction-aware compliance** — auto-fills your regulatory licence number (bar, NPI, AFSL, CRD, GMC, AHPRA, SRA, etc.) and appends the correct country-specific disclaimer (HIPAA, Circular 230, FCA, FINRA Reg BI, Legal Professional Privilege, etc.) for 7 regulated professions across US, UK, AU, and CA
-- 18 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
+- 19 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
 - 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
 - Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
@@ -55,11 +55,11 @@ No. The generator runs entirely in your browser. No login, no account, no tracki
 Yes. Come back anytime and create a new signature. Pro access persists in your browser with no limits.
 
 **Is there a refund policy?**
-Yes. 30-day money-back guarantee. Email info@strata-reports.ai.
+Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 
 ## Contact
 
-- Email: info@strata-reports.ai
+- Email: info@emailsignaturegenerator.ai
 - Website: https://emailsignaturegenerator.ai/
 
 ## Pages

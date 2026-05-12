@@ -3,24 +3,14 @@
 (function() {
   'use strict';
 
+  const FACTS = window.SiteFacts;
+  const CORE = window.SignatureGeneratorCore;
+
   // ── State ──
   let currentTemplate = 'classic';
   let currentCategory = 'all';
-  let isPro = false; // Set to true after Stripe payment
-
-  const defaultStyle = {
-    primaryColor: '#0891B2',
-    secondaryColor: '#7c3aed',
-    textColor: '#1e293b',
-    fontFamily: 'Arial, Helvetica, sans-serif',
-    dividerStyle: 'line',
-    photoShape: 'circle',
-    iconStyle: 'mono',
-    ctaText: '',
-    ctaUrl: '',
-  };
-
-  let style = { ...defaultStyle };
+  let isPro = false;
+  let style = CORE.createStyle();
 
   // Compliance state — populated after compliance.json loads
   let complianceData = null;
@@ -46,7 +36,7 @@
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
-      localStorage.setItem('sig_pro_token', token);
+      localStorage.setItem(FACTS.proTokenStorageKey, token);
       window.history.replaceState({}, '', window.location.pathname);
     }
 
@@ -80,17 +70,7 @@
       currentCategory === 'all' || t.category === currentCategory
     );
 
-    const previewStyle = {
-      primaryColor: '#0891B2',
-      secondaryColor: '#7c3aed',
-      textColor: '#1e293b',
-      fontFamily: 'Arial, Helvetica, sans-serif',
-      dividerStyle: 'line',
-      photoShape: 'circle',
-      iconStyle: 'mono',
-      ctaText: 'Book a Meeting',
-      ctaUrl: 'https://calendly.com',
-    };
+    const previewStyle = CORE.previewStyle;
 
     container.innerHTML = entries.map(([id, t]) => {
       if (!t._previewHtml) {
@@ -248,21 +228,8 @@
     }
   }
 
-  // ── Pro Purchase ──
-  // TODO: Replace this URL with your actual Stripe Payment Link once created.
-  // Create one at https://dashboard.stripe.com/payment-links
-  // Set the success URL to: https://emailsignaturegenerator.ai/generator.html?pro=true
-  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01';
-
   function handleProPurchase() {
-    if (STRIPE_PAYMENT_LINK) {
-      window.location.href = STRIPE_PAYMENT_LINK;
-    } else {
-      // Dev/preview mode — unlock directly for testing
-      if (confirm('Stripe not configured yet. Unlock Pro for testing?')) {
-        unlockPro();
-      }
-    }
+    window.location.href = FACTS.paymentLink;
   }
 
   // ── Photo Handling ──
@@ -282,47 +249,10 @@
     setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PRO : PHOTO_STATUS_DEFAULT_FREE);
   }
 
-  // Resize an image File to fit within maxDim x maxDim, returning a Blob.
-  // JPEG output (re-encoded) for opaque images — strips EXIF and shrinks size.
-  // PNG passthrough only when source is PNG (logos may need transparency, but for photos
-  // we still re-encode to JPEG to keep payload small).
-  async function resizeImage(file, maxDim) {
-    const bitmap = await createImageBitmap(file);
-    const ratio = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-    const w = Math.max(1, Math.round(bitmap.width * ratio));
-    const h = Math.max(1, Math.round(bitmap.height * ratio));
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    bitmap.close && bitmap.close();
-    return await new Promise((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('canvas_encode_failed'))),
-        'image/jpeg',
-        0.88
-      );
-    });
-  }
-
-  function describeUploadError(code) {
-    switch (code) {
-      case 'rate_limited': return 'Too many uploads this hour — try again later.';
-      case 'too_large': return 'Image too large (max 2 MB after resize).';
-      case 'unsupported_format': return 'JPG, PNG, or WebP only.';
-      case 'invalid_token': return 'Pro session expired — please reconnect.';
-      case 'storage_not_configured': return 'Hosting is offline right now — try again shortly.';
-      default: return 'Upload failed — please try again.';
-    }
-  }
-
   async function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
     showCropUI(file);
-  }
-
   }
 
   function removePhoto() {
@@ -438,41 +368,64 @@
     const viewport = document.getElementById('cropViewport');
     const img = document.getElementById('cropImage');
     const viewSize = viewport.offsetWidth;
+    const outputSize = 400;
 
     const canvas = document.createElement('canvas');
-    canvas.width = viewSize;
-    canvas.height = viewSize;
+    canvas.width = outputSize;
+    canvas.height = outputSize;
     const ctx = canvas.getContext('2d');
     const sx = -cropState.x / cropState.scale;
     const sy = -cropState.y / cropState.scale;
     const sw = viewSize / cropState.scale;
     const sh = viewSize / cropState.scale;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, viewSize, viewSize);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outputSize, outputSize);
 
     closeCropUI();
 
-    // Show preview immediately from canvas
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     const thumb = document.getElementById('photoPreviewThumb');
     thumb.innerHTML = `<img src="${dataUrl}" alt="Photo preview">`;
     thumb.classList.add('has-photo');
+    thumb.dataset.previewOnly = dataUrl;
+    document.getElementById('photoUrl').value = '';
     document.getElementById('photoRemoveBtn').style.display = '';
     renderPreview();
 
-    // Upload the cropped image
-    setPhotoStatus('uploading');
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!isPro || !token) {
+      setPhotoStatus('Preview ready. Pro hosting is required for Gmail-ready photo URLs.');
+      return;
+    }
+
+    setPhotoStatus('Uploading hosted photo...');
     canvas.toBlob(async function(blob) {
       try {
-        const fd = new FormData();
-        fd.append('photo', new File([blob], cropState.file.name, { type: 'image/jpeg' }));
-        const resp = await fetch('/api/upload', { method: 'POST', body: fd });
-        if (!resp.ok) throw new Error(await resp.text());
+        const resp = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'image/jpeg',
+            'X-Image-Type': 'photo',
+          },
+          body: blob,
+        });
+
+        if (!resp.ok) {
+          let code = '';
+          try {
+            const body = await resp.json();
+            code = body.code || body.error || '';
+          } catch {}
+          throw new Error(code);
+        }
+
         const { url } = await resp.json();
         document.getElementById('photoUrl').value = url;
-        setPhotoStatus('done');
+        delete thumb.dataset.previewOnly;
+        setPhotoStatus('Hosted photo ready for Gmail and Outlook.', 'success');
         renderPreview();
-      } catch {
-        setPhotoStatus('error');
+      } catch (err) {
+        setPhotoStatus(CORE.describeUploadError(err.message), 'error');
       }
     }, 'image/jpeg', 0.92);
   }
@@ -629,54 +582,17 @@
   }
 
   function buildSignatureHtml(template, data, style) {
-    let inner = template.render(data, style);
-
-    const complianceHtml = buildComplianceForTemplate(template);
-    if (complianceHtml) inner += complianceHtml;
-
-    if (!isPro) {
-      inner += `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 8px; background-color: #ffffff;"><tr><td bgcolor="#ffffff" style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif; background-color: #ffffff;">Made with <a href="https://emailsignaturegenerator.ai/" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
-    }
-    return template._darkSafeWrap(inner);
-  }
-
-  function buildComplianceForTemplate(template) {
-    const conf = getActiveCompliance();
-    if (!conf) return '';
-    return template._complianceBlock(conf, style.fontFamily);
+    return CORE.buildSignatureHtml({
+      template,
+      data,
+      style,
+      isPro,
+      compliance: getActiveCompliance(),
+    });
   }
 
   function getActiveCompliance() {
-    if (!complianceData) return null;
-    const country = complianceState.country;
-    const role = complianceState.role;
-    if (!country || country === 'OTHER') {
-      // Fall back to generic confidentiality disclaimer if user opted in without a regulated role
-      if (country === 'OTHER' && complianceState.includeDisclaimer) {
-        return {
-          fields: [],
-          disclaimer: complianceData.defaultDisclaimer || '',
-        };
-      }
-      return null;
-    }
-    if (!role) return null;
-
-    const roleEntry = complianceData.roles[role];
-    if (!roleEntry) return null;
-    const countryEntry = roleEntry.countries[country];
-    if (!countryEntry) return null;
-
-    const filledFields = (countryEntry.fields || []).map(f => ({
-      label: f.label,
-      value: (complianceState.fieldValues[f.id] || '').trim(),
-    })).filter(f => f.value);
-
-    const disclaimer = complianceState.includeDisclaimer ? (countryEntry.disclaimer || '') : '';
-
-    if (!filledFields.length && !disclaimer) return null;
-
-    return { fields: filledFields, disclaimer };
+    return CORE.getActiveCompliance(complianceData, complianceState);
   }
 
   // ── Compliance Module ──
@@ -835,42 +751,16 @@
   }
 
   function escapeAttr(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    return CORE.escapeAttr(str);
   }
 
   // ── Validation ──
-  const validators = {
-    fullName: { validate: (val) => val.trim() ? '' : 'Please enter your full name.' },
-    email: {
-      validate: (val) => {
-        if (!val.trim()) return '';
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ? '' : 'Please enter a valid email address.';
-      },
-    },
-    website: { validate: urlValidator },
-    linkedin: { validate: urlValidator },
-    instagram: { validate: urlValidator },
-    facebook: { validate: urlValidator },
-    google: { validate: urlValidator },
-  };
-
-  function urlValidator(val) {
-    if (!val.trim()) return '';
-    return /^https?:\/\//.test(val) ? '' : 'URL must start with http:// or https://';
-  }
-
   function validateField(id) {
     const el = document.getElementById(id);
     const errorEl = document.getElementById(id + '-error');
-    const validator = validators[id];
-    if (!el || !validator) return true;
+    if (!el) return true;
 
-    const msg = validator.validate(el.value);
+    const msg = CORE.validateFieldValue(id, el.value);
     if (msg) {
       el.classList.add('input-error');
       if (errorEl) errorEl.textContent = msg;
@@ -913,7 +803,7 @@
     const html = buildSignatureHtml(template, data, style);
 
     // Plain text fallback
-    const plain = [data.fullName, data.title, data.phone, data.email, data.website].filter(Boolean).join('\n');
+    const plain = CORE.plainTextFromData(data);
 
     try {
       const blob = new ClipboardItem({
@@ -949,10 +839,8 @@
     }
     ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
-    const lines = [data.fullName, data.title, data.company, data.phone, data.email, data.website].filter(Boolean);
-
     try {
-      await navigator.clipboard.writeText(lines.join('\n'));
+      await navigator.clipboard.writeText(CORE.plainTextFromData(data));
       showCopied(btn);
     } catch (e) {
       alert('Could not copy to clipboard.');
@@ -967,7 +855,7 @@
   // ── Pro Unlock ──
   async function checkProStatus() {
     // 1. Try new token-based verification first
-    const token = localStorage.getItem('sig_pro_token');
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
     if (token) {
       const result = await verifyToken(token);
       if (result.valid) {
@@ -975,12 +863,12 @@
         return;
       }
       // Token invalid or expired — clear it
-      localStorage.removeItem('sig_pro_token');
+      localStorage.removeItem(FACTS.proTokenStorageKey);
     }
 
     // 2. Legacy fallback for existing customers (30-day grace period)
     // TODO: Remove this block after 2026-05-22 (30 days from deploy)
-    const legacy = localStorage.getItem('sig_pro');
+    const legacy = localStorage.getItem(FACTS.legacyProStorageKey);
     if (legacy === 'true') {
       showLegacyMigrationBanner();
     }
@@ -1019,7 +907,7 @@
 
   function showProSuccessToast() {
     var toast = document.createElement('div');
-    toast.textContent = 'Welcome to Pro! You now have access to all 19 templates.';
+    toast.textContent = 'Welcome to Pro! You now have access to all ' + FACTS.templateCount + ' templates.';
     toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);
@@ -1028,19 +916,19 @@
 
   function showLegacyMigrationBanner() {
     // Don't show if already dismissed
-    if (localStorage.getItem('sig_pro_migration_dismissed') === 'true') return;
+    if (localStorage.getItem(FACTS.legacyDismissedStorageKey) === 'true') return;
 
     var banner = document.createElement('div');
     banner.id = 'legacy-migration-banner';
     banner.innerHTML = '<strong>Security upgrade:</strong> We\'ve strengthened Pro verification. ' +
-      '<a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
+      '<a href="' + FACTS.paymentLink + '" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
       '(no charge if you already paid). ' +
       '<button id="dismiss-migration" style="margin-left:12px;background:#0f766e;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">Dismiss</button>';
     banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ccfbf1;color:#115e59;padding:12px 16px;text-align:center;font-size:13px;z-index:10000;border-bottom:1px solid #99f6e4;';
     document.body.appendChild(banner);
 
     document.getElementById('dismiss-migration').addEventListener('click', function() {
-      localStorage.setItem('sig_pro_migration_dismissed', 'true');
+      localStorage.setItem(FACTS.legacyDismissedStorageKey, 'true');
       banner.remove();
     });
   }

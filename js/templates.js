@@ -918,3 +918,6 @@ const CATEGORIES = [
   { id: 'industry', name: 'Industry' },
 ];
 
+if (typeof module === 'object' && module.exports) {
+  module.exports = { TEMPLATES, CATEGORIES };
+}

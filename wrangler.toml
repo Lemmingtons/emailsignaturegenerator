@@ -6,7 +6,7 @@ compatibility_date = "2025-04-01"
 directory = "."
 
 [[r2_buckets]]
-binding = "PHOTOS"
+binding = "UPLOADS"
 bucket_name = "email-sig-photos"
 
 # ── KV rate limiting (add once KV namespace is created) ──

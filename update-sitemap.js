@@ -10,8 +10,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const SITE_FACTS = require('./js/site-facts');
 
-const SITE_URL = 'https://emailsignaturegenerator.ai';
+const SITE_URL = SITE_FACTS.origin;
 
 function xmlEscape(str) {
   return String(str)
@@ -30,57 +31,71 @@ function fileLastmod(filePath) {
   }
 }
 
-const urls = [];
+function collectUrls() {
+  const urls = [];
 
-// ─── Core pages ────────────────────────────────────────────────────────────
-urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly', file: path.join(__dirname, 'index.html') });
-urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'generator.html') });
-urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
+  urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly', file: path.join(__dirname, 'index.html') });
+  urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'generator.html') });
+  urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
+  urls.push({ loc: `${SITE_URL}/privacy`, priority: '0.6', changefreq: 'yearly', file: path.join(__dirname, 'privacy.html') });
 
-// ─── SEO programmatic pages ─────────────────────────────────────────────────
-const seoDir = path.join(__dirname, 'seo');
-if (fs.existsSync(seoDir)) {
-  const seoFiles = fs.readdirSync(seoDir).filter(f => f.endsWith('.html'));
-  for (const file of seoFiles) {
-    const slug = file.replace('.html', '');
-    urls.push({
-      loc: `${SITE_URL}/seo/${slug}`,
-      priority: '0.7',
-      changefreq: 'monthly',
-      file: path.join(seoDir, file)
-    });
-  }
-  console.log(`  Found ${seoFiles.length} SEO pages`);
-}
-
-// ─── Blog pages ─────────────────────────────────────────────────────────────
-const blogDir = path.join(__dirname, 'blog');
-if (fs.existsSync(blogDir)) {
-  const blogFiles = fs.readdirSync(blogDir).filter(f => f.endsWith('.html'));
-  for (const file of blogFiles) {
-    if (file === 'index.html') {
-      urls.push({ loc: `${SITE_URL}/blog/`, priority: '0.8', changefreq: 'weekly', file: path.join(blogDir, file) });
-    } else {
+  const seoDir = path.join(__dirname, 'seo');
+  if (fs.existsSync(seoDir)) {
+    const seoFiles = fs.readdirSync(seoDir).filter(f => f.endsWith('.html')).sort();
+    for (const file of seoFiles) {
       const slug = file.replace('.html', '');
-      urls.push({ loc: `${SITE_URL}/blog/${slug}`, priority: '0.7', changefreq: 'monthly', file: path.join(blogDir, file) });
+      urls.push({
+        loc: `${SITE_URL}/seo/${slug}`,
+        priority: '0.7',
+        changefreq: 'monthly',
+        file: path.join(seoDir, file)
+      });
     }
+    console.log(`  Found ${seoFiles.length} SEO pages`);
   }
-  console.log(`  Found ${blogFiles.length} blog pages`);
+
+  const blogDir = path.join(__dirname, 'blog');
+  if (fs.existsSync(blogDir)) {
+    const blogFiles = fs.readdirSync(blogDir).filter(f => f.endsWith('.html')).sort();
+    for (const file of blogFiles) {
+      if (file === 'index.html') {
+        urls.push({ loc: `${SITE_URL}/blog/`, priority: '0.8', changefreq: 'weekly', file: path.join(blogDir, file) });
+      } else {
+        const slug = file.replace('.html', '');
+        urls.push({ loc: `${SITE_URL}/blog/${slug}`, priority: '0.7', changefreq: 'monthly', file: path.join(blogDir, file) });
+      }
+    }
+    console.log(`  Found ${blogFiles.length} blog pages`);
+  }
+
+  return urls;
 }
 
-// ─── Generate XML ───────────────────────────────────────────────────────────
-const urlEntries = urls.map(u => `  <url>
-    <loc>${xmlEscape(u.loc)}</loc>
-    <lastmod>${fileLastmod(u.file)}</lastmod>
-    <changefreq>${u.changefreq}</changefreq>
-    <priority>${u.priority}</priority>
-  </url>`).join('\n');
+function buildSitemapXml(urls) {
+  const urlEntries = urls.map(u => `  <url>
+  <loc>${xmlEscape(u.loc)}</loc>
+  <lastmod>${fileLastmod(u.file)}</lastmod>
+  <changefreq>${u.changefreq}</changefreq>
+  <priority>${u.priority}</priority>
+</url>`).join('\n');
 
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urlEntries}
 </urlset>
 `;
+}
 
-fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), xml, 'utf8');
-console.log(`✅ sitemap.xml updated — ${urls.length} URLs`);
+function updateSitemap() {
+  const urls = collectUrls();
+  const xml = buildSitemapXml(urls);
+  fs.writeFileSync(path.join(__dirname, 'sitemap.xml'), xml, 'utf8');
+  console.log(`sitemap.xml updated - ${urls.length} URLs`);
+  return urls;
+}
+
+if (require.main === module) {
+  updateSitemap();
+}
+
+module.exports = { collectUrls, buildSitemapXml, updateSitemap };
