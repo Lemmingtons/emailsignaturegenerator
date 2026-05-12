@@ -29,6 +29,7 @@
     bindStyleControls();
     bindButtons();
     bindValidation();
+    initPreviewDock();
     initCompliance();
     renderPreview();
 
@@ -226,6 +227,85 @@
         document.querySelector('.controls-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
+  }
+
+  function initPreviewDock() {
+    const grid = document.querySelector('.generator-grid');
+    const column = document.querySelector('.preview-column');
+    const preview = document.querySelector('.preview-sticky');
+    if (!grid || !column || !preview) return;
+
+    let ticking = false;
+    const topOffset = 80;
+
+    function clearDock() {
+      preview.style.position = '';
+      preview.style.top = '';
+      preview.style.left = '';
+      preview.style.width = '';
+      preview.style.zIndex = '';
+    }
+
+    function placeAtBottom(gridRect, columnRect, previewHeight) {
+      const columnTop = columnRect.top + window.scrollY;
+      const gridBottom = gridRect.bottom + window.scrollY;
+      const top = Math.max(0, gridBottom - columnTop - previewHeight);
+
+      preview.style.position = 'absolute';
+      preview.style.top = top + 'px';
+      preview.style.left = '';
+      preview.style.width = columnRect.width + 'px';
+      preview.style.zIndex = '40';
+    }
+
+    function placeFixed(columnRect) {
+      preview.style.position = 'fixed';
+      preview.style.top = topOffset + 'px';
+      preview.style.left = columnRect.left + 'px';
+      preview.style.width = columnRect.width + 'px';
+      preview.style.zIndex = '40';
+    }
+
+    function updateDock() {
+      ticking = false;
+
+      if (window.innerWidth <= 900) {
+        clearDock();
+        return;
+      }
+
+      const gridRect = grid.getBoundingClientRect();
+      const columnRect = column.getBoundingClientRect();
+      const previewHeight = preview.offsetHeight;
+
+      if (gridRect.height <= previewHeight || gridRect.top > topOffset) {
+        clearDock();
+        return;
+      }
+
+      if (gridRect.bottom - previewHeight <= topOffset) {
+        placeAtBottom(gridRect, columnRect, previewHeight);
+        return;
+      }
+
+      placeFixed(columnRect);
+    }
+
+    function requestDockUpdate() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(updateDock);
+    }
+
+    window.addEventListener('scroll', requestDockUpdate, { passive: true });
+    window.addEventListener('resize', requestDockUpdate);
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(requestDockUpdate);
+      observer.observe(grid);
+      observer.observe(column);
+      observer.observe(preview);
+    }
+    updateDock();
   }
 
   function handleProPurchase() {
