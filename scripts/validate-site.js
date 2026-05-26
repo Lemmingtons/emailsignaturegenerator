@@ -80,6 +80,9 @@ function checkWorkerBehavior() {
     "if (assetRequests.includes('/scripts/validate-site.js')) throw new Error('private asset reached static asset binding');",
     "const noAssets = await worker.default.fetch(new Request('https://example.com/does-not-exist'), { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket });",
     "if (noAssets.status !== 404) throw new Error('missing asset binding returned ' + noAssets.status);",
+    "const googleVerify = await worker.default.fetch(new Request('https://example.com/googlee8f6af86faea90b4.html'), {});",
+    "if (googleVerify.status !== 200) throw new Error('google verification returned ' + googleVerify.status);",
+    "if ((await googleVerify.text()).trim() !== 'google-site-verification: googlee8f6af86faea90b4.html') throw new Error('google verification body mismatch');",
   ].join('\n');
 
   try {

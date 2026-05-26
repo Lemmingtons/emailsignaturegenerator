@@ -1,6 +1,9 @@
 // Cloudflare Worker for Email Signature Generator
 // Handles: clean URL rewriting, security headers, and Pro payment verification
 
+const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
+const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
+
 // ── JWT Helpers (Web Crypto API) ─────────────────────────────────────────────
 
 function base64url(source) {
@@ -204,6 +207,12 @@ async function fetchStaticAsset(env, request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === GOOGLE_SITE_VERIFICATION_FILE) {
+      return new Response(`${GOOGLE_SITE_VERIFICATION_BODY}\n`, {
+        headers: { 'Content-Type': 'text/html; charset=UTF-8' },
+      });
+    }
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {
