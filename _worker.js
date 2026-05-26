@@ -187,7 +187,7 @@ function isPrivateAssetPath(pathname) {
 
 async function fetchStaticAsset(env, request) {
   if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {
-    return new Response('Static assets not configured', { status: 500 });
+    return notFoundResponse();
   }
 
   try {

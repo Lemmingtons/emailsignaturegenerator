@@ -78,6 +78,8 @@ function checkWorkerBehavior() {
     "const privateAsset = await worker.default.fetch(new Request('https://example.com/scripts/validate-site.js'), env);",
     "if (privateAsset.status !== 404) throw new Error('private asset returned ' + privateAsset.status);",
     "if (assetRequests.includes('/scripts/validate-site.js')) throw new Error('private asset reached static asset binding');",
+    "const noAssets = await worker.default.fetch(new Request('https://example.com/does-not-exist'), { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket });",
+    "if (noAssets.status !== 404) throw new Error('missing asset binding returned ' + noAssets.status);",
   ].join('\n');
 
   try {
