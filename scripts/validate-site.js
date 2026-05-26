@@ -53,7 +53,11 @@ function checkWorkerBehavior() {
     "    return { body: value.body, httpMetadata: value.httpMetadata, httpEtag: 'test-etag', writeHttpMetadata(headers) { headers.set('Content-Type', value.httpMetadata.contentType); } };",
     "  },",
     "};",
-    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async () => new Response('missing', { status: 404 }) } };",
+    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async (request) => {",
+    "  const pathname = new URL(request.url).pathname;",
+    "  if (pathname === '/does-not-exist' || pathname === '/missing.js') throw new Error('asset not found');",
+    "  return new Response('missing', { status: 404 });",
+    "} } };",
     "const token = await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
     "const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0]);",
     "const upload = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), env);",
@@ -64,6 +68,10 @@ function checkWorkerBehavior() {
     "if (served.status !== 200) throw new Error('served upload returned ' + served.status);",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
+    "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
+    "if (missingRoute.status !== 404) throw new Error('missing clean route returned ' + missingRoute.status);",
+    "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
+    "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
   ].join('\n');
 
   try {

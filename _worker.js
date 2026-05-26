@@ -162,6 +162,22 @@ function addSecurityHeaders(response) {
   return newHeaders;
 }
 
+function notFoundResponse() {
+  return new Response('Not found', { status: 404 });
+}
+
+async function fetchStaticAsset(env, request) {
+  if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {
+    return new Response('Static assets not configured', { status: 500 });
+  }
+
+  try {
+    return await env.ASSETS.fetch(request);
+  } catch {
+    return notFoundResponse();
+  }
+}
+
 // ── Main Worker ──────────────────────────────────────────────────────────────
 
 export default {
@@ -333,14 +349,14 @@ export default {
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
-    let response = await env.ASSETS.fetch(request);
+    let response = await fetchStaticAsset(env, request);
 
     // If 404 and path has no file extension, try appending .html for clean URLs
     if (response.status === 404 && !url.pathname.match(/\.[a-zA-Z0-9]+$/)) {
       const htmlUrl = new URL(request.url);
       htmlUrl.pathname = url.pathname.replace(/\/$/, '') + '.html';
       const htmlRequest = new Request(htmlUrl.toString(), request);
-      const htmlResponse = await env.ASSETS.fetch(htmlRequest);
+      const htmlResponse = await fetchStaticAsset(env, htmlRequest);
       if (htmlResponse.status === 200) {
         response = htmlResponse;
       }
