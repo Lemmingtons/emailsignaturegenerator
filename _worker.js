@@ -166,13 +166,34 @@ function notFoundResponse() {
   return new Response('Not found', { status: 404 });
 }
 
+function isPrivateAssetPath(pathname) {
+  return (
+    pathname === '/package.json' ||
+    pathname === '/NEXT_STEPS.md' ||
+    pathname === '/generate-pages.js' ||
+    pathname === '/update-sitemap.js' ||
+    pathname === '/wrangler.toml' ||
+    pathname === '/test.html' ||
+    pathname === '/_worker.js' ||
+    pathname.startsWith('/automation/') ||
+    pathname.startsWith('/graphify-out/') ||
+    pathname.startsWith('/scripts/') ||
+    pathname.startsWith('/templates/') ||
+    pathname.startsWith('/.git/') ||
+    pathname.startsWith('/.wrangler/') ||
+    pathname.startsWith('/.claude/')
+  );
+}
+
 async function fetchStaticAsset(env, request) {
   if (!env.ASSETS || typeof env.ASSETS.fetch !== 'function') {
     return new Response('Static assets not configured', { status: 500 });
   }
 
   try {
-    return await env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    if (response.status === 500) return notFoundResponse();
+    return response;
   } catch {
     return notFoundResponse();
   }
@@ -349,6 +370,8 @@ export default {
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
+    if (isPrivateAssetPath(url.pathname)) return notFoundResponse();
+
     let response = await fetchStaticAsset(env, request);
 
     // If 404 and path has no file extension, try appending .html for clean URLs

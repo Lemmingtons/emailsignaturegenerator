@@ -53,9 +53,12 @@ function checkWorkerBehavior() {
     "    return { body: value.body, httpMetadata: value.httpMetadata, httpEtag: 'test-etag', writeHttpMetadata(headers) { headers.set('Content-Type', value.httpMetadata.contentType); } };",
     "  },",
     "};",
+    "const assetRequests = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
-    "  if (pathname === '/does-not-exist' || pathname === '/missing.js') throw new Error('asset not found');",
+    "  assetRequests.push(pathname);",
+    "  if (pathname === '/does-not-exist' || pathname === '/does-not-exist.html' || pathname === '/missing.js') return new Response('asset failure', { status: 500 });",
+    "  if (pathname === '/scripts/validate-site.js') throw new Error('private asset path reached');",
     "  return new Response('missing', { status: 404 });",
     "} } };",
     "const token = await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
@@ -72,6 +75,9 @@ function checkWorkerBehavior() {
     "if (missingRoute.status !== 404) throw new Error('missing clean route returned ' + missingRoute.status);",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
+    "const privateAsset = await worker.default.fetch(new Request('https://example.com/scripts/validate-site.js'), env);",
+    "if (privateAsset.status !== 404) throw new Error('private asset returned ' + privateAsset.status);",
+    "if (assetRequests.includes('/scripts/validate-site.js')) throw new Error('private asset reached static asset binding');",
   ].join('\n');
 
   try {
