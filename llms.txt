@@ -8,6 +8,8 @@ Email Signature Generator (emailsignaturegenerator.ai) lets professionals create
 
 A companion **Email Signature Health Check** at /health-check audits any pasted signature HTML for contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and size. It runs entirely in the browser and is free.
 
+The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures.
+
 ## Pricing
 
 - **Free**: $0 — 8 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
@@ -66,6 +68,7 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 
 - [Homepage](https://emailsignaturegenerator.ai/) — Product overview, templates, pricing, FAQ
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
+- [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
 - [Health Check](https://emailsignaturegenerator.ai/health-check) — Free signature auditor: paste any HTML to test dark-mode, contrast, Outlook compat, trackers, and accessibility
 
 ## Competitor comparison

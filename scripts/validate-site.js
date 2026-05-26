@@ -156,6 +156,7 @@ checkWorkerBehavior();
 const contentFiles = [
   'index.html',
   'generator.html',
+  'email-signature-examples.html',
   'generate-pages.js',
   'llms.txt',
   'assets/og-image.svg',

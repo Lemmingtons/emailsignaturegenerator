@@ -36,6 +36,7 @@ function collectUrls() {
 
   urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly', file: path.join(__dirname, 'index.html') });
   urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'generator.html') });
+  urls.push({ loc: `${SITE_URL}/email-signature-examples`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'email-signature-examples.html') });
   urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
   urls.push({ loc: `${SITE_URL}/privacy`, priority: '0.6', changefreq: 'yearly', file: path.join(__dirname, 'privacy.html') });
 

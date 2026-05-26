@@ -67,6 +67,7 @@
     </a>
     <nav class="site-nav" aria-label="Main navigation">
       <a href="index.html#templates">Templates</a>
+      <a href="email-signature-examples.html">Examples</a>
       <a href="health-check.html" aria-current="page">Health Check</a>
       <a href="index.html#pricing">Pricing</a>
       <a href="generator.html" class="nav-cta">Create Signature</a>
@@ -191,6 +192,78 @@
       </div>
     </section>
 
+    <section class="check-info" aria-label="How to use the signature audit report">
+      <h2>How to use the report</h2>
+      <div class="check-info-grid">
+        <div class="check-info-item">
+          <strong>Fix critical issues first</strong>
+          <p>Start with invisible text, broken images, invalid links, and Outlook-breaking layout CSS. These are the problems most likely to make a signature unusable for recipients.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Then clean up warnings</strong>
+          <p>Warnings usually cover contrast, image weight, missing dimensions, and mobile width. They may not break every inbox, but they reduce trust and make signatures harder to read.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Re-test after changes</strong>
+          <p>Paste the repaired HTML back into the checker after each round. A good production signature should be readable in dark mode, lightweight, and free of tracking pixels.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="check-info" aria-label="Common email signature failures">
+      <h2>Common failures this catches</h2>
+      <div class="check-info-grid">
+        <div class="check-info-item">
+          <strong>Browser-only layouts</strong>
+          <p>Signatures built with flexbox, grid, external CSS, or absolute positioning often look fine in a web preview and then collapse in classic Outlook.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Images that only work locally</strong>
+          <p>Local file paths and pasted image blobs can show up for you but fail for everyone else. Hosted HTTPS image URLs are safer for logos and headshots.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Dark-mode surprises</strong>
+          <p>Low-contrast grey text, transparent logo artwork, and pure black text can be recoloured by Gmail and other clients in ways that make the signature hard to read.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="check-info" aria-label="Email signature audit checklist">
+      <h2>Signature audit checklist</h2>
+      <div class="check-info-grid">
+        <div class="check-info-item">
+          <strong>Before sending to customers</strong>
+          <p>Run the check after changing colours, images, disclaimers, badges, or CTA links. Small visual edits can add weight, lower contrast, or introduce broken image URLs.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Before rolling out to a team</strong>
+          <p>Test one approved signature first, then duplicate it for staff. This prevents every person from copying a slightly different logo size, font, link, or disclaimer.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>After a redesign</strong>
+          <p>Check the signature again whenever your website, booking link, logo file, tracking links, or brand colours change. Email signatures often keep stale assets long after the site is updated.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="check-info" aria-label="Email signature repair path">
+      <h2>Repair path</h2>
+      <div class="check-info-grid">
+        <div class="check-info-item">
+          <strong>Use real text</strong>
+          <p>Names, roles, phone numbers, emails, and addresses should be selectable text. Avoid turning the whole signature into one image because it hurts accessibility and deliverability.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Host images properly</strong>
+          <p>Use public HTTPS URLs for profile photos, logos, and badges. Add width, height, and alt text so recipients still understand the signature when remote images are blocked.</p>
+        </div>
+        <div class="check-info-item">
+          <strong>Keep layout conservative</strong>
+          <p>Use table-based HTML and inline styles for production signatures. Browser CSS such as grid, flexbox, external stylesheets, and background images is fragile inside email clients, especially older Outlook builds.</p>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ── Footer ── -->
@@ -198,6 +271,8 @@
     <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
     <p style="margin-top: 8px;">
       <a href="generator.html">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="email-signature-examples.html">Examples</a>
       &nbsp;&middot;&nbsp;
       <a href="health-check.html">Health Check</a>
       &nbsp;&middot;&nbsp;

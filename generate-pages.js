@@ -93,11 +93,23 @@ function rolePageHTML({ slug, label, singular, description, keywords }) {
   });
 }
 
-function platformPageHTML({ slug, label, description, installInstructions, keywords }) {
+function platformPageHTML({
+  slug,
+  label,
+  description,
+  installInstructions,
+  guideSections,
+  troubleshooting,
+  additionalFaqs,
+  keywords,
+  seoTitle,
+  metaDescription,
+  heading,
+}) {
   const url = `${SITE_URL}/seo/email-signature-generator-for-${slug}`;
-  const title = `Email Signature Generator for ${label} — Free Templates`;
-  const metaDesc = `Create a professional ${label} email signature in under 2 minutes. One-click copy, works perfectly in ${label}. Free templates with full customisation.`;
-  const h1 = `Email Signature Generator for ${label}`;
+  const title = seoTitle || `Email Signature Generator for ${label} — Free Templates`;
+  const metaDesc = metaDescription || `Create a professional ${label} email signature in under 2 minutes. One-click copy, works perfectly in ${label}. Free templates with full customisation.`;
+  const h1 = heading || `Email Signature Generator for ${label}`;
 
   return pageHTML({
     url, title, metaDesc, h1, slug,
@@ -106,6 +118,8 @@ function platformPageHTML({ slug, label, description, installInstructions, keywo
     ctaText: `Create Your ${label} Signature`,
     seoType: 'platform',
     seoLabel: label,
+    guideSections,
+    troubleshooting,
     installInstructions,
     faqs: [
       {
@@ -120,7 +134,7 @@ function platformPageHTML({ slug, label, description, installInstructions, keywo
         q: `Is there a free email signature generator for ${label}?`,
         a: `Yes. Our free plan includes ${FREE_TEMPLATE_COUNT} professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs ${PRICE} as a one-time payment and unlocks all ${TEMPLATE_COUNT} templates with no branding.`
       }
-    ]
+    ].concat(additionalFaqs || [])
   });
 }
 
@@ -154,7 +168,7 @@ function industryPageHTML({ slug, label, description, keywords }) {
   });
 }
 
-function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, seoType, seoLabel, faqs, installInstructions }) {
+function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, seoType, seoLabel, faqs, installInstructions, guideSections, troubleshooting }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -178,8 +192,29 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <section class="install-section">
       <h2>How to add your signature to ${escapeHtml(seoLabel)}</h2>
       <ol class="install-steps">
-        ${installInstructions.map(step => `<li>${escapeHtml(step)}</li>`).join('\n        ')}
+        ${installInstructions.map(step => `<li>${step}</li>`).join('\n        ')}
       </ol>
+    </section>` : '';
+
+  const guideHTML = guideSections ? guideSections.map(section => `
+    <section class="guide-section">
+      <h2>${escapeHtml(section.heading)}</h2>
+      ${(section.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('\n      ')}
+      ${section.items ? `<ul class="guide-list">
+        ${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('\n        ')}
+      </ul>` : ''}
+    </section>`).join('\n') : '';
+
+  const troubleshootingHTML = troubleshooting ? `
+    <section class="troubleshooting-section">
+      <h2>${escapeHtml(seoLabel)} signature troubleshooting</h2>
+      <div class="troubleshooting-grid">
+        ${troubleshooting.map(item => `
+        <div class="troubleshooting-item">
+          <h3>${escapeHtml(item.issue)}</h3>
+          <p>${escapeHtml(item.fix)}</p>
+        </div>`).join('\n        ')}
+      </div>
     </section>` : '';
 
   const faqHTML = faqs.map(f => `
@@ -188,7 +223,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
           <p>${escapeHtml(f.a)}</p>
         </details>`).join('');
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -242,6 +277,15 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     .feature-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
     .feature-item h3 { font-size: 0.95rem; margin-bottom: 4px; }
     .feature-item p { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+    .guide-section { margin: 40px 0; }
+    .guide-section h2, .troubleshooting-section h2 { font-size: 1.3rem; margin-bottom: 14px; }
+    .guide-section p { color: var(--text-secondary); line-height: 1.8; margin-bottom: 14px; }
+    .guide-list { padding-left: 24px; color: var(--text-secondary); line-height: 1.8; }
+    .troubleshooting-section { margin: 40px 0; }
+    .troubleshooting-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+    .troubleshooting-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .troubleshooting-item h3 { font-size: 0.95rem; margin-bottom: 6px; }
+    .troubleshooting-item p { font-size: 0.88rem; color: var(--text-secondary); margin: 0; }
   </style>
 </head>
 <body>
@@ -310,6 +354,10 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     ${installHTML}
 
+    ${guideHTML}
+
+    ${troubleshootingHTML}
+
     <section class="faq-section" aria-label="Frequently asked questions">
       <h2>Frequently Asked Questions</h2>
       ${faqHTML}
@@ -337,6 +385,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
 </body>
 </html>`;
+
+  return html.replace(/[ \t]+$/gm, '');
 }
 
 function writePage(filename, html) {

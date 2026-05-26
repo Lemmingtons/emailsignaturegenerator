@@ -2,7 +2,10 @@
   {
     "slug": "gmail",
     "label": "Gmail",
-    "description": "Create a professional email signature for Gmail in under 2 minutes. Copy with one click and paste directly into Gmail Settings.",
+    "seoTitle": "Gmail Email Signature Generator | Free Templates & Setup Guide",
+    "metaDescription": "Create a Gmail email signature, paste it into Gmail settings, and fix image, spacing, mobile, and dark-mode issues with this free setup guide.",
+    "heading": "Gmail Email Signature Generator",
+    "description": "Create a professional Gmail email signature in under 2 minutes, then paste it into Gmail Settings with the formatting intact. This guide covers setup, image hosting, mobile defaults, and the Gmail issues that usually break copied signatures.",
     "installInstructions": [
       "Click <strong>\"Copy for Gmail\"</strong> in the generator",
       "Open <strong>Gmail</strong> and click the gear icon (top right)",
@@ -12,18 +15,167 @@
       "Click inside the editor, press <code>Ctrl+A</code> then <code>Ctrl+V</code>",
       "Scroll down and click <strong>\"Save Changes\"</strong>"
     ],
+    "guideSections": [
+      {
+        "heading": "Gmail setup details that matter",
+        "paragraphs": [
+          "Gmail's signature editor accepts pasted rich HTML, but it does not behave like a normal website editor. It keeps inline table layouts, links, images, colours, and basic typography, then strips anything it considers unsafe or unsupported. That is why the safest Gmail signature uses inline styles, hosted images, and simple table structure instead of external CSS.",
+          "After pasting, scroll below the editor and choose the signature as the default for new emails and replies. Many people save the signature but leave both default dropdowns set to \"No signature\", which makes it look like Gmail ignored the paste. Send one test email to yourself after saving, then check it in Gmail desktop and Gmail mobile before rolling it out."
+        ],
+        "items": [
+          "Use the rich HTML copy button, not plain text, when pasting into Gmail.",
+          "Keep the signature under 10KB when possible so long email threads do not get clipped.",
+          "Use hosted HTTPS image URLs for profile photos and logos.",
+          "Use simple text links for email, phone, website, and calendar CTAs."
+        ]
+      },
+      {
+        "heading": "Images, logos, and profile photos in Gmail",
+        "paragraphs": [
+          "Gmail can display images in a pasted signature, but the image source needs to be reachable by recipients. A local file path from your computer will not work after the email is sent. Upload your logo or headshot to a stable HTTPS URL, use reasonable dimensions, and add alt text so the signature still makes sense if a recipient blocks remote images.",
+          "For profile photos, square source images are the least fragile. The generator can preview circles and rounded corners, but some email clients simplify border radius handling. If your brand depends on an exact crop, test it in Gmail, Outlook, and Apple Mail before sending high-volume campaigns."
+        ],
+        "items": [
+          "Avoid base64 image data because it increases message size quickly.",
+          "Use explicit width and height attributes on important images.",
+          "Keep logo files compressed and visually legible at small sizes.",
+          "Add descriptive alt text for photos, badges, and company logos."
+        ]
+      },
+      {
+        "heading": "Gmail mobile and dark-mode behavior",
+        "paragraphs": [
+          "Gmail mobile does not always mirror the desktop default signature settings. If you use the Gmail app, open mobile settings and confirm the account does not have a separate mobile signature overriding the desktop version. If the mobile signature field is enabled with old text, Gmail can append that instead of the HTML signature you just created on desktop.",
+          "Dark mode is the other common failure point. Gmail may recolour pure black text, grey text, or transparent backgrounds in dark inboxes. Use strong contrast, avoid relying on transparent logo artwork, and test the finished HTML in the free health check before sending it to clients or customers."
+        ],
+        "items": [
+          "Disable or update Gmail's separate mobile signature field.",
+          "Avoid pure black text on transparent backgrounds.",
+          "Use brand colours as accents, not as the only readable text colour.",
+          "Run the signature through the health check before rollout."
+        ]
+      }
+    ],
+    "troubleshooting": [
+      {
+        "issue": "Formatting disappears after paste",
+        "fix": "Copy the rich HTML version again, click inside Gmail's signature editor, and paste directly with Ctrl+V or Cmd+V. Do not paste through a plain-text intermediary such as a notes app."
+      },
+      {
+        "issue": "The image looks broken",
+        "fix": "Check that the image URL starts with https:// and opens in a private browser window. If it only opens on your computer, recipients cannot load it."
+      },
+      {
+        "issue": "The signature does not appear",
+        "fix": "Return to Gmail Settings and set the signature as the default for new emails and replies. Saving the signature alone does not always make it active."
+      },
+      {
+        "issue": "The mobile app shows an old signature",
+        "fix": "Open Gmail mobile settings for the same account and update or disable the mobile signature override."
+      }
+    ],
+    "additionalFaqs": [
+      {
+        "q": "Why does Gmail change my signature colours in dark mode?",
+        "a": "Gmail may recolour text and backgrounds so messages remain readable in dark inboxes. Signatures with transparent backgrounds, pure black text, and low-contrast greys are most likely to change. Use explicit background colours and run the finished HTML through the health check before publishing it."
+      },
+      {
+        "q": "Can I use the same Gmail signature in Google Workspace?",
+        "a": "Yes. The same HTML signature works in Gmail for personal accounts and Google Workspace accounts. Workspace admins can also manage signatures centrally, but individual users can still paste the generated signature into Gmail settings when admin policy allows it."
+      },
+      {
+        "q": "Why is my Gmail signature image an attachment?",
+        "a": "This usually happens when the signature uses a local image or pasted image blob instead of a hosted HTTPS image URL. Use a hosted image URL and paste the full HTML signature rather than dragging an image into the editor."
+      }
+    ],
     "keywords": ["email signature for Gmail", "Gmail email signature generator", "how to create email signature in Gmail"]
   },
   {
     "slug": "outlook",
     "label": "Outlook",
-    "description": "Generate a professional Outlook email signature that renders perfectly in Outlook for Windows, Mac, and Outlook.com.",
+    "seoTitle": "Email Signature for Outlook | Free Generator & Setup Guide",
+    "metaDescription": "Create an Outlook email signature and install it in Outlook for Windows, Mac, web, and Microsoft 365 with practical rendering and image fixes.",
+    "heading": "Email Signature for Outlook",
+    "description": "Generate a professional Outlook email signature that uses email-safe HTML and table layouts instead of fragile web CSS. This guide covers Outlook for Windows, Outlook for Mac, Outlook on the web, Microsoft 365 defaults, images, spacing, and the rendering problems Outlook is known for.",
     "installInstructions": [
-      "Click <strong>\"Copy for Gmail\"</strong> in the generator (works for Outlook too)",
+      "Click <strong>\"Copy for Gmail\"</strong> in the generator; it copies rich HTML that Outlook can paste",
       "Open <strong>Outlook</strong> → <strong>Settings</strong> → <strong>Compose and reply</strong>",
       "Under <strong>Email signature</strong>, click <strong>\"+ New signature\"</strong>",
       "Paste with <code>Ctrl+V</code> (<code>Cmd+V</code>)",
       "Click <strong>Save</strong> and set as default"
+    ],
+    "guideSections": [
+      {
+        "heading": "Which Outlook signature settings to use",
+        "paragraphs": [
+          "Outlook has several interfaces, and the signature settings move slightly between them. In Outlook on the web and new Outlook for Windows, look for Settings, Mail, then Compose and reply. In classic Outlook for Windows, use File, Options, Mail, then Signatures. Outlook for Mac keeps signatures under Outlook, Settings, Signatures.",
+          "After creating the signature, set it as the default for both new messages and replies or forwards. Outlook can store multiple signatures, so creating the HTML block is only half the job. The default dropdowns decide whether the signature appears automatically when you compose."
+        ],
+        "items": [
+          "Use Outlook on the web for the cleanest paste experience if classic Outlook mangles spacing.",
+          "Set defaults for new messages and replies separately.",
+          "Keep one simple signature for replies if long email threads matter.",
+          "Send test emails to Gmail and Apple Mail as well as Outlook."
+        ]
+      },
+      {
+        "heading": "Outlook rendering rules",
+        "paragraphs": [
+          "Classic Outlook on Windows uses Microsoft Word's rendering engine, which is stricter than browser-based email clients. It does not reliably support flexbox, grid, external stylesheets, advanced positioning, or modern responsive CSS. A signature that looks good in a browser can still break in Outlook if it depends on those patterns.",
+          "The safest Outlook signature is built with tables, inline styles, fixed image dimensions, and conservative spacing. That is the format the generator outputs. Keep decorative elements simple, avoid background images, and make sure the signature remains readable if a recipient's client blocks remote images."
+        ],
+        "items": [
+          "Use table-based layout instead of flexbox or CSS grid.",
+          "Keep CSS inline rather than in a style block.",
+          "Avoid background images and absolute positioning.",
+          "Use standard fonts such as Arial, Georgia, Verdana, and Tahoma."
+        ]
+      },
+      {
+        "heading": "Microsoft 365, teams, and shared brands",
+        "paragraphs": [
+          "For one person, pasting a generated signature into Outlook settings is enough. For a small team, create a single brand version first, test it across Outlook desktop and web, then duplicate it with each person's name, role, phone, and calendar link. This avoids every staff member improvising fonts, colours, or logo sizes.",
+          "If your Microsoft 365 admin manages signatures centrally, use the generated HTML as the approved source and hand it to the admin instead of asking each user to paste it. Centralized deployment is useful for disclaimers and brand control, but individual Outlook settings are still the fastest path for freelancers, founders, and small teams."
+        ],
+        "items": [
+          "Create one approved brand signature before duplicating it for staff.",
+          "Keep legal disclaimers short so they do not dominate every reply.",
+          "Use hosted images so signatures work outside the company network.",
+          "Document the exact colour values and link targets used in the signature."
+        ]
+      }
+    ],
+    "troubleshooting": [
+      {
+        "issue": "Outlook changes spacing",
+        "fix": "Use the table-based HTML copy and avoid editing spacing inside Outlook after paste. Manual edits can introduce Word-specific markup that changes row heights."
+      },
+      {
+        "issue": "Images show as blank boxes",
+        "fix": "Use publicly reachable HTTPS image URLs with explicit width and height. Ask recipients to download pictures only after confirming the image URL itself works."
+      },
+      {
+        "issue": "The signature works on web but not desktop",
+        "fix": "Classic Outlook for Windows is stricter than Outlook web. Remove flexbox, grid, background images, and style blocks, or recreate the signature with the generator."
+      },
+      {
+        "issue": "Replies become too long",
+        "fix": "Create a shorter reply signature with name, role, phone, and website only. Use the full signature for new conversations."
+      }
+    ],
+    "additionalFaqs": [
+      {
+        "q": "Why does Outlook break HTML signatures more often than Gmail?",
+        "a": "Classic Outlook for Windows renders emails with Microsoft Word rather than a browser engine. That means modern layout CSS can fail even when the same signature looks fine in Gmail or Apple Mail. Table-based HTML with inline styles is the safest format."
+      },
+      {
+        "q": "Does this work with Outlook 365 and Outlook.com?",
+        "a": "Yes. The generated signature can be pasted into Outlook on the web, Outlook.com, Microsoft 365, new Outlook for Windows, classic Outlook for Windows, and Outlook for Mac. Test desktop and web if your team uses both."
+      },
+      {
+        "q": "Should I include a long legal disclaimer in Outlook?",
+        "a": "Only include a disclaimer when your role, industry, or employer requires it. Long disclaimers add weight to every thread and can bury useful contact details, so keep them short and reviewed."
+      }
     ],
     "keywords": ["email signature for Outlook", "Outlook email signature generator", "how to add email signature in Outlook"]
   },
