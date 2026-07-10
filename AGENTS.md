@@ -1,11 +1,63 @@
-# AGENTS.md
+# AGENTS.md — Email Signature Generator
 
-This repository uses Codex GitHub PR review guidance from this file.
+Inherit the universal instructions from `${AGENT_WORKBENCH:-$HOME/agent-workbench}/AGENTS.md`. This file is the project-specific delta.
 
-## Review guidelines
+## Review guidance
 
 Codex PR review should stay high-signal and focus on P0/P1 issues:
+
 - Flag correctness, security, privacy, data loss, authorization, migration, concurrency, billing, deployment, and user-visible workflow regressions.
 - Check changed behavior against the closest `AGENTS.md`, existing project patterns, and the affected runtime workflow.
 - Treat missing or misleading verification as a review issue when a change touches user-visible behavior, data writes, auth, jobs, billing, or deployment.
 - Do not leave low-priority style comments unless they hide a real bug or future maintenance risk.
+
+## Scope and sources of truth
+
+This repository is a static site plus Cloudflare Worker for generating email signatures, serving generated SEO pages, and handling approved hosted-image and paid-feature flows.
+
+- `js/site-facts.js` — canonical product facts used by UI, generated content, and validation.
+- `js/templates.js` and `js/generator-core.js` — signature templates and rendering behavior.
+- `generate-pages.js` and `update-sitemap.js` — generated SEO outputs.
+- `_worker.js` and `wrangler.toml` — Worker routes, bindings, uploads, and deployment configuration.
+- `scripts/validate-site.js` — local contract and regression gate.
+- `NEXT_STEPS.md` — current operational status; do not copy it into this file.
+
+Do not add another source for prices, counts, contacts, payment links, or canonical URLs. Do not hand-edit generated SEO pages when the generator owns them.
+
+## Durable invariants
+
+- Generated signatures must remain portable across major email clients, table-safe where required, and free of script/runtime dependencies.
+- Escape user-entered text and URLs. Do not allow generated HTML to execute arbitrary markup or script.
+- Free/pro entitlement is verified by the server-side signed token flow, not client flags alone.
+- Never expose Stripe customer IDs, signing secrets, or storage keys in public upload URLs, client code, logs, or error bodies.
+- Hosted images accept only validated supported image types and bounded sizes. Preserve opaque IDs and legacy-read compatibility unless migration is explicitly scoped.
+- Private files and automation sources must not be served by the static asset binding.
+- Generated pages, sitemap, robots, structured data, and `llms.txt` must stay consistent with `js/site-facts.js`.
+
+## Commands and risk
+
+### Local-safe
+
+```bash
+npm run check
+npm run generate
+npm run sitemap
+```
+
+`generate` and `sitemap` write tracked/generated content. Run them only when those outputs are in scope, then review the diff and rerun `npm run check`.
+
+### External read-only
+
+Public-site, Search Console, analytics, Stripe, Cloudflare, R2, or email inspection must identify the account/environment and perform no replay, upload, checkout, configuration change, or send.
+
+### External write
+
+`npx wrangler deploy`, any automation run with `DEPLOY_AFTER=1`, `automation/send-email.js`, Stripe/payment changes, R2 writes/deletes, Search Console submissions, and production smoke purchases/uploads require explicit current-turn approval naming the account, environment, recipient or artifact, and expected effect.
+
+### Destructive or irreversible
+
+Deleting hosted images, changing active payment links/entitlements, bulk-regenerating live indexed pages, removing legacy routes, or rolling back production requires explicit confirmation and a recovery plan.
+
+## Verification
+
+Run `npm run check`. For rendering changes, test representative free/pro templates, empty and hostile input, copy/paste into supported email clients when applicable, and desktop/mobile UI screenshots. Keep local validation, deployed Worker proof, Stripe proof, email delivery, and live hosted-image proof separate.
