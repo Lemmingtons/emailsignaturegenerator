@@ -1,16 +1,5 @@
 # AGENTS.md — Email Signature Generator
 
-Inherit the universal instructions from `${AGENT_WORKBENCH:-$HOME/agent-workbench}/AGENTS.md`. This file is the project-specific delta.
-
-## Review guidance
-
-Codex PR review should stay high-signal and focus on P0/P1 issues:
-
-- Flag correctness, security, privacy, data loss, authorization, migration, concurrency, billing, deployment, and user-visible workflow regressions.
-- Check changed behavior against the closest `AGENTS.md`, existing project patterns, and the affected runtime workflow.
-- Treat missing or misleading verification as a review issue when a change touches user-visible behavior, data writes, auth, jobs, billing, or deployment.
-- Do not leave low-priority style comments unless they hide a real bug or future maintenance risk.
-
 ## Scope and sources of truth
 
 This repository is a static site plus Cloudflare Worker for generating email signatures, serving generated SEO pages, and handling approved hosted-image and paid-feature flows.
