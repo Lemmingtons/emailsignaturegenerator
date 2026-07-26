@@ -393,6 +393,27 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
   assert(!hidden.includes('divider.gif'), 'divider style "none" must suppress the animated rule too');
 }
 
+// Saved signatures must bring their animation back. The hosted image URLs ride
+// along in `data`, but they live in module state rather than form inputs, so the
+// generic "set every input by id" restore skips them and the signature silently
+// reopens without the animation it was saved with.
+{
+  const appSource = read('js/app.js');
+  assert(appSource.includes('function restoreAnimationState'),
+    'restoring a saved signature must restore its animation state');
+  assert(/restoreAnimationState\(state\)/.test(appSource),
+    'applySignatureState must call restoreAnimationState');
+  for (const field of ['ctaImageUrl', 'dividerImageUrl']) {
+    assert(new RegExp(`data\\.${field}`).test(appSource),
+      `restore must read ${field} back out of the saved payload`);
+  }
+  // These are what getFormData writes into the saved payload; if a field is
+  // renamed on one side only, restore silently stops working.
+  for (const field of ['ctaImageUrl', 'ctaImageWidth', 'ctaImageHeight', 'dividerImageUrl', 'dividerImageHeight']) {
+    assert(appSource.includes(`${field}:`), `getFormData must still emit ${field}`);
+  }
+}
+
 // One animation per signature: enabling any effect must clear the others.
 {
   const appSource = read('js/app.js');

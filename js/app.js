@@ -1733,7 +1733,61 @@
       renderTemplateGrid();
     }
 
+    restoreAnimationState(state);
     renderPreview();
+  }
+
+  // Animated CTAs and dividers are hosted images whose URLs ride along in `data`,
+  // but they live in module state rather than in form inputs — so the generic
+  // "set every input by id" restore above skips them entirely. Without this, a
+  // saved signature silently comes back without the animation it was saved with.
+  function restoreAnimationState(state) {
+    const data = (state && state.data) || {};
+
+    ctaState.url = '';
+    ctaState.width = 0;
+    ctaState.height = 0;
+    dividerState.url = '';
+    dividerState.height = 0;
+
+    const ctaToggle = document.getElementById('ctaAnimate');
+    const dividerToggle = document.getElementById('dividerAnimate');
+    const photoSelect = document.getElementById('photoEffect');
+    const secondGroup = document.getElementById('photoSecondGroup');
+
+    if (ctaToggle) ctaToggle.checked = false;
+    if (dividerToggle) dividerToggle.checked = false;
+    if (photoSelect) photoSelect.value = 'none';
+    if (secondGroup) secondGroup.style.display = 'none';
+
+    // Only one animation can be active, so restore the first one present rather
+    // than trusting a payload to contain at most one.
+    if (data.ctaImageUrl) {
+      ctaState.url = data.ctaImageUrl;
+      ctaState.width = parseInt(data.ctaImageWidth, 10) || 0;
+      ctaState.height = parseInt(data.ctaImageHeight, 10) || 0;
+      if (ctaToggle) ctaToggle.checked = true;
+      return;
+    }
+
+    if (data.dividerImageUrl) {
+      dividerState.url = data.dividerImageUrl;
+      dividerState.height = parseInt(data.dividerImageHeight, 10) || 0;
+      if (dividerToggle) dividerToggle.checked = true;
+      return;
+    }
+
+    // An animated photo returns on its own, because the hosted GIF is the
+    // photoUrl. This only re-syncs the control so it stops claiming the photo is
+    // unanimated. There is no source canvas after a restore, so the rebuild
+    // schedulers correctly decline to re-encode until a new photo is uploaded.
+    const effect = state && state.photoEffect;
+    if (photoSelect && effect && window.PhotoAnimator && PhotoAnimator.EFFECTS[effect]) {
+      photoSelect.value = effect;
+      if (secondGroup && PhotoAnimator.EFFECTS[effect].needsSecondPhoto) {
+        secondGroup.style.display = '';
+      }
+    }
   }
 
   // Pushes the restored style object back onto the controls so the UI matches.
