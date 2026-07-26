@@ -9,7 +9,6 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function(siteFacts) {
   const facts = siteFacts || {
     homeUrl: 'https://emailsignaturegenerator.ai/',
-    freeBrandingText: 'Made with emailsignaturegenerator.ai',
   };
 
   const defaultStyle = Object.freeze({
@@ -97,11 +96,9 @@
     return { fields: filledFields, disclaimer };
   }
 
-  function brandingHtml() {
-    return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-top: 8px; background-color: #ffffff;"><tr><td bgcolor="#ffffff" style="font-size: 9px; color: #9ca3af; font-family: Arial, sans-serif; background-color: #ffffff;">Made with <a href="${escapeAttr(facts.homeUrl)}" style="color: #0891B2; text-decoration: none; font-weight: 600;">emailsignaturegenerator.ai</a></td></tr></table>`;
-  }
-
-  function buildSignatureHtml({ template, data, style, isPro, compliance }) {
+  // Signatures carry no branding footer. With a single paid plan there is no free
+  // tier to distinguish, so every exported signature is clean.
+  function buildSignatureHtml({ template, data, style, compliance }) {
     if (!template || typeof template.render !== 'function') {
       throw new Error('template_missing_render');
     }
@@ -112,13 +109,30 @@
       inner += template._complianceBlock(compliance, (style || defaultStyle).fontFamily || defaultStyle.fontFamily);
     }
 
-    if (!isPro) {
-      inner += brandingHtml();
-    }
-
     return typeof template._darkSafeWrap === 'function'
       ? template._darkSafeWrap(inner)
       : inner;
+  }
+
+  // Inline `data:` images render in our own preview but are stripped by Gmail and
+  // Outlook, so a signature copied with one in it arrives with a broken image.
+  // Returns the slot names ('photo', 'logo') that are preview-only.
+  function previewOnlyImageSlots(data) {
+    const d = data || {};
+    const slots = [];
+    if (/^data:/i.test(String(d.photoUrl || '').trim())) slots.push('photo');
+    if (/^data:/i.test(String(d.logoUrl || '').trim())) slots.push('logo');
+    return slots;
+  }
+
+  // Returns a copy of `data` with every preview-only image removed, so the
+  // exported signature degrades to no image rather than a broken one.
+  function withoutPreviewOnlyImages(data) {
+    const out = { ...(data || {}) };
+    previewOnlyImageSlots(out).forEach((slot) => {
+      out[slot === 'photo' ? 'photoUrl' : 'logoUrl'] = '';
+    });
+    return out;
   }
 
   function plainTextFromData(data) {
@@ -128,6 +142,8 @@
 
   function describeUploadError(code) {
     switch (code) {
+      case 'not_pro': return 'Pro is required to host images for Gmail and Outlook.';
+      case 'invalid_type': return 'That image slot is not supported.';
       case 'rate_limited': return 'Too many uploads this hour. Try again later.';
       case 'too_large': return 'Image too large. Use a smaller JPG, PNG, or WebP.';
       case 'unsupported_format': return 'JPG, PNG, or WebP only.';
@@ -147,6 +163,8 @@
     validateFieldValue,
     getActiveCompliance,
     buildSignatureHtml,
+    previewOnlyImageSlots,
+    withoutPreviewOnlyImages,
     plainTextFromData,
     describeUploadError,
   });

@@ -50,20 +50,13 @@
     "offers": [
       {
         "@type": "Offer",
-        "name": "Free",
-        "price": "0",
-        "priceCurrency": "AUD",
-        "description": "8 free templates with full customisation and subtle branding"
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro",
+        "name": "Email Signature Generator",
         "price": "9.00",
         "priceCurrency": "AUD",
-        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access, hosted photo upload"
+        "description": "All 19 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. One-time payment, no subscription. Free to build and preview before buying."
       }
     ],
-    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Pay $9 once, no subscription."
+    "description": "Professional email signature generator. 19 templates, full customisation, works with Gmail and Outlook. Free to build and preview; $9 once to use it. No subscription."
   }
   </script>
 
@@ -78,7 +71,7 @@
         "name": "Is this really a one-time payment?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Pay $9 AUD once and you get lifetime access to all Pro templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
+          "text": "Yes. Pay $9 AUD once and you get lifetime access to all 19 templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
         }
       },
       {
@@ -91,10 +84,10 @@
       },
       {
         "@type": "Question",
-        "name": "Can I use the free version?",
+        "name": "Can I try it before paying?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Absolutely. The free version includes 8 templates with full customisation of colours, fonts, photo, and social links. The only difference is a small 'Made with emailsignaturegenerator.ai' text line and access to fewer template designs."
+          "text": "Yes. The builder is free to use with no account. You get all 19 templates, full customisation, and a live preview of exactly what your signature will look like. You pay $9 once when you are ready to copy it into your email client, host your photo, or save an edit link."
         }
       },
       {
@@ -159,6 +152,7 @@
   </script>
 
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/motion.css">
 </head>
 <body>
 
@@ -186,16 +180,16 @@
     <!-- ══════════════════════════════════════
          HERO
          ══════════════════════════════════════ -->
-    <section class="landing-hero" aria-label="Hero">
-      <h1>Professional email signatures.<br><span class="highlight">No subscription.</span></h1>
-      <p class="subtitle">Create a polished email signature in under 2 minutes. 19 templates, full customisation, works with Gmail &amp; Outlook. Pay once, own forever.</p>
-      <div class="hero-cta-row">
-        <a href="generator.html" class="btn btn-primary hero-cta" aria-label="Start creating your signature for free">Create Free Signature</a>
+    <section class="landing-hero" aria-label="Hero" data-reveal-group>
+      <h1 data-reveal>Professional email signatures.<br><span class="highlight">No subscription.</span></h1>
+      <p class="subtitle" data-reveal>Build a polished email signature in under 2 minutes. All 19 templates, free to try. Pay $9 once when you're ready to use it &mdash; then it's yours forever.</p>
+      <div class="hero-cta-row" data-reveal>
+        <a href="generator.html" class="btn btn-primary hero-cta" aria-label="Start building your signature for free">Start Building &mdash; Free</a>
         <a href="#pricing" class="btn btn-secondary hero-cta" aria-label="View pricing options">See Pricing</a>
       </div>
-      <div class="hero-price">
+      <div class="hero-price" data-reveal>
         <span class="price-tag">$9</span>
-        one-time for Pro
+        one-time, everything included
         <span class="no-sub">No subscription</span>
       </div>
     </section>
@@ -206,7 +200,7 @@
     <section class="anti-sub-banner" aria-label="Why no subscription">
       <h3>Why pay $108/year for something you use once?</h3>
       <p>Most tools charge $9 every month — $108 a year. You pay $9 once. Total. Forever.</p>
-      <div class="comparison">
+      <div class="comparison" data-reveal>
         <div class="comp-card them">
           <div class="comp-price">$108</div>
           <div class="comp-label">Typical signature tool</div>
@@ -251,7 +245,7 @@
          TEMPLATE SHOWCASE CAROUSEL
          ══════════════════════════════════════ -->
     <section class="sig-carousel-section" id="templates" aria-label="Template previews">
-      <div class="landing-section-header">
+      <div class="landing-section-header" data-reveal>
         <h2>19 templates. Your style.</h2>
         <p>From corporate boardrooms to creative studios — pick a template, tweak the colours, and you're done.</p>
       </div>
@@ -267,8 +261,8 @@
       <div class="sig-carousel-dots" id="sigDots" role="tablist" aria-label="Template navigation"></div>
 
       <div class="sig-carousel-cta">
-        <a href="generator.html" class="btn btn-primary" style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; padding: 14px 36px;">Create Your Signature Free</a>
-        <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">8 templates free &nbsp;&middot;&nbsp; All 19 from $9 once &nbsp;&middot;&nbsp; No subscription</p>
+        <a href="generator.html" class="btn btn-primary" style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; padding: 14px 36px;">Start Building &mdash; Free</a>
+        <p style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">All 19 templates &nbsp;&middot;&nbsp; Free to build &nbsp;&middot;&nbsp; $9 once to use it &nbsp;&middot;&nbsp; No subscription</p>
       </div>
     </section>
 
@@ -276,36 +270,36 @@
          FEATURES
          ══════════════════════════════════════ -->
     <section class="landing-section" aria-label="Features">
-      <div class="landing-section-header">
+      <div class="landing-section-header" data-reveal>
         <h2>Everything you need. Nothing you don't.</h2>
         <p>Full customisation without the complexity. Every signature works perfectly in Gmail, Outlook, Apple Mail, and 50+ other clients.</p>
       </div>
-      <div class="template-showcase">
-        <div class="showcase-card">
+      <div class="template-showcase" data-reveal-group>
+        <div class="showcase-card" data-reveal>
           <h3>Custom Colours</h3>
           <p>Pick your brand colours with a colour picker or paste your hex codes directly. Primary, secondary, and text colours.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>8 Email-Safe Fonts</h3>
           <p>Choose from fonts that actually render in email clients. No broken typography, ever.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>Photo Control</h3>
           <p>Circle, rounded, or square. Upload a preview or paste a hosted URL. Your photo, your shape.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>Social Icons</h3>
           <p>Website, LinkedIn, Instagram, Facebook. Four icon styles: mono, colour, rounded, or square.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>CTA Buttons</h3>
           <p>Add a "Book a Meeting" or "View My Listings" button. Drive action from every email you send.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>One-Click Copy</h3>
           <p>Copy as rich HTML for Gmail or plain text for any client. Paste and go. No code knowledge needed.</p>
         </div>
-        <div class="showcase-card">
+        <div class="showcase-card" data-reveal>
           <h3>Hosted Photos</h3>
           <p>Upload a headshot and use the hosted URL in your signature. No extra image hosting setup required.</p>
         </div>
@@ -317,42 +311,28 @@
          ══════════════════════════════════════ -->
     <section class="pricing-section" id="pricing" aria-label="Pricing">
       <div class="landing-section" style="padding-bottom: 80px;">
-        <div class="landing-section-header">
-          <h2>Simple pricing. No surprises.</h2>
-          <p>Start free. Upgrade once if you want premium templates and no branding. That's it.</p>
+        <div class="landing-section-header" data-reveal>
+          <h2>One price. No surprises.</h2>
+          <p>Build your signature and see exactly how it looks before you pay a cent. Pay once when you're ready to use it.</p>
         </div>
-        <div class="pricing-grid">
+        <div class="pricing-grid pricing-grid-single" data-reveal-group>
 
-          <!-- Free -->
-          <div class="pricing-card">
-            <h3>Free</h3>
-            <div class="price">$0</div>
-            <div class="price-note">Free forever</div>
-            <ul>
-              <li>6 signature templates</li>
-              <li>Full customisation (colours, fonts, layout)</li>
-              <li>Photo upload and social links</li>
-              <li>Copy for Gmail and Outlook</li>
-              <li>Small "Made with emailsignaturegenerator.ai" footer</li>
-            </ul>
-            <a href="generator.html" class="btn btn-secondary" aria-label="Start with free plan">Get Started</a>
-          </div>
-
-          <!-- Pro -->
-          <div class="pricing-card featured">
-            <h3>Pro</h3>
+          <div class="pricing-card featured" data-reveal>
+            <h3>Everything</h3>
             <div class="price">$9</div>
             <div class="price-note">One-time. <strong>No subscription.</strong></div>
             <ul>
-              <li>All 19 templates</li>
-              <li>No branding footer</li>
-              <li>Hosted photo (just upload — we serve it)</li>
+              <li>All 19 templates, no locked designs</li>
+              <li>Full customisation (colours, fonts, layout)</li>
+              <li>Animated photo effects</li>
+              <li>Hosted photo and logo — just upload, we serve them</li>
               <li>CTA buttons (Book a Meeting, etc.)</li>
-              <li>Industry templates (real estate, trades)</li>
-              <li>Gradient and creative designs</li>
+              <li>Save your signature and re-edit it anytime</li>
+              <li>No branding on your signature, ever</li>
               <li>Lifetime access to future templates</li>
             </ul>
-            <a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" class="btn btn-primary" id="checkoutBtn" aria-label="Unlock Pro for $9">Unlock Pro &mdash; $9</a>
+            <a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
+            <p class="pricing-try-note">Or <a href="generator.html">try the builder first</a> — free, no account.</p>
           </div>
 
         </div>
@@ -363,21 +343,21 @@
          FAQ
          ══════════════════════════════════════ -->
     <section class="landing-section" aria-label="Frequently asked questions">
-      <div class="landing-section-header">
+      <div class="landing-section-header" data-reveal>
         <h2>Questions? Answers.</h2>
       </div>
       <div style="max-width: 640px; margin: 0 auto;">
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Is this really a one-time payment?</summary>
-          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. Pay $9 once and you get lifetime access to all Pro templates. No subscription, no recurring charges, no hidden fees. If we add new templates in the future, you get those too.</p>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. Pay $9 once and you get lifetime access to all 19 templates. No subscription, no recurring charges, no hidden fees. If we add new templates in the future, you get those too.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Will my signature work in Gmail and Outlook?</summary>
           <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. All signatures use HTML table-based layouts that are compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients. We test every template across major clients.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
-          <summary>Can I use the free version?</summary>
-          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Absolutely. The free version includes 8 templates with full customisation. The only difference is a small "Made with emailsignaturegenerator.ai" text line and access to fewer template designs.</p>
+          <summary>Can I try it before paying?</summary>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. The builder is free to use with no account &mdash; all 19 templates, full customisation, and a live preview of exactly what you will get. You pay $9 once when you are ready to copy it into your email client, host your photo, or save an edit link.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Do I need to create an account?</summary>
@@ -430,34 +410,52 @@
       facebook: '',
     };
 
+    // Each slide demonstrates one animation, matching the shipped rule of a single
+    // moving element per signature. The ring bakes its accent into the pixels so it
+    // needs a colour-matched file; the shine sweep only lightens, so one file serves
+    // every slide. Regenerate with: node scripts/build-demo-animations.js
+    var RING_TEAL = 'assets/demo-photo-ring-0891B2.gif';
+    var RING_PINE = 'assets/demo-photo-ring-0D9488.gif';
+    var SWEEP = 'assets/demo-photo-sweep.gif';
+
     var SLIDES = [
       {
-        id: 'classic', category: 'Professional', name: 'Classic', isPro: false,
+        id: 'classic', category: 'Professional', name: 'Classic',
+        effect: 'Ring orbit', photo: RING_TEAL,
         desc: 'Clean and corporate-safe. Works perfectly in Gmail, Outlook, and every major client.',
         style: { primaryColor: '#0891B2', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
       },
       {
-        id: 'bold', category: 'Creative', name: 'Bold', isPro: false,
+        id: 'bold', category: 'Creative', name: 'Bold',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Bold colours and modern typography. Stand out in every inbox.',
         style: { primaryColor: '#0F766E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'gradient', category: 'Creative', name: 'Gradient', isPro: true,
+        id: 'gradient', category: 'Creative', name: 'Gradient',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Gradient accents and bold colour. Makes a strong impression without sacrificing professionalism.',
         style: { primaryColor: '#7C3AED', secondaryColor: '#EC4899', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'creator', category: 'Social', name: 'Creator', isPro: false,
+        id: 'creator', category: 'Social', name: 'Creator',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Social icons front and centre. Perfect for influencers and content creators.',
         style: { primaryColor: '#22C55E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'none', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'meetinglink', category: 'Sales / CTA', name: 'Meeting', isPro: false,
-        desc: 'Drive meetings and demos directly from your email signature.',
+        // ctabox rather than meetinglink: meetinglink renders its call to action as
+        // a text link, and a sheen needs a filled shape to travel across. The photo
+        // stays still here so this slide demonstrates exactly one moving element.
+        id: 'ctabox', category: 'Sales / CTA', name: 'CTA Box',
+        effect: 'Button sheen',
+        ctaImage: { url: 'assets/demo-cta-EA580C.gif', width: 129, height: 32 },
+        desc: 'Drive meetings and demos with a call-to-action button that catches the eye.',
         style: { primaryColor: '#EA580C', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
       },
       {
-        id: 'consultant', category: 'Industry', name: 'Consultant', isPro: false,
+        id: 'consultant', category: 'Industry', name: 'Consultant',
+        effect: 'Ring orbit', photo: RING_PINE,
         desc: 'Purpose-built for consulting and professional services. Tailored layout for your field.',
         style: { primaryColor: '#0D9488', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
       },
@@ -471,10 +469,14 @@
 
     // Build slides and dots
     SLIDES.forEach(function (s, i) {
-      var html = TEMPLATES[s.id].render(D, s.style);
-      var badge = s.isPro
-        ? '<span class="showcase-badge pro">Pro</span>'
-        : '<span class="showcase-badge free">Free</span>';
+      var data = Object.assign({}, D, { photoUrl: s.photo || D.photoUrl });
+      if (s.ctaImage) {
+        data.ctaImageUrl = s.ctaImage.url;
+        data.ctaImageWidth = s.ctaImage.width;
+        data.ctaImageHeight = s.ctaImage.height;
+      }
+      var html = TEMPLATES[s.id].render(data, s.style);
+      var badge = '<span class="showcase-badge animated">' + s.effect + '</span>';
 
       var slide = document.createElement('div');
       slide.className = 'sig-carousel-slide';
@@ -539,5 +541,6 @@
     }
   })();
   </script>
+  <script src="js/motion.js" defer></script>
 </body>
 </html>

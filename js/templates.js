@@ -16,7 +16,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.4;">
   <tr>
@@ -143,7 +143,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
@@ -457,7 +457,7 @@ const TEMPLATES = {
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         <tr><td>
-          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};">${ctaSafe}</a>
+          ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};`)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor, 10)}
       </table>
@@ -516,7 +516,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
       const cta = ctaText || 'Schedule a call';
       const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
 
@@ -581,7 +581,7 @@ const TEMPLATES = {
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
         <tr><td style="padding-top: 10px;">
-          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;">${this.escapeAttr(cta)}</a>
+          ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;`)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
       </table>
@@ -739,6 +739,23 @@ const _helpers = {
     return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff;border-collapse:collapse;"><tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0;">${innerHtml}</td></tr></table>`;
   },
 
+  // Renders a filled call-to-action button. When an animated CTA image has been
+  // generated and hosted, the button becomes that image inside the same link;
+  // otherwise it stays a styled text anchor. The label is carried as alt text so
+  // clients that block remote images still show a usable link.
+  _ctaButton(data, ctaLink, label, anchorStyle) {
+    const safeLabel = this.escapeAttr(label);
+    const src = data.ctaImageUrl ? this.escapeUrl(data.ctaImageUrl, 'src') : '';
+    const width = parseInt(data.ctaImageWidth, 10);
+    const height = parseInt(data.ctaImageHeight, 10);
+
+    if (src && width > 0 && height > 0) {
+      return `<a href="${ctaLink}" target="_blank" style="text-decoration: none;"><img src="${src}" width="${width}" height="${height}" alt="${safeLabel}" style="display: block; border: 0; outline: none;" /></a>`;
+    }
+
+    return `<a href="${ctaLink}" target="_blank" style="${anchorStyle}">${safeLabel}</a>`;
+  },
+
   _photoCell(data, radius, size = 90) {
     if (!data.photoUrl) return '';
     const safeUrl = this.escapeUrl(data.photoUrl, 'src');
@@ -800,8 +817,20 @@ const _helpers = {
     return items;
   },
 
-  _divider(style, color) {
+  // `data` is optional so existing callers keep working; when an animated divider
+  // has been generated and hosted, the border rule is replaced by that image.
+  // width="100%" makes it fill the cell exactly as the border does, and a thin
+  // horizontal bar scales without visible distortion. Frame 1 of the GIF is a
+  // plain rule, so older Outlook renders what it renders today.
+  _divider(style, color, data) {
     if (style === 'none') return '';
+
+    const src = data && data.dividerImageUrl ? this.escapeUrl(data.dividerImageUrl, 'src') : '';
+    const height = parseInt(data && data.dividerImageHeight, 10);
+    if (src && height > 0) {
+      return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="font-size: 1px; line-height: 1px; background-color: #ffffff;" bgcolor="#ffffff"><img src="${src}" width="100%" height="${height}" alt="" style="display: block; border: 0; width: 100%; height: ${height}px;" /></td></tr></table>`;
+    }
+
     const safe = this._safeColor(color);
     const styles = {
       line: `border-top: 2px solid ${safe}`,

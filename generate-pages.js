@@ -31,7 +31,6 @@ const SITE_URL = SITE_FACTS.origin;
 const PRICE = SITE_FACTS.proPrice.displayWithCurrency;
 const PRICE_SHORT = SITE_FACTS.proPrice.display;
 const TEMPLATE_COUNT = SITE_FACTS.templateCount;
-const FREE_TEMPLATE_COUNT = SITE_FACTS.freeTemplateCount;
 
 function readDataset(name) {
   const filePath = path.join(__dirname, 'datasets', name);
@@ -61,8 +60,8 @@ function ensureOutputDir() {
 
 function rolePageHTML({ slug, label, singular, description, keywords }) {
   const url = `${SITE_URL}/seo/email-signature-for-${slug}`;
-  const title = `Email Signature for ${label} — Free Templates | Email Signature Generator`;
-  const metaDesc = `Create a professional email signature for ${label.toLowerCase()} in under 2 minutes. Free templates, full customisation. Works with Gmail and Outlook.`;
+  const title = `Email Signature for ${label} — Free Builder | Email Signature Generator`;
+  const metaDesc = `Build a professional email signature for ${label.toLowerCase()} in under 2 minutes. Free to build, all 19 templates, $9 once to use it. Works with Gmail and Outlook.`;
   const h1 = `Professional Email Signature for ${label}`;
 
   return pageHTML({
@@ -87,7 +86,7 @@ function rolePageHTML({ slug, label, singular, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()}?`,
-        a: `Yes. The free plan includes ${FREE_TEMPLATE_COUNT} professional templates with full customisation of colours, fonts, photos, and social links. The Pro plan costs ${PRICE} (one-time payment) and unlocks all ${TEMPLATE_COUNT} templates, removes branding, and adds CTA buttons. No subscription required.`
+        a: `The builder is free to use with no account — all ${TEMPLATE_COUNT} templates, full customisation of colours, fonts, photos and social links, and a live preview of exactly what you will get. You pay ${PRICE} once, when you are ready to copy the signature into your email client. No subscription.`
       }
     ]
   });
@@ -107,8 +106,8 @@ function platformPageHTML({
   heading,
 }) {
   const url = `${SITE_URL}/seo/email-signature-generator-for-${slug}`;
-  const title = seoTitle || `Email Signature Generator for ${label} — Free Templates`;
-  const metaDesc = metaDescription || `Create a professional ${label} email signature in under 2 minutes. One-click copy, works perfectly in ${label}. Free templates with full customisation.`;
+  const title = seoTitle || `Email Signature Generator for ${label} — Free Builder`;
+  const metaDesc = metaDescription || `Build a professional ${label} email signature in under 2 minutes. Free to build with all 19 templates, $9 once to use it. Works perfectly in ${label}.`;
   const h1 = heading || `Email Signature Generator for ${label}`;
 
   return pageHTML({
@@ -132,7 +131,7 @@ function platformPageHTML({
       },
       {
         q: `Is there a free email signature generator for ${label}?`,
-        a: `Yes. Our free plan includes ${FREE_TEMPLATE_COUNT} professional email signature templates for ${label} with full customisation. The only difference from Pro is a small "Made with emailsignaturegenerator.ai" footer line. Pro costs ${PRICE} as a one-time payment and unlocks all ${TEMPLATE_COUNT} templates with no branding.`
+        a: `You can build and preview an email signature for ${label} free, with no account — all ${TEMPLATE_COUNT} templates and full customisation. Copying it into your email client costs ${PRICE} as a one-time payment. There is no subscription and no branding on your signature.`
       }
     ].concat(additionalFaqs || [])
   });
@@ -162,7 +161,7 @@ function industryPageHTML({ slug, label, description, keywords }) {
       },
       {
         q: `Is this email signature generator free for ${label.toLowerCase()} professionals?`,
-        a: `Yes. The free plan includes ${FREE_TEMPLATE_COUNT} templates with full customisation. The Pro plan costs ${PRICE} as a one-time payment and unlocks all ${TEMPLATE_COUNT} templates, removes branding, and adds CTA buttons. No subscription, no recurring charges.`
+        a: `The builder is free with no account — all ${TEMPLATE_COUNT} templates and full customisation. You pay ${PRICE} once when you are ready to use the signature. No subscription, no recurring charges.`
       }
     ]
   });
@@ -318,7 +317,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
-      <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Pay ${PRICE_SHORT} once for Pro, or use ${FREE_TEMPLATE_COUNT} templates free forever.</p>
+      <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Free to build and preview. ${PRICE_SHORT} once when you are ready to use it.</p>
       <a href="../generator.html" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
     </div>
 

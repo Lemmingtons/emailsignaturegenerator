@@ -1,0 +1,273 @@
+/* ══════════════════════════════════════
+   MOTION & INTERACTION LAYER
+   ══════════════════════════════════════
+   Scroll reveals, button and field micro-interactions, and header behaviour.
+   Loaded after styles.css so it can refine existing rules.
+
+   Two rules govern everything here:
+   - Nothing is hidden unless JavaScript is running. Reveal styles are scoped to
+     .js-motion, which motion.js sets on <html>. Without JS the page renders fully.
+   - Motion is short and purposeful. Interactions land in 120-220ms; reveals take
+     longer but only travel a short distance.
+   ══════════════════════════════════════ */
+
+:root {
+  /* Decelerating curve — fast departure, soft landing. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-fast: 130ms;
+  --dur-mid: 220ms;
+  --dur-reveal: 520ms;
+  --reveal-travel: 20px;
+}
+
+/* Smaller screens scroll faster relative to their height, so reveals need to be
+   quicker and travel less or content is still arriving after you have read it. */
+@media (max-width: 640px) {
+  :root {
+    --dur-reveal: 420ms;
+    --reveal-travel: 12px;
+  }
+}
+
+/* ── Buttons ──────────────────────────── */
+
+/* Anchors styled as buttons were inheriting the user-agent underline. */
+.btn,
+.btn:hover,
+.btn:focus {
+  text-decoration: none;
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out-expo),
+    box-shadow var(--dur-mid) var(--ease-out-expo);
+}
+
+/* Light sweeps across primary buttons on hover — a quiet echo of the animated
+   photo's shine effect. Pointer-only so it never fires on touch. */
+@media (hover: hover) {
+  .btn-primary::after,
+  .btn-accent::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.28) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-18deg);
+    transition: left 520ms var(--ease-out-expo);
+    pointer-events: none;
+  }
+
+  .btn-primary:hover::after,
+  .btn-accent:hover::after {
+    left: 130%;
+  }
+
+  .btn-primary:hover,
+  .btn-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -8px rgba(8, 145, 178, 0.45);
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* Press state: the button gives, so a click feels physical. */
+.btn:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 60ms;
+}
+
+/* The copy-confirmation swap shouldn't inherit the hover lift. */
+.btn.copied {
+  transform: none;
+}
+
+.btn.copied::after {
+  display: none;
+}
+
+/* ── Touch targets ────────────────────── */
+/* .btn-sm is 36px, which is fine for a mouse but under the 44px minimum for a
+   finger. The upload and remove controls are all btn-sm, so raise them on touch
+   layouts while leaving the compact desktop sizing alone. */
+
+@media (max-width: 640px) {
+  .btn-sm {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+}
+
+/* Hero call-to-action buttons stack on mobile; matching their widths stops the
+   pair reading as a primary button with a stray link underneath it. */
+@media (max-width: 640px) {
+  .landing-hero .hero-cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-hero .hero-cta {
+    width: 100%;
+  }
+}
+
+/* ── Form fields ──────────────────────── */
+
+.form-group label {
+  transition: color var(--dur-fast) ease;
+}
+
+.form-group:focus-within label {
+  color: var(--primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  transition:
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-mid) var(--ease-out-expo),
+    background-color var(--dur-fast) ease;
+}
+
+.form-group input:hover:not(:focus),
+.form-group select:hover:not(:focus),
+.form-group textarea:hover:not(:focus) {
+  border-color: var(--text-muted);
+}
+
+/* Focus ring expands rather than snapping on. */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.14);
+}
+
+/* Validation messages slide in instead of jumping the layout. */
+.field-error,
+.error-message {
+  animation: field-error-in var(--dur-mid) var(--ease-out-expo);
+}
+
+@keyframes field-error-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Toggle options and template cards ── */
+
+.toggle-option {
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-spring);
+}
+
+.toggle-option:active {
+  transform: scale(0.95);
+}
+
+.template-card,
+.pricing-card {
+  transition:
+    transform var(--dur-mid) var(--ease-out-expo),
+    box-shadow var(--dur-mid) var(--ease-out-expo),
+    border-color var(--dur-fast) ease;
+}
+
+@media (hover: hover) {
+  .template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pricing-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* ── Header ───────────────────────────── */
+
+.site-header {
+  transition:
+    box-shadow var(--dur-mid) var(--ease-out-expo),
+    background-color var(--dur-mid) ease;
+}
+
+.site-header.is-scrolled {
+  box-shadow: 0 4px 20px -8px rgba(22, 78, 99, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Scroll reveals ───────────────────── */
+/* Scoped to .js-motion so content is never hidden when JS is unavailable. */
+
+.js-motion [data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--reveal-travel));
+  will-change: opacity, transform;
+}
+
+.js-motion [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-reveal) var(--ease-out-expo),
+    transform var(--dur-reveal) var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* Once revealed, drop the compositing hint. */
+.js-motion [data-reveal].reveal-done {
+  will-change: auto;
+}
+
+/* Hero content animates on load rather than on scroll — it is already in view,
+   so it travels less and does not need to announce itself. */
+.js-motion .landing-hero [data-reveal] {
+  transform: translateY(calc(var(--reveal-travel) * 0.7));
+}
+
+/* ── Reduced motion ───────────────────── */
+/* styles.css already collapses durations globally; this additionally makes sure
+   revealed content is visible and untransformed rather than mid-animation. */
+
+@media (prefers-reduced-motion: reduce) {
+  .js-motion [data-reveal] {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+
+  .btn-primary::after,
+  .btn-accent::after {
+    display: none;
+  }
+
+  .btn:hover,
+  .btn:active,
+  .template-card:hover,
+  .pricing-card:hover {
+    transform: none;
+  }
+}

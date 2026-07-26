@@ -103,7 +103,7 @@ async function verifyJwt(token, secret) {
 // ── Image helpers ────────────────────────────────────────────────────────────
 
 function sniffImage(buf) {
-  // Detect JPG / PNG / WebP from the first 12 bytes. Returns null if no match.
+  // Detect JPG / PNG / WebP / GIF from the first 12 bytes. Returns null if no match.
   const b = new Uint8Array(buf);
   if (b.length < 12) return null;
   if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return { ext: 'jpg', mime: 'image/jpeg' };
@@ -111,8 +111,15 @@ function sniffImage(buf) {
       b[4] === 0x0D && b[5] === 0x0A && b[6] === 0x1A && b[7] === 0x0A) return { ext: 'png', mime: 'image/png' };
   if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
       b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return { ext: 'webp', mime: 'image/webp' };
+  // GIF87a / GIF89a
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38 &&
+      (b[4] === 0x37 || b[4] === 0x39) && b[5] === 0x61) return { ext: 'gif', mime: 'image/gif' };
   return null;
 }
+
+// Image slots a Pro user may occupy. One stored file per slot per user.
+const IMAGE_SLOTS = ['photo', 'logo', 'cta', 'divider'];
+const IMAGE_EXTS = ['jpg', 'png', 'webp', 'gif'];
 
 function apiError(status, code, detail) {
   const body = detail ? { error: code, code, detail } : { error: code, code };
@@ -298,21 +305,22 @@ export default {
       const sub = verified.payload && verified.payload.sub;
       if (!sub || !/^cus_[A-Za-z0-9]+$/.test(sub)) return apiError(401, 'invalid_token', 'bad_subject');
 
-      // Slot type (only photo in v1)
+      // Slot type — each slot stores at most one file per user
       const imageType = request.headers.get('X-Image-Type') || '';
-      if (imageType !== 'photo') return apiError(400, 'invalid_type');
+      if (!IMAGE_SLOTS.includes(imageType)) return apiError(400, 'invalid_type');
 
-      // Size pre-check via Content-Length
-      const MAX_BYTES = 2_000_000;
+      // Size pre-check via Content-Length. Animated GIFs run larger than stills.
+      const MAX_BYTES = 3_000_000;
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
       if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
 
-      // Rate limit: 10 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable)
+      // Rate limit: 25 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable).
+      // Raised from 10 — photo, logo and animated-GIF retries now share one budget.
       if (env.RATE_LIMIT) {
         const hourBucket = Math.floor(Date.now() / 3_600_000);
         const rlKey = `rl:upload:${sub}:${hourBucket}`;
         const current = parseInt((await env.RATE_LIMIT.get(rlKey)) || '0', 10);
-        if (current >= 10) return apiError(429, 'rate_limited');
+        if (current >= 25) return apiError(429, 'rate_limited');
         await env.RATE_LIMIT.put(rlKey, String(current + 1), { expirationTtl: 7200 });
       }
 
@@ -327,16 +335,15 @@ export default {
 
       const uploadId = await publicUploadId(sub, env.PRO_SIGNING_SECRET);
 
-      // Best-effort delete other-extension siblings so each user has at most one photo file
-      const allExts = ['jpg', 'png', 'webp'];
+      // Best-effort delete other-extension siblings so each slot holds at most one file
       await Promise.all(
-        allExts
+        IMAGE_EXTS
           .filter((e) => e !== sniffed.ext)
-          .map((e) => bucket.delete(`users/${uploadId}/photo.${e}`).catch(() => {}))
+          .map((e) => bucket.delete(`users/${uploadId}/${imageType}.${e}`).catch(() => {}))
       );
 
       // Store
-      const key = `users/${uploadId}/photo.${sniffed.ext}`;
+      const key = `users/${uploadId}/${imageType}.${sniffed.ext}`;
       await bucket.put(key, buf, {
         httpMetadata: {
           contentType: sniffed.mime,
@@ -345,7 +352,7 @@ export default {
         customMetadata: { uploadedAt: String(Date.now()) },
       });
 
-      const publicUrl = `${url.origin}/u/${uploadId}/photo.${sniffed.ext}?v=${Date.now()}`;
+      const publicUrl = `${url.origin}/u/${uploadId}/${imageType}.${sniffed.ext}?v=${Date.now()}`;
       return new Response(
         JSON.stringify({ url: publicUrl, bytes: buf.byteLength, contentType: sniffed.mime }),
         { headers: { 'Content-Type': 'application/json' } }
@@ -356,9 +363,10 @@ export default {
     if (url.pathname.startsWith('/u/')) {
       const bucket = uploadBucket(env);
       if (!bucket) return new Response('Storage not configured', { status: 500 });
-      const match = url.pathname.match(/^\/u\/([A-Za-z0-9_-]{16,64}|cus_[A-Za-z0-9]+)\/photo\.(jpg|png|webp)$/);
+      // Legacy /u/cus_.../photo.jpg URLs stay readable; `logo` and `gif` are new.
+      const match = url.pathname.match(/^\/u\/([A-Za-z0-9_-]{16,64}|cus_[A-Za-z0-9]+)\/(photo|logo|cta|divider)\.(jpg|png|webp|gif)$/);
       if (!match) return new Response('Not found', { status: 404 });
-      const key = `users/${match[1]}/photo.${match[2]}`;
+      const key = `users/${match[1]}/${match[2]}.${match[3]}`;
       const obj = await bucket.get(key);
       if (!obj) return new Response('Not found', { status: 404 });
 
@@ -368,6 +376,78 @@ export default {
       headers.set('Access-Control-Allow-Origin', '*');
       headers.set('X-Content-Type-Options', 'nosniff');
       return new Response(obj.body, { headers });
+    }
+
+    // ── API: Save a signature for later editing (Pro only) ──────────────────
+    // The returned id is a 256-bit random capability. Anyone holding the link can
+    // read the saved signature, which contains the name, email and phone the user
+    // entered, so the id must stay unguessable and must never be derived from the
+    // customer id.
+    if (url.pathname === '/api/signature') {
+      if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+      if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
+      const bucket = uploadBucket(env);
+      if (!bucket) return apiError(500, 'storage_not_configured');
+
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) return apiError(401, 'invalid_token', 'missing');
+      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
+      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+
+      const MAX_SIGNATURE_BYTES = 32_000;
+      const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
+      if (declaredLen > MAX_SIGNATURE_BYTES) return apiError(413, 'too_large');
+
+      const raw = await request.text();
+      if (!raw) return apiError(400, 'empty_body');
+      if (raw.length > MAX_SIGNATURE_BYTES) return apiError(413, 'too_large');
+
+      // Store only what we can parse, so a malformed body never lands in the bucket.
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return apiError(400, 'invalid_json');
+      }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return apiError(400, 'invalid_json');
+      }
+
+      const idBytes = new Uint8Array(32);
+      crypto.getRandomValues(idBytes);
+      const signatureId = base64url(idBytes.buffer);
+
+      await bucket.put(`signatures/${signatureId}.json`, JSON.stringify(parsed), {
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        customMetadata: { savedAt: String(Date.now()) },
+      });
+
+      return new Response(
+        JSON.stringify({ id: signatureId, url: `${url.origin}/generator?s=${signatureId}` }),
+        { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    if (url.pathname.startsWith('/api/signature/')) {
+      if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
+      const bucket = uploadBucket(env);
+      if (!bucket) return apiError(500, 'storage_not_configured');
+
+      const match = url.pathname.match(/^\/api\/signature\/([A-Za-z0-9_-]{40,64})$/);
+      if (!match) return apiError(404, 'not_found');
+
+      const obj = await bucket.get(`signatures/${match[1]}.json`);
+      if (!obj) return apiError(404, 'not_found');
+
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': 'application/json',
+          // Saved signatures hold personal details; keep them out of shared caches.
+          'Cache-Control': 'no-store, private',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
     }
 
     if (request.method === 'POST' && url.pathname === '/api/upload') {

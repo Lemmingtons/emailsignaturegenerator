@@ -12,8 +12,9 @@ The **Email Signature Examples** hub at /email-signature-examples provides 52 ro
 
 ## Pricing
 
-- **Free**: $0 — 8 templates with full customisation. Includes a small "Made with emailsignaturegenerator.ai" footer line.
-- **Pro**: $9 AUD, one-time payment — All 19 templates, no branding, CTA buttons, industry templates, gradient designs, lifetime access.
+One plan, one price: **$9 AUD, one-time**. It includes all 19 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
+
+The builder itself is free to use with no account: anyone can pick any of the 19 templates, customise it fully, and see a live preview of exactly what they will get. Payment is required to copy the signature out, host images, or save an edit link.
 
 No subscription. No recurring charges. No account needed.
 
@@ -35,17 +36,17 @@ No subscription. No recurring charges. No account needed.
 
 ## Template categories
 
-1. **Professional** — Clean corporate layouts with photo, contact info, and social links (2 free, 2 pro)
-2. **Creative** — Bold colours, gradient accents, modern typography (1 free, 2 pro)
-3. **Minimal** — Text-focused, ultra-lightweight, no images (2 free, 1 pro)
-4. **Social-First** — Large social icons, ideal for creators and influencers (1 free, 1 pro)
-5. **Sales / CTA** — Built-in call-to-action buttons for meetings and demos (1 free, 2 pro)
-6. **Industry** — Purpose-built for real estate, trades, consulting (1 free, 2 pro)
+1. **Professional** — Clean corporate layouts with photo, contact info, and social links (4 templates)
+2. **Creative** — Bold colours, gradient accents, modern typography (3 templates)
+3. **Minimal** — Text-focused, ultra-lightweight, no images (3 templates)
+4. **Social-First** — Large social icons, ideal for creators and influencers (2 templates)
+5. **Sales / CTA** — Built-in call-to-action buttons for meetings and demos (3 templates)
+6. **Industry** — Purpose-built for real estate, trades, consulting (3 templates)
 
 ## Frequently asked questions
 
 **Is this a one-time payment?**
-Yes. Pay $9 AUD once and get lifetime access to all Pro templates, including future templates. No subscription, no recurring charges.
+Yes. Pay $9 AUD once and get lifetime access to all 19 templates, including future templates. No subscription, no recurring charges.
 
 **Does it work in Gmail and Outlook?**
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
