@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Free Email Signature Generator | Gmail & Outlook Templates</title>
-  <meta name="description" content="Create a free professional email signature for Gmail, Outlook, Apple Mail, and more. 19 templates, hosted photos, no account, optional $9 Pro upgrade.">
+  <meta name="description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build and preview with all 19 templates, no account. $9 once when you are ready to use it.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/generator">
 
   <!-- Open Graph -->
   <meta property="og:title" content="Free Email Signature Generator | Gmail & Outlook Templates">
-  <meta property="og:description" content="Create a free professional email signature for Gmail, Outlook, Apple Mail, and more. 19 templates, hosted photos, no account needed.">
+  <meta property="og:description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build with all 19 templates, no account. $9 once to use it.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/generator">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -49,24 +49,18 @@
     "offers": [
       {
         "@type": "Offer",
-        "name": "Free",
-        "price": "0",
-        "priceCurrency": "AUD",
-        "description": "8 free templates with full customisation and subtle branding"
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro",
+        "name": "Email Signature Generator",
         "price": "9.00",
         "priceCurrency": "AUD",
-        "description": "All 19 templates, no branding, CTA buttons, premium designs, lifetime access, hosted photo upload"
+        "description": "All 19 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. Free to build and preview before buying."
       }
     ],
-    "description": "Free professional email signature generator for Gmail, Outlook, Apple Mail, Yahoo Mail, and other email clients. 19 templates, hosted photo upload, no account required."
+    "description": "Professional email signature generator for Gmail, Outlook, Apple Mail, Yahoo Mail, and other email clients. Free to build and preview with all 19 templates and no account; $9 one-time to copy it out, host images, and save an edit link."
   }
   </script>
 
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/motion.css">
 </head>
 <body>
 
@@ -99,7 +93,7 @@
 
     <section class="generator-seo-intro" aria-label="Generator introduction">
       <h1>Free Email Signature Generator</h1>
-      <p>Create a professional HTML email signature for Gmail, Outlook, Apple Mail, Yahoo Mail, and Microsoft 365. Choose a template, add your contact details, customise colours and fonts, then copy the finished signature into your email client.</p>
+      <p>Build a professional HTML email signature for Gmail, Outlook, Apple Mail, Yahoo Mail, and Microsoft 365. Choose from all 19 templates, add your contact details, and customise colours and fonts &mdash; free, with no account. Pay $9 once when you are ready to copy it into your email client.</p>
       <div class="generator-intro-links" aria-label="Related guides">
         <a href="email-signature-examples.html">Email signature examples</a>
         <a href="seo/email-signature-generator-for-gmail.html">Gmail setup guide</a>
@@ -109,10 +103,10 @@
     </section>
 
     <!-- Pro Banner -->
-    <div class="pro-banner" id="pro-banner" role="region" aria-label="Upgrade to Pro">
+    <div class="pro-banner" id="pro-banner" role="region" aria-label="Unlock your signature">
       <div class="pro-banner-text">
-        <h3>Unlock all 19 templates</h3>
-        <p>Remove branding, premium designs, CTA buttons. One-time payment, no subscription.</p>
+        <h3>Building is free &mdash; $9 when you're ready to use it</h3>
+        <p>Unlocks copy to Gmail and Outlook, hosted photo and logo, animated photo effects, and a saved edit link. One-time payment, no subscription.</p>
       </div>
       <button class="btn-unlock" id="buyProBtn" aria-label="Unlock Pro for $9">Unlock Pro &mdash; $9</button>
     </div>
@@ -191,6 +185,32 @@
               </div>
             </div>
 
+            <!-- Animated photo (Pro) -->
+            <div class="form-group" id="photoAnimateGroup">
+              <label for="photoEffect">Animate photo <span class="pro-tag">Pro</span></label>
+              <select id="photoEffect">
+                <option value="none">No animation (still photo)</option>
+                <option value="sweep">Shine sweep — highlight passes across</option>
+                <option value="ring">Ring orbit — accent ring with travelling highlight</option>
+                <option value="crossfade">Two-photo crossfade</option>
+              </select>
+              <span class="photo-hint" id="photoEffectHint">Saved as an animated GIF. Older Outlook shows the first frame as a still.</span>
+            </div>
+            <div class="form-group" id="photoSecondGroup" style="display: none;">
+              <div class="photo-upload-area">
+                <div class="photo-preview" id="photoSecondThumb">
+                  <span class="photo-placeholder">No 2nd photo</span>
+                </div>
+                <div class="photo-controls">
+                  <label class="btn btn-secondary btn-sm" for="photoSecondFile" style="cursor: pointer;">
+                    Upload 2nd photo
+                  </label>
+                  <input type="file" id="photoSecondFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload second photo for crossfade">
+                  <span class="photo-hint">The photo your signature dissolves into.</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Company Logo -->
             <div class="section-label">Company Logo</div>
             <div class="form-group">
@@ -205,11 +225,11 @@
                 </div>
                 <div class="logo-controls">
                   <label class="btn btn-secondary btn-sm" for="logoFile" style="cursor: pointer;">
-                    Upload preview
+                    Upload logo
                   </label>
-                  <input type="file" id="logoFile" accept="image/*" style="display: none;" aria-label="Upload company logo for preview">
+                  <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload company logo">
                   <button class="btn btn-secondary btn-sm" id="logoRemoveBtn" style="display: none;" aria-label="Remove logo">Remove</button>
-                  <span class="photo-hint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint" id="logoStatusHint">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
             </div>
@@ -413,7 +433,13 @@
                   <span class="btn-label">Plain Text</span>
                   <span class="btn-feedback">Copied!</span>
                 </button>
+                <button class="btn btn-secondary" id="saveLinkBtn" aria-label="Save signature and copy an edit link">
+                  <span class="btn-label">Save &amp; get link</span>
+                  <span class="btn-feedback">Link copied!</span>
+                </button>
               </div>
+              <p class="photo-hint" id="exportStatusHint"></p>
+              <p class="photo-hint" id="saveLinkHint">Save your signature and reopen it later on any device. Anyone with the link can view it.</p>
               <button class="mobile-back-to-form" id="mobileBackToForm" aria-label="Back to form">↑ Back to form</button>
 
               <details class="instructions">
@@ -483,9 +509,12 @@
 
   <button class="mobile-preview-fab" id="mobilePreviewFab" aria-label="Jump to preview">👁 Preview</button>
 
+  <script src="js/motion.js" defer></script>
   <script src="js/site-facts.js"></script>
   <script src="js/generator-core.js"></script>
   <script src="js/templates.js"></script>
+  <script src="js/gif-encoder.js"></script>
+  <script src="js/photo-animator.js"></script>
   <script src="js/app.js"></script>
 
   <!-- Photo Crop Modal -->

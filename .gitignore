@@ -2,3 +2,6 @@
 .DS_Store
 node_modules/
 graphify-out/
+
+# Local wrangler dev secrets
+.dev.vars

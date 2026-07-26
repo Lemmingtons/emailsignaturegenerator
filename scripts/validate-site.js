@@ -69,6 +69,51 @@ function checkWorkerBehavior() {
     "if (uploaded.url.includes('cus_TEST123')) throw new Error('public upload URL exposes Stripe customer id');",
     "const served = await worker.default.fetch(new Request(uploaded.url), env);",
     "if (served.status !== 200) throw new Error('served upload returned ' + served.status);",
+    "if (!uploaded.url.includes('/photo.jpg')) throw new Error('photo slot url mismatch: ' + uploaded.url);",
+    // Logo slot: must store alongside the photo, not replace it.
+    "const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);",
+    "const logoUp = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/png', 'X-Image-Type': 'logo' }, body: png }), env);",
+    "if (logoUp.status !== 200) throw new Error('logo upload returned ' + logoUp.status + ': ' + await logoUp.text());",
+    "const logoUploaded = await logoUp.json();",
+    "if (!logoUploaded.url.includes('/logo.png')) throw new Error('logo slot url mismatch: ' + logoUploaded.url);",
+    "if (logoUploaded.url.includes('cus_TEST123')) throw new Error('public logo URL exposes Stripe customer id');",
+    "const logoServed = await worker.default.fetch(new Request(logoUploaded.url), env);",
+    "if (logoServed.status !== 200) throw new Error('served logo returned ' + logoServed.status);",
+    "const photoStillThere = await worker.default.fetch(new Request(uploaded.url), env);",
+    "if (photoStillThere.status !== 200) throw new Error('logo upload evicted the photo slot');",
+    // Animated GIF support for the animated-photo feature.
+    "const gif = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0, 0, 0, 0, 0, 0]);",
+    "const gifUp = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/gif', 'X-Image-Type': 'photo' }, body: gif }), env);",
+    "if (gifUp.status !== 200) throw new Error('gif upload returned ' + gifUp.status + ': ' + await gifUp.text());",
+    "const gifUploaded = await gifUp.json();",
+    "if (gifUploaded.contentType !== 'image/gif') throw new Error('gif content type mismatch: ' + gifUploaded.contentType);",
+    "const gifServed = await worker.default.fetch(new Request(gifUploaded.url), env);",
+    "if (gifServed.status !== 200) throw new Error('served gif returned ' + gifServed.status);",
+    "if (gifServed.headers.get('Content-Type') !== 'image/gif') throw new Error('served gif content type mismatch');",
+    // Uploading a GIF into the photo slot must evict the previous jpg for that slot.
+    "const evictedJpg = await worker.default.fetch(new Request(uploaded.url), env);",
+    "if (evictedJpg.status !== 404) throw new Error('same-slot different-extension file was not evicted');",
+    // Unknown slots are rejected outright.
+    "const badSlot = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/png', 'X-Image-Type': 'banner' }, body: png }), env);",
+    "if (badSlot.status !== 400) throw new Error('unknown image slot returned ' + badSlot.status);",
+    // Saved signatures: Pro-gated write, capability-id read, no personal data cached.
+    "const sigBody = JSON.stringify({ version: 1, template: 'classic', data: { fullName: 'Jane Smith', email: 'jane@example.com' }, style: { primaryColor: '#0891B2' } });",
+    "const sigSave = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: sigBody }), env);",
+    "if (sigSave.status !== 200) throw new Error('signature save returned ' + sigSave.status + ': ' + await sigSave.text());",
+    "const saved = await sigSave.json();",
+    "if (!/^[A-Za-z0-9_-]{40,64}$/.test(saved.id)) throw new Error('signature id is not an opaque capability: ' + saved.id);",
+    "if (saved.id.includes('cus_TEST123')) throw new Error('signature id exposes Stripe customer id');",
+    "const sigRead = await worker.default.fetch(new Request('https://example.com/api/signature/' + saved.id), env);",
+    "if (sigRead.status !== 200) throw new Error('signature read returned ' + sigRead.status);",
+    "if (!(sigRead.headers.get('Cache-Control') || '').includes('no-store')) throw new Error('saved signature must not be cached');",
+    "const readBack = await sigRead.json();",
+    "if (readBack.data.fullName !== 'Jane Smith') throw new Error('saved signature did not round-trip');",
+    "const sigNoAuth = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: sigBody }), env);",
+    "if (sigNoAuth.status !== 401) throw new Error('unauthenticated signature save returned ' + sigNoAuth.status);",
+    "const sigBadJson = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: 'not json' }), env);",
+    "if (sigBadJson.status !== 400) throw new Error('malformed signature save returned ' + sigBadJson.status);",
+    "const sigMissing = await worker.default.fetch(new Request('https://example.com/api/signature/" + 'A'.repeat(43) + "'), env);",
+    "if (sigMissing.status !== 404) throw new Error('unknown signature id returned ' + sigMissing.status);",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
     "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
@@ -103,6 +148,9 @@ function assert(condition, message) {
 checkSyntax('js/site-facts.js');
 checkSyntax('js/generator-core.js');
 checkSyntax('js/templates.js');
+checkSyntax('js/gif-encoder.js');
+checkSyntax('js/photo-animator.js');
+checkSyntax('js/motion.js');
 checkSyntax('js/app.js');
 checkSyntax('js/health-check.js');
 checkSyntax('generate-pages.js');
@@ -117,7 +165,110 @@ const { TEMPLATES } = require('../js/templates');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
-assert(templates.filter(([, t]) => !t.pro).length === facts.freeTemplateCount, `Expected ${facts.freeTemplateCount} free templates`);
+// Single paid plan: every template is available in the builder, and nothing in
+// site-facts should reintroduce a free/paid template split.
+assert(facts.freeTemplateCount === undefined, 'freeTemplateCount must not come back — there is one plan');
+assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come back — signatures carry no branding');
+
+// Animated photo pipeline: the GIF must be structurally valid, animate, and keep
+// frame 0 as the resting image (classic Outlook renders only that frame).
+{
+  const GifEncoder = require('../js/gif-encoder');
+  const PhotoAnimator = require('../js/photo-animator');
+
+  const size = 64;
+  const photo = new Uint8ClampedArray(size * size * 4);
+  const second = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      photo[i] = 40 + x * 2; photo[i + 1] = 90; photo[i + 2] = 200 - y; photo[i + 3] = 255;
+      second[i] = 200 - x; second[i + 1] = 30 + y; second[i + 2] = 80; second[i + 3] = 255;
+    }
+  }
+
+  for (const [id, spec] of Object.entries(PhotoAnimator.EFFECTS)) {
+    const built = PhotoAnimator.buildFrames({
+      photo, size, effect: id, shape: 'circle',
+      background: '#ffffff', accentColor: '#0891B2',
+      secondPhoto: spec.needsSecondPhoto ? second : null,
+    });
+
+    assert(built.frames.length === spec.frames, `${id} produced ${built.frames.length} frames, expected ${spec.frames}`);
+
+    // Frame 0 must be the untouched photo inside the shape, so the Outlook still is
+    // a clean headshot rather than a mid-animation state.
+    const centre = ((size / 2) * size + size / 2) * 4;
+    assert(
+      Math.abs(built.frames[0][centre] - photo[centre]) <= 1,
+      `${id} frame 0 must rest on the source photo at the centre`
+    );
+
+    // Corners sit outside the circle and must be the baked background, not stray pixels.
+    assert(built.frames[0][0] === 255 && built.frames[0][1] === 255 && built.frames[0][2] === 255,
+      `${id} must composite the circular mask onto the background colour`);
+
+    // Something has to actually move.
+    let moved = 0;
+    const last = built.frames[built.frames.length - 1];
+    for (const frame of built.frames) {
+      for (let p = 0; p < frame.length; p += 4) {
+        if (frame[p] !== built.frames[0][p]) { moved++; break; }
+      }
+    }
+    assert(moved > 0, `${id} produced no motion`);
+    assert(last.length === photo.length, `${id} final frame is the wrong size`);
+
+    const bytes = GifEncoder.encode({
+      width: size, height: size, frames: built.frames,
+      delay: built.delay, loop: false, dither: false,
+    });
+
+    assert(Buffer.from(bytes.subarray(0, 6)).toString('latin1') === 'GIF89a', `${id} missing GIF89a header`);
+    assert(bytes[bytes.length - 1] === 0x3B, `${id} missing GIF trailer`);
+    // One image descriptor (0x2C) per frame.
+    let descriptors = 0;
+    for (let i = 0; i < bytes.length - 1; i++) if (bytes[i] === 0x2C) descriptors++;
+    assert(descriptors >= spec.frames, `${id} encoded ${descriptors} image descriptors for ${spec.frames} frames`);
+    // Looping must stay off: the Netscape block is what makes a GIF repeat forever.
+    assert(!Buffer.from(bytes).includes(Buffer.from('NETSCAPE2.0')), `${id} must not loop by default`);
+  }
+
+  // Frame differencing must actually shrink a static sequence.
+  const still = [];
+  for (let i = 0; i < 8; i++) still.push(photo.slice());
+  const optimised = GifEncoder.encode({ width: size, height: size, frames: still, dither: false, optimise: true });
+  const unoptimised = GifEncoder.encode({ width: size, height: size, frames: still, dither: false, optimise: false });
+  assert(optimised.length * 2 < unoptimised.length,
+    `Frame differencing ineffective: ${optimised.length} vs ${unoptimised.length} bytes`);
+}
+
+// Preview-only images must never survive into an exported signature.
+{
+  const dataUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  const hosted = 'https://emailsignaturegenerator.ai/u/abcdef0123456789/photo.jpg';
+  assert(
+    core.previewOnlyImageSlots({ photoUrl: dataUri, logoUrl: dataUri }).join(',') === 'photo,logo',
+    'previewOnlyImageSlots must flag both inline image slots'
+  );
+  assert(
+    core.previewOnlyImageSlots({ photoUrl: hosted, logoUrl: '' }).length === 0,
+    'previewOnlyImageSlots must not flag hosted URLs'
+  );
+  const cleaned = core.withoutPreviewOnlyImages({ photoUrl: dataUri, logoUrl: hosted, fullName: 'Jane' });
+  assert(cleaned.photoUrl === '', 'withoutPreviewOnlyImages must strip inline photos');
+  assert(cleaned.logoUrl === hosted, 'withoutPreviewOnlyImages must keep hosted logos');
+  assert(cleaned.fullName === 'Jane', 'withoutPreviewOnlyImages must preserve non-image fields');
+
+  const exported = core.buildSignatureHtml({
+    template: TEMPLATES.classic,
+    data: cleaned,
+    style: core.previewStyle,
+    isPro: true,
+    compliance: null,
+  });
+  assert(!exported.includes('data:image'), 'Exported signature must contain no inline data: images');
+}
 
 const sampleData = {
   fullName: 'Jane Smith',
@@ -134,18 +285,59 @@ for (const [id, template] of templates) {
     template,
     data: sampleData,
     style: core.defaultStyle,
-    isPro: false,
     compliance: null,
   });
   assert(html.includes(sampleData.fullName) || html.includes(sampleData.fullName.toUpperCase()), `${id} output missing fullName`);
   assert(html.includes('mailto:'), `${id} output missing mailto link`);
   assert(!html.includes('undefined') && !html.includes('null'), `${id} output leaks undefined/null`);
-  assert(html.includes('emailsignaturegenerator.ai'), `${id} free output missing branding`);
+  // No branding footer on any signature, paid or not.
+  assert(!html.includes('emailsignaturegenerator.ai'), `${id} output must not carry a branding footer`);
 }
 
 const app = read('js/app.js');
 assert(app.includes('/api/upload-image'), 'Client must upload through /api/upload-image');
 assert(!app.includes("fetch('/api/upload'"), 'Client still uploads through legacy /api/upload');
+assert(app.includes("uploadImageBlob(blob, 'logo')"), 'Logo uploads must be hosted, not preview-only data URIs');
+assert(app.includes('CORE.previewOnlyImageSlots'), 'Copy path must guard against preview-only data: URIs');
+assert(!/range\.selectNodeContents\(preview\)/.test(app), 'Clipboard fallback must not copy from the live preview');
+
+const coreSource = read('js/generator-core.js');
+assert(coreSource.includes('previewOnlyImageSlots'), 'generator-core must expose preview-only image detection');
+
+// Motion must stay progressive enhancement: content is only ever hidden behind the
+// .js-motion class that motion.js sets, so a script failure cannot blank the page.
+{
+  const motionCss = read('css/motion.css');
+  const motionJs = read('js/motion.js');
+
+  const hidingRules = motionCss.match(/^[^{}]*\[data-reveal\][^{}]*\{[^}]*opacity:\s*0[^}]*\}/gm) || [];
+  hidingRules.forEach((rule) => {
+    assert(rule.includes('.js-motion'), `Reveal hiding rule must be scoped to .js-motion:\n${rule}`);
+  });
+  assert(hidingRules.length > 0, 'motion.css should hide reveal targets behind .js-motion');
+
+  assert(motionJs.includes("classList.add('js-motion')"), 'motion.js must opt in to the hiding rules itself');
+  assert(motionJs.includes('prefers-reduced-motion'), 'motion.js must honour reduced-motion');
+  // The sweep is what stops jumped-past content from staying invisible forever.
+  assert(/function sweep\(/.test(motionJs), 'motion.js needs the scroll sweep safety net');
+  assert(motionJs.includes('rect.bottom < 0'), 'sweep must reveal content the reader has scrolled past');
+  // Stagger must be per-row, not per-index. Indexing across a single-column mobile
+  // stack leaves the last card waiting the full delay before it starts to fade in.
+  assert(motionJs.includes('offsetTop'), 'stagger must be computed from layout rows, not item index');
+  assert(!/items\.forEach\(function\([a-z]+, index\)/.test(motionJs), 'stagger must not be assigned by flat item index');
+  assert(motionJs.includes('assignStagger();') && /addEventListener\('resize'/.test(motionJs),
+    'stagger must be recomputed on resize so breakpoint changes do not leave stale delays');
+  // Touch targets on the compact upload controls.
+  assert(/\.btn-sm\s*\{[^}]*min-height:\s*44px/.test(motionCss.replace(/\s+/g, ' ')),
+    'btn-sm must reach a 44px touch target on small screens');
+
+  for (const page of ['index.html', 'generator.html']) {
+    const html = read(page);
+    if (!html.includes('data-reveal')) continue;
+    assert(html.includes('js/motion.js'), `${page} uses data-reveal but never loads motion.js`);
+    assert(html.includes('css/motion.css'), `${page} uses data-reveal but never loads motion.css`);
+  }
+}
 
 const worker = read('_worker.js');
 assert(worker.includes("url.pathname === '/api/upload-image'"), 'Worker missing /api/upload-image');
@@ -170,6 +362,13 @@ const stalePatterns = [
   /6oUeVc0ET92yauBf1sf7i00/,
   /\$5 one-time/i,
   /6 free templates/i,
+  /6 signature templates/i,
+  // There is one paid plan. Nothing may advertise a free tier or a branding footer.
+  /\b8 free templates/i,
+  /\b8 templates free/i,
+  /free plan/i,
+  /free forever/i,
+  /Made with emailsignaturegenerator\.ai/i,
   /18 professional email signature templates/i,
   /18 signature templates across/i,
   /\b18 templates\b/i,

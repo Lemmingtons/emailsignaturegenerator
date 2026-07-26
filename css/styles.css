@@ -1049,6 +1049,23 @@ body {
   margin: 0 auto;
 }
 
+/* A lone plan should not stretch to the full two-column width. */
+.pricing-grid-single {
+  max-width: 420px;
+}
+
+.pricing-try-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.pricing-try-note a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .pricing-card {
   background: var(--glass);
   backdrop-filter: blur(12px);

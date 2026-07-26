@@ -31,19 +31,33 @@
   <main id="privacy-main" style="max-width: 760px; margin: 40px auto; padding: 0 24px; line-height: 1.7; color: var(--text-primary, #1f2937);">
 
     <h1 style="font-size: 32px; margin-bottom: 8px;">Privacy &amp; Terms</h1>
-    <p style="color: var(--text-secondary, #6b7280); margin-top: 0;">Last updated: 28 April 2026</p>
+    <p style="color: var(--text-secondary, #6b7280); margin-top: 0;">Last updated: 26 July 2026</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">What we store</h2>
-    <p>The signature generator runs entirely in your browser. The form fields you fill in (name, title, contact details, social links, colour preferences) never leave your device unless you copy or download your signature. We do not have user accounts.</p>
+    <p>The signature generator runs entirely in your browser. We do not have user accounts. The form fields you fill in (name, title, contact details, social links, colour preferences) stay on your device unless you take one of two actions: uploading an image, or saving your signature to a link. Both are Pro features, both are explicitly initiated by you, and both are described below.</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">Pro purchases</h2>
     <p>Pro is sold as a one-time payment via Stripe. We receive a Stripe checkout session ID and your Stripe customer ID, which we use to issue a signed access token (JWT) that is stored in your browser's <code>localStorage</code>. We do not see or store your card details — Stripe handles all payment information.</p>
 
-    <h2 style="font-size: 22px; margin-top: 32px;">Hosted photo upload (Pro)</h2>
-    <p>When you upload a photo as a Pro user, we store the image on Cloudflare R2 keyed to your Stripe customer ID and serve it from <code>emailsignaturegenerator.ai/u/&hellip;</code>. Before upload, your browser resizes the image to 400&times;400 pixels and re-encodes it as JPEG, which strips EXIF metadata (including any embedded location data).</p>
-    <p>Only your most recent uploaded photo is retained — re-uploading replaces the previous file. Hosted photos are publicly accessible by URL (this is intentional, so any recipient's email client can fetch them).</p>
+    <h2 style="font-size: 22px; margin-top: 32px;">Hosted images (Pro)</h2>
+    <p>Pro lets you host two images with us: a profile photo and a company logo. We store them on Cloudflare R2 and serve them from <code>emailsignaturegenerator.ai/u/&hellip;</code>. The identifier in that URL is an opaque random-looking value; it is not your Stripe customer ID, your email address, or anything else that identifies you.</p>
+    <p>Your browser prepares every image before it is sent, and re-encoding through the browser's canvas removes EXIF metadata (including any embedded location data):</p>
+    <ul>
+      <li><strong>Still photos</strong> are cropped and resized to 400&times;400 pixels and encoded as JPEG.</li>
+      <li><strong>Animated photos</strong> are rendered to a 160&times;160 pixel animated GIF. The animation is built in your browser — the image is not processed on our servers.</li>
+      <li><strong>Logos</strong> are resized so the longest edge is at most 400 pixels and encoded as PNG.</li>
+    </ul>
+    <p>Each slot keeps only your most recent file — re-uploading a photo replaces the previous photo, and the same for a logo. Hosted images are publicly accessible to anyone with the URL. This is intentional and unavoidable: your recipients' email clients must be able to fetch the image for your signature to display.</p>
+    <p>We keep hosted images for as long as you may be using them. Because a signature you have already sent points at these URLs, deleting them would break the appearance of email that is already in other people's inboxes, so we do not expire them automatically.</p>
     <p><strong>Acceptable use.</strong> Uploaded images must be your own content or content you are licensed to use. Prohibited content — illegal material, content that infringes others' rights, or child sexual abuse material (CSAM) — will be removed and the associated Pro access may be terminated without refund. We may report illegal content to law enforcement.</p>
-    <p><strong>Deletion.</strong> To delete your hosted photo, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> from the address associated with your Stripe purchase, or simply re-upload to overwrite the previous file.</p>
+    <p><strong>Deletion.</strong> To delete a hosted image, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> from the address associated with your Stripe purchase, or simply re-upload to overwrite the previous file. Note that deleting an image will stop it displaying in signatures you have already sent.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Saved signatures (Pro)</h2>
+    <p>Pro includes a "Save &amp; get link" option. If you use it, we store a copy of your signature on Cloudflare R2 so you can reopen and edit it later on another device. Unlike everything else in the generator, this <em>does</em> place the details you entered — including your name, email address, phone number and social links — on our servers.</p>
+    <p><strong>The link is the key.</strong> Each saved signature gets a long random web address. Anyone who has that address can open your saved signature and see the details in it, without signing in. There is no password on it. Treat the link like a private document: share it only with people you are happy to show those details to, and avoid posting it anywhere public.</p>
+    <p>Saved signatures are never listed publicly, are not indexed by search engines, and are not sent to any third party.</p>
+    <p><strong>Retention.</strong> We delete saved signatures 12 months after they are created. Losing one costs you nothing beyond re-entering your details — signatures you have already copied into your email client keep working, and hosted images are unaffected.</p>
+    <p><strong>Deletion.</strong> To delete a saved signature before then, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> with the link.</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">Cookies and analytics</h2>
     <p>We use only first-party storage (<code>localStorage</code>) to remember your Pro access token. We do not run third-party analytics or advertising trackers.</p>

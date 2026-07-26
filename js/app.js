@@ -29,20 +29,28 @@
     bindStyleControls();
     bindButtons();
     bindValidation();
+    bindPhotoEffect();
     initPreviewDock();
     initCompliance();
     renderPreview();
 
-    // Check for pro unlock via URL param (post-Stripe redirect with token)
+    // Read every URL param up front: handling the Pro token rewrites the query
+    // string, which would otherwise discard a saved-signature id in the same link.
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const savedSignatureId = params.get('s');
+
     if (token) {
       localStorage.setItem(FACTS.proTokenStorageKey, token);
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', window.location.pathname + (savedSignatureId ? '?s=' + encodeURIComponent(savedSignatureId) : ''));
     }
 
     // Verify Pro status (new token-based or legacy fallback)
     checkProStatus();
+
+    // Reopening a saved signature is independent of Pro status — the link itself
+    // is the credential.
+    restoreSignatureFromLink(savedSignatureId);
   });
 
   // ── Category Tabs ──
@@ -77,8 +85,8 @@
       if (!t._previewHtml) {
         t._previewHtml = t.preview(previewStyle);
       }
+      // Every template is available to build with. Payment gates export, not design.
       return `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
-        ${t.pro && !isPro ? '<span class="pro-badge">Pro</span>' : ''}
         <div class="template-preview">${t._previewHtml}</div>
         <div class="template-name">${t.name}</div>
       </button>`;
@@ -86,15 +94,7 @@
 
     container.querySelectorAll('.template-card').forEach(card => {
       card.addEventListener('click', function() {
-        const id = this.dataset.template;
-        const template = TEMPLATES[id];
-
-        if (template.pro && !isPro) {
-          showProPrompt();
-          return;
-        }
-
-        currentTemplate = id;
+        currentTemplate = this.dataset.template;
         renderTemplateGrid();
         renderPreview();
       });
@@ -173,6 +173,7 @@
       style[pickerId] = this.value;
       if (hex) hex.value = this.value;
       renderPreview();
+      if (pickerId === 'primaryColor') scheduleAnimatedPhotoRebuild();
     });
 
     if (hex) {
@@ -182,6 +183,7 @@
           style[pickerId] = val;
           picker.value = val;
           renderPreview();
+          if (pickerId === 'primaryColor') scheduleAnimatedPhotoRebuild();
         }
       });
     }
@@ -201,8 +203,23 @@
         this.setAttribute('aria-checked', 'true');
         style[styleKey] = this.dataset.value;
         renderPreview();
+        if (styleKey === 'photoShape') scheduleAnimatedPhotoRebuild();
       });
     });
+  }
+
+  // Photo shape and accent colour are baked into the GIF pixels, so an active
+  // animation has to be re-encoded when either changes. Debounced because the
+  // colour picker fires continuously while dragging.
+  let animatedRebuildTimer = null;
+
+  function scheduleAnimatedPhotoRebuild() {
+    if (selectedPhotoEffect() === 'none' || !photoState.primaryCanvas || !isPro) return;
+    clearTimeout(animatedRebuildTimer);
+    setPhotoStatus('Animation will rebuild...');
+    animatedRebuildTimer = setTimeout(function() {
+      regeneratePhotoAsset();
+    }, 700);
   }
 
   // ── Buttons ──
@@ -215,6 +232,9 @@
 
     if (copyHtmlBtn) copyHtmlBtn.addEventListener('click', function() { copyHTML(this); });
     if (copyTextBtn) copyTextBtn.addEventListener('click', function() { copyPlainText(this); });
+
+    const saveLinkBtn = document.getElementById('saveLinkBtn');
+    if (saveLinkBtn) saveLinkBtn.addEventListener('click', function() { saveSignatureLink(this); });
     if (buyProBtn) buyProBtn.addEventListener('click', handleProPurchase);
 
     if (mobilePreviewFab) {
@@ -315,8 +335,8 @@
   // ── Photo Handling ──
 
   // Default hint copy when the user hasn't done anything yet — restored on remove.
-  const PHOTO_STATUS_DEFAULT_FREE = 'Upload for preview only. Use a hosted URL for Gmail.';
-  const PHOTO_STATUS_DEFAULT_PRO = 'Upload — we\'ll host it for Gmail-ready use.';
+  const PHOTO_STATUS_DEFAULT_UNPAID = 'Upload to preview. Hosting for Gmail unlocks when you buy.';
+  const PHOTO_STATUS_DEFAULT_PAID = 'Upload — we\'ll host it for Gmail-ready use.';
 
   function setPhotoStatus(text, kind) {
     const el = document.getElementById('photoStatusHint');
@@ -326,7 +346,37 @@
   }
 
   function defaultPhotoStatus() {
-    setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PRO : PHOTO_STATUS_DEFAULT_FREE);
+    setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PAID : PHOTO_STATUS_DEFAULT_UNPAID);
+  }
+
+  // ── Shared hosted-image upload ──
+  // Every image slot (photo, logo) goes through here so hosting rules stay in one place.
+  // Throws an Error whose message is an upload error code from CORE.describeUploadError.
+  async function uploadImageBlob(blob, slot) {
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!isPro || !token) throw new Error('not_pro');
+
+    const resp = await fetch('/api/upload-image', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': blob.type || 'application/octet-stream',
+        'X-Image-Type': slot,
+      },
+      body: blob,
+    });
+
+    if (!resp.ok) {
+      let code = '';
+      try {
+        const body = await resp.json();
+        code = body.code || body.error || '';
+      } catch {}
+      throw new Error(code);
+    }
+
+    const { url } = await resp.json();
+    return url;
   }
 
   async function handlePhotoUpload(input) {
@@ -338,6 +388,19 @@
   function removePhoto() {
     document.getElementById('photoUrl').value = '';
     document.getElementById('photoFile').value = '';
+
+    photoState.primaryCanvas = null;
+    photoState.secondaryCanvas = null;
+
+    const effectSelect = document.getElementById('photoEffect');
+    if (effectSelect) effectSelect.value = 'none';
+    const secondGroup = document.getElementById('photoSecondGroup');
+    if (secondGroup) secondGroup.style.display = 'none';
+    const secondThumb = document.getElementById('photoSecondThumb');
+    if (secondThumb) {
+      secondThumb.innerHTML = '<span class="photo-placeholder">No 2nd photo</span>';
+      secondThumb.classList.remove('has-photo');
+    }
 
     const thumb = document.getElementById('photoPreviewThumb');
     thumb.innerHTML = '<span class="photo-placeholder">No photo</span>';
@@ -352,30 +415,92 @@
   }
 
   // ── Logo Handling ──
+
+  const LOGO_STATUS_DEFAULT_UNPAID = 'Upload to preview. Hosting for Gmail unlocks when you buy.';
+  const LOGO_STATUS_DEFAULT_PAID = 'Upload — we\'ll host it for Gmail-ready use.';
+  // Longest side of a stored logo. Keeps hosted files small; templates render far smaller.
+  const LOGO_MAX_EDGE = 400;
+
+  function setLogoStatus(text, kind) {
+    const el = document.getElementById('logoStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function defaultLogoStatus() {
+    setLogoStatus(isPro ? LOGO_STATUS_DEFAULT_PAID : LOGO_STATUS_DEFAULT_UNPAID);
+  }
+
+  // Draws the logo onto a canvas capped at LOGO_MAX_EDGE, preserving aspect ratio.
+  // PNG output so logos with transparency survive.
+  function logoCanvasFromImage(img) {
+    const scale = Math.min(1, LOGO_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
   function handleLogoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const dataUri = e.target.result;
-      const thumb = document.getElementById('logoPreviewThumb');
-      if (!thumb) return;
-      const img = document.createElement('img');
-      img.src = dataUri;
-      img.alt = 'Logo';
-      thumb.replaceChildren(img);
+    const thumb = document.getElementById('logoPreviewThumb');
+    if (!thumb) return;
+
+    const blobUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = function() {
+      URL.revokeObjectURL(blobUrl);
+
+      const canvas = logoCanvasFromImage(img);
+      const dataUri = canvas.toDataURL('image/png');
+
+      const preview = document.createElement('img');
+      preview.src = dataUri;
+      preview.alt = 'Logo';
+      thumb.replaceChildren(preview);
       thumb.classList.add('has-logo');
 
       const removeBtn = document.getElementById('logoRemoveBtn');
       if (removeBtn) removeBtn.style.display = '';
 
-      if (!document.getElementById('logoUrl').value.trim()) {
-        thumb.dataset.previewOnly = dataUri;
-      }
+      // Only fall back to the inline preview when no hosted URL is set. Data URIs are
+      // stripped by Gmail and Outlook, so this is a preview aid, never a shippable src.
+      document.getElementById('logoUrl').value = '';
+      thumb.dataset.previewOnly = dataUri;
       renderPreview();
+
+      if (!isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) {
+        setLogoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
+        return;
+      }
+
+      setLogoStatus('Uploading hosted logo...');
+      canvas.toBlob(async function(blob) {
+        try {
+          const url = await uploadImageBlob(blob, 'logo');
+          document.getElementById('logoUrl').value = url;
+          delete thumb.dataset.previewOnly;
+          setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
+          renderPreview();
+        } catch (err) {
+          setLogoStatus(CORE.describeUploadError(err.message), 'error');
+        }
+      }, 'image/png');
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = function() {
+      URL.revokeObjectURL(blobUrl);
+      setLogoStatus('That file could not be read as an image.', 'error');
+    };
+
+    img.src = blobUrl;
+    // Reset so re-selecting the same file fires change again
+    input.value = '';
   }
 
   function removeLogo() {
@@ -390,16 +515,20 @@
     const removeBtn = document.getElementById('logoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
 
+    defaultLogoStatus();
     renderPreview();
   }
 
   // ── Photo Crop ──
-  const cropState = { file: null, scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, naturalW: 0, naturalH: 0 };
+  const cropState = { file: null, slot: 'primary', scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, naturalW: 0, naturalH: 0 };
   let cropHandlersReady = false;
 
-  function showCropUI(file) {
+  // `slot` is 'primary' for the signature photo, or 'secondary' for the second
+  // frame of a crossfade animation.
+  function showCropUI(file, slot) {
     if (!cropHandlersReady) { initCropHandlers(); cropHandlersReady = true; }
     cropState.file = file;
+    cropState.slot = slot || 'primary';
 
     const img = document.getElementById('cropImage');
     const viewport = document.getElementById('cropViewport');
@@ -440,8 +569,10 @@
     modal.style.display = 'none';
     const img = document.getElementById('cropImage');
     if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-    // Reset file input so re-selecting the same file triggers change again
+    // Reset file inputs so re-selecting the same file triggers change again
     document.getElementById('photoFile').value = '';
+    const secondFile = document.getElementById('photoSecondFile');
+    if (secondFile) secondFile.value = '';
   }
 
   async function applyCrop() {
@@ -460,54 +591,187 @@
     const sh = viewSize / cropState.scale;
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outputSize, outputSize);
 
+    const slot = cropState.slot;
     closeCropUI();
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    if (slot === 'secondary') {
+      photoState.secondaryCanvas = canvas;
+      const thumb = document.getElementById('photoSecondThumb');
+      if (thumb) {
+        thumb.innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.9)}" alt="Second photo preview">`;
+        thumb.classList.add('has-photo');
+      }
+      await regeneratePhotoAsset();
+      return;
+    }
+
+    photoState.primaryCanvas = canvas;
+    document.getElementById('photoRemoveBtn').style.display = '';
+    await regeneratePhotoAsset();
+  }
+
+  // ── Photo asset pipeline ──
+  //
+  // One place decides what the photo actually becomes: a still JPEG, or an animated
+  // GIF built from the chosen effect. Both paths end with a hosted URL for Pro users
+  // and a preview-only data URI otherwise.
+
+  const photoState = { primaryCanvas: null, secondaryCanvas: null };
+
+  // Square edge of the generated GIF. Templates render photos at 60-100px, so this
+  // stays crisp on retina while keeping files well under a couple of hundred KB.
+  const ANIMATED_PHOTO_SIZE = 160;
+
+  function selectedPhotoEffect() {
+    const el = document.getElementById('photoEffect');
+    return el ? el.value : 'none';
+  }
+
+  function canvasToRgba(source, size) {
+    const scaled = document.createElement('canvas');
+    scaled.width = size;
+    scaled.height = size;
+    const ctx = scaled.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, size, size);
+    return ctx.getImageData(0, 0, size, size).data;
+  }
+
+  function showPhotoPreview(dataUrl) {
     const thumb = document.getElementById('photoPreviewThumb');
     thumb.innerHTML = `<img src="${dataUrl}" alt="Photo preview">`;
     thumb.classList.add('has-photo');
     thumb.dataset.previewOnly = dataUrl;
     document.getElementById('photoUrl').value = '';
-    document.getElementById('photoRemoveBtn').style.display = '';
     renderPreview();
+  }
 
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('preview_failed'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function canvasToBlob(canvas, type, quality) {
+    return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  }
+
+  async function uploadPhotoBlob(blob, successMessage) {
+    const thumb = document.getElementById('photoPreviewThumb');
     const token = localStorage.getItem(FACTS.proTokenStorageKey);
+
     if (!isPro || !token) {
-      setPhotoStatus('Preview ready. Pro hosting is required for Gmail-ready photo URLs.');
+      setPhotoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
       return;
     }
 
     setPhotoStatus('Uploading hosted photo...');
-    canvas.toBlob(async function(blob) {
-      try {
-        const resp = await fetch('/api/upload-image', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'image/jpeg',
-            'X-Image-Type': 'photo',
-          },
-          body: blob,
-        });
+    try {
+      const url = await uploadImageBlob(blob, 'photo');
+      document.getElementById('photoUrl').value = url;
+      delete thumb.dataset.previewOnly;
+      setPhotoStatus(successMessage, 'success');
+      renderPreview();
+    } catch (err) {
+      setPhotoStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
 
-        if (!resp.ok) {
-          let code = '';
-          try {
-            const body = await resp.json();
-            code = body.code || body.error || '';
-          } catch {}
-          throw new Error(code);
-        }
+  async function regeneratePhotoAsset() {
+    const canvas = photoState.primaryCanvas;
+    if (!canvas) return;
 
-        const { url } = await resp.json();
-        document.getElementById('photoUrl').value = url;
-        delete thumb.dataset.previewOnly;
-        setPhotoStatus('Hosted photo ready for Gmail and Outlook.', 'success');
-        renderPreview();
-      } catch (err) {
-        setPhotoStatus(CORE.describeUploadError(err.message), 'error');
+    const effect = selectedPhotoEffect();
+    const spec = window.PhotoAnimator && PhotoAnimator.EFFECTS[effect];
+
+    // Still photo: the original path.
+    if (effect === 'none' || !spec || !isPro) {
+      showPhotoPreview(canvas.toDataURL('image/jpeg', 0.92));
+      const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92);
+      await uploadPhotoBlob(blob, 'Hosted photo ready for Gmail and Outlook.');
+      return;
+    }
+
+    if (spec.needsSecondPhoto && !photoState.secondaryCanvas) {
+      showPhotoPreview(canvas.toDataURL('image/jpeg', 0.92));
+      setPhotoStatus('Add a second photo to build the crossfade.');
+      return;
+    }
+
+    setPhotoStatus('Building animation...');
+    // Yield once so the status text paints before the encode blocks the main thread.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    let blob;
+    try {
+      const size = ANIMATED_PHOTO_SIZE;
+      const built = PhotoAnimator.buildFrames({
+        photo: canvasToRgba(canvas, size),
+        secondPhoto: spec.needsSecondPhoto ? canvasToRgba(photoState.secondaryCanvas, size) : null,
+        size,
+        effect,
+        shape: style.photoShape,
+        // Baked in because GIF has no soft alpha. Matches the white background the
+        // templates already force for dark-mode safety.
+        background: '#ffffff',
+        accentColor: style.primaryColor,
+      });
+
+      const bytes = GifEncoder.encode({
+        width: size,
+        height: size,
+        frames: built.frames,
+        delay: built.delay,
+        loop: false,
+        // Error-diffusion dithering would defeat inter-frame differencing and roughly
+        // triple the file size for no visible gain at this resolution.
+        dither: false,
+      });
+
+      blob = new Blob([bytes], { type: 'image/gif' });
+    } catch (err) {
+      setPhotoStatus('Could not build the animation. Try a different photo.', 'error');
+      return;
+    }
+
+    showPhotoPreview(await blobToDataUrl(blob));
+    const kb = Math.round(blob.size / 1024);
+    await uploadPhotoBlob(blob, `Animated photo ready (${kb} KB). Older Outlook shows the first frame.`);
+  }
+
+  function bindPhotoEffect() {
+    const select = document.getElementById('photoEffect');
+    const secondGroup = document.getElementById('photoSecondGroup');
+    const secondFile = document.getElementById('photoSecondFile');
+    if (!select) return;
+
+    select.addEventListener('change', async function() {
+      const effect = select.value;
+      const spec = window.PhotoAnimator && PhotoAnimator.EFFECTS[effect];
+
+      if (effect !== 'none' && !isPro) {
+        select.value = 'none';
+        if (secondGroup) secondGroup.style.display = 'none';
+        showProPrompt();
+        return;
       }
-    }, 'image/jpeg', 0.92);
+
+      if (secondGroup) {
+        secondGroup.style.display = spec && spec.needsSecondPhoto ? '' : 'none';
+      }
+      await regeneratePhotoAsset();
+    });
+
+    if (secondFile) {
+      secondFile.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) showCropUI(file, 'secondary');
+      });
+    }
   }
 
   function initCropHandlers() {
@@ -666,9 +930,27 @@
       template,
       data,
       style,
-      isPro,
       compliance: getActiveCompliance(),
     });
+  }
+
+  // Building and previewing is open to everyone; taking the signature away is what
+  // costs money. Returns false and prompts when the visitor has not paid.
+  function requireProForExport() {
+    if (isPro) return true;
+    showProPrompt();
+    setExportStatus(
+      `Unlock for ${FACTS.proPrice.displayWithCurrency} to copy your signature, host your photo, and save an edit link.`,
+      'error'
+    );
+    return false;
+  }
+
+  function setExportStatus(text, kind) {
+    const el = document.getElementById('exportStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
   }
 
   function getActiveCompliance() {
@@ -871,13 +1153,31 @@
 
   // ── Copy Functions ──
   async function copyHTML(btn) {
-    const data = getFormData();
+    let data = getFormData();
     if (!data.fullName) {
       validateField('fullName');
       alert('Please enter your name to generate a signature.');
       return;
     }
+    if (!requireProForExport()) return;
     ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
+
+    // Never let a preview-only inline image reach the clipboard — it would paste as a
+    // broken image in Gmail and Outlook with no visible warning.
+    const previewOnly = CORE.previewOnlyImageSlots(data);
+    if (previewOnly.length) {
+      const label = previewOnly.length === 2 ? 'photo and logo' : previewOnly[0];
+      const fix = isPro
+        ? 'Re-upload it so we can host it, or paste a hosted URL.'
+        : 'Paste a hosted URL, or unlock Pro and we\'ll host it for you.';
+      const proceed = confirm(
+        `Your ${label} is preview-only and will not display in Gmail or Outlook.\n\n` +
+        `${fix}\n\n` +
+        `Press OK to copy the signature without it, or Cancel to fix it first.`
+      );
+      if (!proceed) return;
+      data = CORE.withoutPreviewOnlyImages(data);
+    }
 
     const template = TEMPLATES[currentTemplate];
     const html = buildSignatureHtml(template, data, style);
@@ -893,16 +1193,23 @@
       await navigator.clipboard.write([blob]);
       showCopied(btn);
     } catch (err) {
-      // Fallback: select and copy from preview
+      // Fallback: copy from an offscreen node holding the same sanitised HTML.
+      // Copying from the live preview instead would reintroduce preview-only images.
       try {
-        const preview = document.getElementById('signature-preview');
+        const staging = document.createElement('div');
+        staging.innerHTML = html;
+        staging.setAttribute('aria-hidden', 'true');
+        staging.style.cssText = 'position:fixed;left:-9999px;top:0;';
+        document.body.appendChild(staging);
+
         const range = document.createRange();
-        range.selectNodeContents(preview);
+        range.selectNodeContents(staging);
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
         document.execCommand('copy');
         sel.removeAllRanges();
+        staging.remove();
         showCopied(btn);
       } catch (e) {
         alert('Could not copy. Please select the preview manually and press Ctrl+C.');
@@ -917,6 +1224,7 @@
       alert('Please enter your name.');
       return;
     }
+    if (!requireProForExport()) return;
     ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     try {
@@ -930,6 +1238,152 @@
   function showCopied(btn) {
     btn.classList.add('copied');
     setTimeout(() => btn.classList.remove('copied'), 2000);
+  }
+
+  // ── Save & restore ──
+  //
+  // A saved signature is stored server-side under a random capability id. The link
+  // is the only credential, which is why the UI says so plainly next to the button.
+
+  function setSaveLinkStatus(text, kind) {
+    const el = document.getElementById('saveLinkHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function collectSignatureState() {
+    const data = getFormData();
+    return {
+      version: 1,
+      template: currentTemplate,
+      style: style,
+      // Preview-only images can't be restored on another device and would bloat the
+      // payload, so only hosted URLs are saved.
+      data: CORE.withoutPreviewOnlyImages(data),
+      compliance: complianceState || null,
+      photoEffect: selectedPhotoEffect(),
+    };
+  }
+
+  async function saveSignatureLink(btn) {
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!isPro || !token) {
+      setSaveLinkStatus(`Saving an edit link unlocks with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
+      showProPrompt();
+      return;
+    }
+
+    const state = collectSignatureState();
+    if (!state.data.fullName) {
+      setSaveLinkStatus('Add your name before saving.', 'error');
+      return;
+    }
+
+    setSaveLinkStatus('Saving...');
+    try {
+      const resp = await fetch('/api/signature', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      });
+      if (!resp.ok) {
+        let code = '';
+        try { code = (await resp.json()).code || ''; } catch {}
+        throw new Error(code);
+      }
+
+      const { url } = await resp.json();
+      try {
+        await navigator.clipboard.writeText(url);
+        showCopied(btn);
+        setSaveLinkStatus('Link copied. Open it on any device to keep editing.', 'success');
+      } catch {
+        setSaveLinkStatus('Saved. Your link: ' + url, 'success');
+      }
+    } catch (err) {
+      setSaveLinkStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
+
+  async function restoreSignatureFromLink(signatureId) {
+    const id = signatureId || new URLSearchParams(window.location.search).get('s');
+    if (!id) return;
+
+    try {
+      const resp = await fetch('/api/signature/' + encodeURIComponent(id));
+      if (!resp.ok) throw new Error('not_found');
+      const state = await resp.json();
+      applySignatureState(state);
+      setSaveLinkStatus('Signature restored from your link.', 'success');
+    } catch {
+      setSaveLinkStatus('That saved link could not be found.', 'error');
+    }
+  }
+
+  function applySignatureState(state) {
+    if (!state || typeof state !== 'object') return;
+
+    if (state.style && typeof state.style === 'object') {
+      Object.assign(style, state.style);
+      syncStyleControls();
+    }
+
+    if (state.data && typeof state.data === 'object') {
+      Object.keys(state.data).forEach(function(key) {
+        const el = document.getElementById(key);
+        if (el) el.value = state.data[key] || '';
+      });
+      // Hosted photos and logos come back as plain URLs, so show them as such.
+      ['photo', 'logo'].forEach(function(slot) {
+        const url = state.data[slot + 'Url'];
+        const thumb = document.getElementById(slot + 'PreviewThumb');
+        if (!thumb) return;
+        delete thumb.dataset.previewOnly;
+        if (url) {
+          thumb.innerHTML = `<img src="${escapeAttr(url)}" alt="${slot} preview">`;
+          thumb.classList.add('has-' + slot);
+          const removeBtn = document.getElementById(slot + 'RemoveBtn');
+          if (removeBtn) removeBtn.style.display = '';
+        }
+      });
+    }
+
+    if (state.template && TEMPLATES[state.template]) {
+      currentTemplate = state.template;
+      renderTemplateGrid();
+    }
+
+    renderPreview();
+  }
+
+  // Pushes the restored style object back onto the controls so the UI matches.
+  function syncStyleControls() {
+    ['primaryColor', 'secondaryColor', 'textColor'].forEach(function(key) {
+      const picker = document.getElementById(key);
+      const hex = document.getElementById(key + 'Hex');
+      if (picker && style[key]) picker.value = style[key];
+      if (hex && style[key]) hex.value = style[key];
+    });
+
+    const font = document.getElementById('fontFamily');
+    if (font && style.fontFamily) font.value = style.fontFamily;
+
+    [['divider-toggles', 'dividerStyle'], ['photo-shape-toggles', 'photoShape'], ['icon-style-toggles', 'iconStyle']]
+      .forEach(function(pair) {
+        const container = document.getElementById(pair[0]);
+        if (!container) return;
+        container.querySelectorAll('.toggle-option').forEach(function(opt) {
+          const active = opt.dataset.value === style[pair[1]];
+          opt.classList.toggle('active', active);
+          opt.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+      });
+
+    ['ctaText', 'ctaUrl'].forEach(function(key) {
+      const el = document.getElementById(key);
+      if (el && style[key] != null) el.value = style[key];
+    });
   }
 
   // ── Pro Unlock ──
@@ -979,6 +1433,7 @@
 
     // Refresh upload hint copy now that hosting is unlocked
     defaultPhotoStatus();
+    defaultLogoStatus();
 
     // Re-render to remove badges and branding
     renderTemplateGrid();
