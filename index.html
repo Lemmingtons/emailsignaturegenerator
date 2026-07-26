@@ -444,9 +444,13 @@
         style: { primaryColor: '#22C55E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'none', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'meetinglink', category: 'Sales / CTA', name: 'Meeting',
-        effect: 'Shine sweep', photo: SWEEP,
-        desc: 'Drive meetings and demos directly from your email signature.',
+        // ctabox rather than meetinglink: meetinglink renders its call to action as
+        // a text link, and a sheen needs a filled shape to travel across. The photo
+        // stays still here so this slide demonstrates exactly one moving element.
+        id: 'ctabox', category: 'Sales / CTA', name: 'CTA Box',
+        effect: 'Button sheen',
+        ctaImage: { url: 'assets/demo-cta-EA580C.gif', width: 129, height: 32 },
+        desc: 'Drive meetings and demos with a call-to-action button that catches the eye.',
         style: { primaryColor: '#EA580C', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
       },
       {
@@ -466,6 +470,11 @@
     // Build slides and dots
     SLIDES.forEach(function (s, i) {
       var data = Object.assign({}, D, { photoUrl: s.photo || D.photoUrl });
+      if (s.ctaImage) {
+        data.ctaImageUrl = s.ctaImage.url;
+        data.ctaImageWidth = s.ctaImage.width;
+        data.ctaImageHeight = s.ctaImage.height;
+      }
       var html = TEMPLATES[s.id].render(data, s.style);
       var badge = '<span class="showcase-badge animated">' + s.effect + '</span>';
 
