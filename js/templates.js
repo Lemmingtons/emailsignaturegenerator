@@ -842,22 +842,30 @@ const _helpers = {
     return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="${borderStyle}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>`;
   },
 
-  _getIconSvg(platform, iconStyle, primaryColor, size = 22) {
-    const safePrimary = this._safeColor(primaryColor);
-    const color = (iconStyle === 'color') ? safePrimary : '#4b5563';
-    const bg = (iconStyle === 'rounded' || iconStyle === 'square') ? color : 'none';
-    const radius = iconStyle === 'rounded' ? '4' : '0';
-    const iconPaths = {
-      website: `<circle cx="12" cy="12" r="10" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="${color}" stroke-width="1.8"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="${color}" stroke-width="1.8" fill="none"/>`,
-      linkedin: `<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" fill="${color}"/><rect x="2" y="9" width="4" height="12" fill="${color}"/><circle cx="4" cy="4" r="2" fill="${color}"/>`,
-      instagram: `<rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="${color}" stroke-width="1.8" fill="none"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`,
-      facebook: `<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="${color}"/>`,
-      google: `<circle cx="11" cy="11" r="8" stroke="${color}" stroke-width="1.8" fill="none"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`,
-    };
-    const path = iconPaths[platform] || iconPaths.website;
-    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">${path}</svg>`;
-    const encoded = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgContent)));
-    return encoded;
+  // Returns a hosted PNG URL for a social icon, tinted to match the signature.
+  //
+  // These used to be inline `data:` SVGs, which neither Gmail nor Outlook render —
+  // every signature showed a row of broken-image placeholders. The Worker renders
+  // them on demand at /i/{platform}-{hex}.png and caches them forever.
+  //
+  // `rounded` and `square` are currently drawn the same as `mono`; the original
+  // code computed a background and radius for them but never used either.
+  _iconUrl(platform, iconStyle, primaryColor) {
+    const known = ['website', 'linkedin', 'instagram', 'facebook', 'google'];
+    const safePlatform = known.includes(platform) ? platform : 'website';
+
+    const tint = (iconStyle === 'color') ? this._safeColor(primaryColor) : '#4b5563';
+    const hex = /^#[0-9a-fA-F]{6}$/.test(tint) ? tint.slice(1).toLowerCase() : '4b5563';
+
+    return `${this._siteOrigin()}/i/${safePlatform}-${hex}.png`;
+  },
+
+  // Icons must be absolute for email, and must point at the live site rather than
+  // wherever the generator happens to be running.
+  _siteOrigin() {
+    const facts = (typeof SiteFacts !== 'undefined' && SiteFacts)
+      || (typeof globalThis !== 'undefined' && globalThis.SiteFacts);
+    return (facts && facts.origin) || 'https://emailsignaturegenerator.ai';
   },
 
   _socialRow(data, iconStyle, primaryColor, topPad = 10) {
@@ -874,7 +882,7 @@ const _helpers = {
     const cells = socials.map(s => {
       const safeUrl = this.escapeUrl(s.url, 'href');
       if (!safeUrl) return '';
-      const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 22);
+      const icon = this._iconUrl(s.platform, iconStyle, primaryColor);
       return `<td style="padding-right: 8px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
     }).join('');
 
@@ -921,7 +929,7 @@ const _helpers = {
     const cells = socials.map(s => {
       const safeUrl = this.escapeUrl(s.url, 'href');
       if (!safeUrl) return '';
-      const icon = this._getIconSvg(s.platform, iconStyle, primaryColor, 30);
+      const icon = this._iconUrl(s.platform, iconStyle, primaryColor);
       return `<td style="padding-right: 10px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
     }).join('');
 

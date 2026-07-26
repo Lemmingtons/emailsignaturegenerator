@@ -31,8 +31,9 @@ function checkSyntax(file, mode) {
 function checkWorkerBehavior() {
   const script = [
     "import fs from 'node:fs';",
-    "const source = fs.readFileSync('_worker.js', 'utf8');",
-    "const worker = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));",
+    // Imported from its real path, not a data: URL, so the Worker's own relative
+    // imports (the PNG encoder) resolve the way they do under wrangler.
+    "const worker = await import(new URL('_worker.js', 'file://' + process.cwd() + '/').href);",
     "function text(value) { return new TextEncoder().encode(value); }",
     "function b64url(value) { return Buffer.from(value).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/g, ''); }",
     "async function signJwt(payload, secret) {",
@@ -96,6 +97,25 @@ function checkWorkerBehavior() {
     // Unknown slots are rejected outright.
     "const badSlot = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/png', 'X-Image-Type': 'banner' }, body: png }), env);",
     "if (badSlot.status !== 400) throw new Error('unknown image slot returned ' + badSlot.status);",
+    // Social icons: tinted PNGs rendered on demand from masks embedded in the bundle.
+    "const icon = await worker.default.fetch(new Request('https://example.com/i/linkedin-0891b2.png'), env);",
+    "if (icon.status !== 200) throw new Error('icon returned ' + icon.status);",
+    "if (icon.headers.get('Content-Type') !== 'image/png') throw new Error('icon content type mismatch');",
+    "const iconBytes = new Uint8Array(await icon.arrayBuffer());",
+    "const pngSig = [137, 80, 78, 71, 13, 10, 26, 10];",
+    "if (!pngSig.every((b, i) => iconBytes[i] === b)) throw new Error('icon is not a PNG');",
+    // Different platforms and different tints must produce different bytes.
+    "const iconB = await worker.default.fetch(new Request('https://example.com/i/facebook-0891b2.png'), env);",
+    "const bytesB = new Uint8Array(await iconB.arrayBuffer());",
+    "if (iconBytes.length === bytesB.length && iconBytes.every((b, i) => b === bytesB[i])) throw new Error('different platforms produced identical icons');",
+    "const iconC = await worker.default.fetch(new Request('https://example.com/i/linkedin-ea580c.png'), env);",
+    "const bytesC = new Uint8Array(await iconC.arrayBuffer());",
+    "if (iconBytes.length === bytesC.length && iconBytes.every((b, i) => b === bytesC[i])) throw new Error('different tints produced identical icons');",
+    // Reject anything not on the allow-list.
+    "const badIcon = await worker.default.fetch(new Request('https://example.com/i/nonsense-0891b2.png'), env);",
+    "if (badIcon.status !== 404) throw new Error('unknown icon platform returned ' + badIcon.status);",
+    "const badHex = await worker.default.fetch(new Request('https://example.com/i/linkedin-zzzzzz.png'), env);",
+    "if (badHex.status !== 404) throw new Error('invalid icon hex returned ' + badHex.status);",
     // Saved signatures: Pro-gated write, capability-id read, no personal data cached.
     "const sigBody = JSON.stringify({ version: 1, template: 'classic', data: { fullName: 'Jane Smith', email: 'jane@example.com' }, style: { primaryColor: '#0891B2' } });",
     "const sigSave = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: sigBody }), env);",
@@ -423,6 +443,51 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
   }
 }
 
+// No template may emit an inline `data:` image. Gmail and Outlook strip them, so
+// anything that reaches a signature this way is invisible to the recipient — which
+// is exactly how the social icons shipped broken.
+{
+  const iconStyles = ['mono', 'color', 'rounded', 'square'];
+  const rich = {
+    fullName: 'Jane Smith', title: 'Marketing Manager', company: 'Acme Corp',
+    phone: '+61 400 000 000', email: 'jane@acme.com',
+    website: 'https://acme.com', linkedin: 'https://linkedin.com/in/jane',
+    instagram: 'https://instagram.com/jane', facebook: 'https://facebook.com/jane',
+    google: 'https://google.com/jane',
+    photoUrl: 'https://emailsignaturegenerator.ai/u/abcdef0123456789/photo.jpg',
+  };
+
+  for (const [id, template] of templates) {
+    for (const iconStyle of iconStyles) {
+      const html = core.buildSignatureHtml({
+        template, data: rich,
+        style: core.createStyle({ iconStyle, ctaText: 'Book a Meeting', ctaUrl: 'https://example.com' }),
+        compliance: null,
+      });
+      assert(!/src="data:/i.test(html),
+        `${id} (${iconStyle}) emits an inline data: image, which Gmail and Outlook strip`);
+      assert(!/src="[^"]*\.svg"/i.test(html),
+        `${id} (${iconStyle}) references an SVG, which Outlook cannot render`);
+    }
+  }
+
+  // Icons must be absolute URLs on the live origin, or they break outside the site.
+  const withIcons = core.buildSignatureHtml({
+    template: TEMPLATES.classic, data: rich,
+    style: core.createStyle({ iconStyle: 'mono' }), compliance: null,
+  });
+  const iconUrls = (withIcons.match(/https:\/\/[^"]*\/i\/[a-z]+-[0-9a-f]{6}\.png/g) || []);
+  assert(iconUrls.length >= 4, `expected hosted icon URLs, found ${iconUrls.length}`);
+  assert(iconUrls.every((u) => u.startsWith(facts.origin)), 'icon URLs must point at the live origin');
+
+  // The colour style must actually track the customer's brand colour.
+  const tinted = core.buildSignatureHtml({
+    template: TEMPLATES.classic, data: rich,
+    style: core.createStyle({ iconStyle: 'color', primaryColor: '#EA580C' }), compliance: null,
+  });
+  assert(tinted.includes('-ea580c.png'), 'colour icon style must tint with the primary colour');
+}
+
 // Preview-only images must never survive into an exported signature.
 {
   const dataUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
@@ -470,8 +535,9 @@ for (const [id, template] of templates) {
   assert(html.includes(sampleData.fullName) || html.includes(sampleData.fullName.toUpperCase()), `${id} output missing fullName`);
   assert(html.includes('mailto:'), `${id} output missing mailto link`);
   assert(!html.includes('undefined') && !html.includes('null'), `${id} output leaks undefined/null`);
-  // No branding footer on any signature, paid or not.
-  assert(!html.includes('emailsignaturegenerator.ai'), `${id} output must not carry a branding footer`);
+  // No branding footer on any signature, paid or not. Checks the footer's own
+  // wording rather than the domain, which now legitimately appears in icon URLs.
+  assert(!/Made with/i.test(html), `${id} output must not carry a branding footer`);
 }
 
 const app = read('js/app.js');

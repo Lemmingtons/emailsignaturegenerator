@@ -77,6 +77,19 @@ Labels, accent colour and divider style are baked into the pixels, so changing a
 
 `claimAnimationSlot` in `js/app.js` enforces it: switching one effect on switches the others off. Three moving parts reads as a free template however well each is made. The validator asserts every effect claims the slot.
 
+## Social icons
+
+Email clients render neither `data:` URIs nor SVG. Icons are therefore real PNGs served by the Worker at `/i/{platform}-{hex}.png`, tinted on demand so they can follow each customer's brand colour without a file per colour.
+
+- `js/png-encoder.js` writes the PNG. Deflate uses stored (uncompressed) blocks — legitimate zlib, and irrelevant at 8 KB per icon when the response is immutable and edge-cached.
+- `js/icon-masks.js` holds the alpha masks, base64, generated from `assets/icon-masks/*.bin` by `scripts/build-icon-masks.js`. The `.bin` files are the source of truth; they were rasterised from the original icon SVGs at 44px (2x the 22px display size) in a browser canvas.
+- Masks are **embedded in the bundle, not fetched from the assets binding**. That binding only serves the request the Worker was handed, not ones it constructs — a synthetic `new Request(...)` returns 404 even for a file that serves fine over HTTP.
+- `TEMPLATES._iconUrl` builds the URL. It must stay in step with `ICON_PLATFORMS` in `_worker.js`.
+
+Until July 2026 these were inline `data:` SVGs, so every signature showed a row of identical broken-image placeholders in Gmail and Outlook. The validator now fails if any template emits a `data:` or `.svg` image.
+
+Note: the `rounded` and `square` icon styles render identically to `mono`. The original code computed a background colour and corner radius for them and then never used either; that is unchanged, not newly broken.
+
 ## Saved signatures
 
 - `POST /api/signature` (Pro only) stores the signature JSON and returns `{ id, url }`
