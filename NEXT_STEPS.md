@@ -52,6 +52,16 @@ Do not add an Infrequent Access transition to `users/`. Those objects are read e
 
 Check with `npx wrangler r2 bucket lifecycle list email-sig-photos`.
 
+## Animated CTA button
+
+`js/cta-animator.js` sweeps a highlight across a rendered call-to-action button and reuses `js/gif-encoder.js` to encode it. The browser draws the button to a canvas at 2x (`renderCtaButtonCanvas` in `js/app.js`), the animator only moves light across the pixels, so the maths stays testable under Node.
+
+Output is roughly 20-25 KB and hosted in the `cta` image slot. `TEMPLATES._ctaButton` swaps the text anchor for the hosted image when `data.ctaImageUrl` is set, keeping the same link and carrying the label as alt text so clients that block images still show something useful.
+
+Only the two filled-button templates (`ctabox`, `realestate`) use it. `banner` and `meetinglink` render text links, where a sheen has nothing to sweep across.
+
+The label and accent colour are baked into the pixels, so changing either rebuilds the GIF (debounced).
+
 ## Saved signatures
 
 - `POST /api/signature` (Pro only) stores the signature JSON and returns `{ id, url }`

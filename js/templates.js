@@ -457,7 +457,7 @@ const TEMPLATES = {
           ${this._contactLine(data, fontFamily)}
         </td></tr>
         <tr><td>
-          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};">${ctaSafe}</a>
+          ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};`)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor, 10)}
       </table>
@@ -581,7 +581,7 @@ const TEMPLATES = {
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
         <tr><td style="padding-top: 10px;">
-          <a href="${ctaLink}" target="_blank" style="display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;">${this.escapeAttr(cta)}</a>
+          ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;`)}
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
       </table>
@@ -737,6 +737,23 @@ const _helpers = {
   // unreadable dark-on-dark text after Gmail's auto color-swap.
   _darkSafeWrap(innerHtml) {
     return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff;border-collapse:collapse;"><tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:0;">${innerHtml}</td></tr></table>`;
+  },
+
+  // Renders a filled call-to-action button. When an animated CTA image has been
+  // generated and hosted, the button becomes that image inside the same link;
+  // otherwise it stays a styled text anchor. The label is carried as alt text so
+  // clients that block remote images still show a usable link.
+  _ctaButton(data, ctaLink, label, anchorStyle) {
+    const safeLabel = this.escapeAttr(label);
+    const src = data.ctaImageUrl ? this.escapeUrl(data.ctaImageUrl, 'src') : '';
+    const width = parseInt(data.ctaImageWidth, 10);
+    const height = parseInt(data.ctaImageHeight, 10);
+
+    if (src && width > 0 && height > 0) {
+      return `<a href="${ctaLink}" target="_blank" style="text-decoration: none;"><img src="${src}" width="${width}" height="${height}" alt="${safeLabel}" style="display: block; border: 0; outline: none;" /></a>`;
+    }
+
+    return `<a href="${ctaLink}" target="_blank" style="${anchorStyle}">${safeLabel}</a>`;
   },
 
   _photoCell(data, radius, size = 90) {

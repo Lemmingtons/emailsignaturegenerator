@@ -30,6 +30,7 @@
     bindButtons();
     bindValidation();
     bindPhotoEffect();
+    bindCtaAnimation();
     initPreviewDock();
     initCompliance();
     renderPreview();
@@ -160,7 +161,7 @@
     // CTA fields
     const ctaText = document.getElementById('ctaText');
     const ctaUrl = document.getElementById('ctaUrl');
-    if (ctaText) ctaText.addEventListener('input', function() { style.ctaText = this.value; renderPreview(); });
+    if (ctaText) ctaText.addEventListener('input', function() { style.ctaText = this.value; renderPreview(); scheduleCtaRebuild(); });
     if (ctaUrl) ctaUrl.addEventListener('input', function() { style.ctaUrl = this.value; renderPreview(); });
   }
 
@@ -173,7 +174,7 @@
       style[pickerId] = this.value;
       if (hex) hex.value = this.value;
       renderPreview();
-      if (pickerId === 'primaryColor') scheduleAnimatedPhotoRebuild();
+      if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); }
     });
 
     if (hex) {
@@ -183,7 +184,7 @@
           style[pickerId] = val;
           picker.value = val;
           renderPreview();
-          if (pickerId === 'primaryColor') scheduleAnimatedPhotoRebuild();
+          if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); }
         }
       });
     }
@@ -743,6 +744,165 @@
     await uploadPhotoBlob(blob, `Animated photo ready (${kb} KB). Older Outlook shows the first frame.`);
   }
 
+  // ── Animated CTA button ──
+  //
+  // The button is drawn to a canvas at 2x for retina, swept by CtaAnimator, then
+  // encoded and hosted like any other image. Templates swap the text anchor for
+  // the resulting <img> when ctaImageUrl is present.
+
+  // Mirrors the inline styles the CTA templates use, so the image matches the
+  // static button it replaces.
+  const CTA_STYLE = Object.freeze({
+    scale: 2,
+    paddingX: 20,
+    paddingY: 8,
+    radius: 5,
+    fontSize: 12,
+    fontWeight: 700,
+  });
+
+  const ctaState = { url: '', width: 0, height: 0 };
+
+  function setCtaStatus(text, kind) {
+    const el = document.getElementById('ctaStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function ctaAnimationEnabled() {
+    const el = document.getElementById('ctaAnimate');
+    return !!(el && el.checked);
+  }
+
+  // Draws the button onto an opaque background. GIF has no soft alpha, so the
+  // rounded corners are composited here rather than left transparent.
+  function renderCtaButtonCanvas(label, background) {
+    const s = CTA_STYLE;
+    const measure = document.createElement('canvas').getContext('2d');
+    const font = `${s.fontWeight} ${s.fontSize * s.scale}px ${style.fontFamily}`;
+    measure.font = font;
+
+    const textWidth = measure.measureText(label).width;
+    const width = Math.ceil(textWidth + s.paddingX * 2 * s.scale);
+    const height = Math.ceil(s.fontSize * 1.35 * s.scale + s.paddingY * 2 * s.scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, width, height);
+
+    const r = s.radius * s.scale;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.arcTo(width, 0, width, height, r);
+    ctx.arcTo(width, height, 0, height, r);
+    ctx.arcTo(0, height, 0, 0, r);
+    ctx.arcTo(0, 0, width, 0, r);
+    ctx.closePath();
+    ctx.fillStyle = style.primaryColor;
+    ctx.fill();
+
+    ctx.font = font;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, width / 2, height / 2 + 1);
+
+    return canvas;
+  }
+
+  function clearCtaImage() {
+    ctaState.url = '';
+    ctaState.width = 0;
+    ctaState.height = 0;
+    renderPreview();
+  }
+
+  async function regenerateCtaAnimation() {
+    const label = (style.ctaText || '').trim();
+
+    if (!ctaAnimationEnabled() || !label) {
+      clearCtaImage();
+      setCtaStatus(label ? '' : 'Add call-to-action text to animate the button.');
+      return;
+    }
+
+    if (!isPro) {
+      clearCtaImage();
+      const toggle = document.getElementById('ctaAnimate');
+      if (toggle) toggle.checked = false;
+      showProPrompt();
+      setCtaStatus(`Animated buttons unlock with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
+      return;
+    }
+
+    setCtaStatus('Building button animation...');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    let blob;
+    let cssWidth;
+    let cssHeight;
+    try {
+      const canvas = renderCtaButtonCanvas(label, '#ffffff');
+      const ctx = canvas.getContext('2d');
+      const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      const built = CtaAnimator.buildFrames({
+        button: rgba,
+        width: canvas.width,
+        height: canvas.height,
+      });
+
+      const bytes = GifEncoder.encode({
+        width: canvas.width,
+        height: canvas.height,
+        frames: built.frames,
+        delay: built.delay,
+        loop: false,
+        dither: false,
+      });
+
+      blob = new Blob([bytes], { type: 'image/gif' });
+      cssWidth = Math.round(canvas.width / CTA_STYLE.scale);
+      cssHeight = Math.round(canvas.height / CTA_STYLE.scale);
+    } catch (err) {
+      setCtaStatus('Could not build the button animation.', 'error');
+      return;
+    }
+
+    try {
+      const url = await uploadImageBlob(blob, 'cta');
+      ctaState.url = url;
+      ctaState.width = cssWidth;
+      ctaState.height = cssHeight;
+      renderPreview();
+      setCtaStatus(`Animated button ready (${Math.round(blob.size / 1024)} KB).`, 'success');
+    } catch (err) {
+      clearCtaImage();
+      setCtaStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
+
+  // The label and accent colour are baked into the pixels, so any change to
+  // either needs a rebuild. Debounced because both come from live-typing inputs.
+  let ctaRebuildTimer = null;
+
+  function scheduleCtaRebuild() {
+    if (!ctaAnimationEnabled()) return;
+    clearTimeout(ctaRebuildTimer);
+    setCtaStatus('Button will rebuild...');
+    ctaRebuildTimer = setTimeout(regenerateCtaAnimation, 700);
+  }
+
+  function bindCtaAnimation() {
+    const toggle = document.getElementById('ctaAnimate');
+    if (toggle) toggle.addEventListener('change', regenerateCtaAnimation);
+  }
+
   function bindPhotoEffect() {
     const select = document.getElementById('photoEffect');
     const secondGroup = document.getElementById('photoSecondGroup');
@@ -901,6 +1061,11 @@
       facebook: get('facebook'),
       linkedin: get('linkedin'),
       google: get('google'),
+      // Only set once an animated CTA has been built and hosted; templates fall
+      // back to the plain text button when absent.
+      ctaImageUrl: ctaState.url,
+      ctaImageWidth: ctaState.width,
+      ctaImageHeight: ctaState.height,
     };
   }
 

@@ -150,6 +150,7 @@ checkSyntax('js/generator-core.js');
 checkSyntax('js/templates.js');
 checkSyntax('js/gif-encoder.js');
 checkSyntax('js/photo-animator.js');
+checkSyntax('js/cta-animator.js');
 checkSyntax('js/motion.js');
 checkSyntax('js/app.js');
 checkSyntax('js/health-check.js');
@@ -241,6 +242,69 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
   const unoptimised = GifEncoder.encode({ width: size, height: size, frames: still, dither: false, optimise: false });
   assert(optimised.length * 2 < unoptimised.length,
     `Frame differencing ineffective: ${optimised.length} vs ${unoptimised.length} bytes`);
+}
+
+// Animated CTA button: frame 0 must be the resting button, motion must exist, and
+// the templates must degrade to a text anchor when no CTA image is hosted.
+{
+  const GifEncoder = require('../js/gif-encoder');
+  const CtaAnimator = require('../js/cta-animator');
+
+  const w = 160;
+  const h = 40;
+  const button = new Uint8ClampedArray(w * h * 4);
+  for (let p = 0; p < w * h; p++) {
+    const i = p * 4;
+    button[i] = 8; button[i + 1] = 145; button[i + 2] = 178; button[i + 3] = 255;
+  }
+
+  const built = CtaAnimator.buildFrames({ button, width: w, height: h });
+  assert(built.frames.length === CtaAnimator.DEFAULTS.frames, 'CTA frame count mismatch');
+
+  // Frame 0 and the final frame are the untouched button — the sheen enters and
+  // leaves the canvas, so Outlook's first-frame still is a normal button.
+  const first = built.frames[0];
+  const last = built.frames[built.frames.length - 1];
+  for (let i = 0; i < button.length; i += 4) {
+    assert(Math.abs(first[i] - button[i]) <= 1, 'CTA frame 0 must equal the resting button');
+    assert(Math.abs(last[i] - button[i]) <= 1, 'CTA final frame must return to rest');
+  }
+
+  // A middle frame must actually be brighter somewhere.
+  const mid = built.frames[Math.floor(built.frames.length / 2)];
+  let brighter = 0;
+  for (let i = 0; i < mid.length; i += 4) if (mid[i] > button[i] + 2) brighter++;
+  assert(brighter > 0, 'CTA sheen produced no visible highlight');
+
+  const bytes = GifEncoder.encode({
+    width: w, height: h, frames: built.frames,
+    delay: built.delay, loop: false, dither: false,
+  });
+  assert(Buffer.from(bytes.subarray(0, 6)).toString('latin1') === 'GIF89a', 'CTA gif missing header');
+  assert(!Buffer.from(bytes).includes(Buffer.from('NETSCAPE2.0')), 'CTA gif must not loop');
+  // Flat button art should stay small; a blown-up figure means differencing broke.
+  assert(bytes.length < 60_000, `CTA gif unexpectedly large: ${bytes.length} bytes`);
+
+  // Template integration: image button when hosted, text anchor otherwise.
+  // Local sample rather than the shared one below, so this block stays self-contained.
+  const ctaSample = { fullName: 'Jane Smith', title: 'Marketing Manager', email: 'jane@acme.com' };
+  const ctaStyle = { ...core.previewStyle, ctaText: 'Book a Meeting', ctaUrl: 'https://example.com' };
+  const plain = core.buildSignatureHtml({
+    template: TEMPLATES.ctabox, data: ctaSample, style: ctaStyle, compliance: null,
+  });
+  assert(plain.includes('Book a Meeting') && !plain.includes('cta.gif'),
+    'CTA must render as a text anchor when no animated image is hosted');
+
+  const animated = core.buildSignatureHtml({
+    template: TEMPLATES.ctabox,
+    data: { ...ctaSample, ctaImageUrl: 'https://emailsignaturegenerator.ai/u/abcdef0123456789/cta.gif', ctaImageWidth: 160, ctaImageHeight: 40 },
+    style: ctaStyle,
+    compliance: null,
+  });
+  assert(animated.includes('cta.gif'), 'CTA must use the hosted animated image when present');
+  assert(/alt="Book a Meeting"/.test(animated),
+    'Animated CTA needs the label as alt text for clients that block images');
+  assert(animated.includes('href="https://example.com"'), 'Animated CTA must stay inside its link');
 }
 
 // Preview-only images must never survive into an exported signature.
