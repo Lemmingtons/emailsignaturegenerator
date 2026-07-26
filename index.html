@@ -410,34 +410,48 @@
       facebook: '',
     };
 
+    // Each slide demonstrates one animation, matching the shipped rule of a single
+    // moving element per signature. The ring bakes its accent into the pixels so it
+    // needs a colour-matched file; the shine sweep only lightens, so one file serves
+    // every slide. Regenerate with: node scripts/build-demo-animations.js
+    var RING_TEAL = 'assets/demo-photo-ring-0891B2.gif';
+    var RING_PINE = 'assets/demo-photo-ring-0D9488.gif';
+    var SWEEP = 'assets/demo-photo-sweep.gif';
+
     var SLIDES = [
       {
-        id: 'classic', category: 'Professional', name: 'Classic', isPro: false,
+        id: 'classic', category: 'Professional', name: 'Classic',
+        effect: 'Ring orbit', photo: RING_TEAL,
         desc: 'Clean and corporate-safe. Works perfectly in Gmail, Outlook, and every major client.',
         style: { primaryColor: '#0891B2', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
       },
       {
-        id: 'bold', category: 'Creative', name: 'Bold', isPro: false,
+        id: 'bold', category: 'Creative', name: 'Bold',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Bold colours and modern typography. Stand out in every inbox.',
         style: { primaryColor: '#0F766E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'gradient', category: 'Creative', name: 'Gradient', isPro: true,
+        id: 'gradient', category: 'Creative', name: 'Gradient',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Gradient accents and bold colour. Makes a strong impression without sacrificing professionalism.',
         style: { primaryColor: '#7C3AED', secondaryColor: '#EC4899', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'creator', category: 'Social', name: 'Creator', isPro: false,
+        id: 'creator', category: 'Social', name: 'Creator',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Social icons front and centre. Perfect for influencers and content creators.',
         style: { primaryColor: '#22C55E', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'none', photoShape: 'circle', iconStyle: 'color' }
       },
       {
-        id: 'meetinglink', category: 'Sales / CTA', name: 'Meeting', isPro: false,
+        id: 'meetinglink', category: 'Sales / CTA', name: 'Meeting',
+        effect: 'Shine sweep', photo: SWEEP,
         desc: 'Drive meetings and demos directly from your email signature.',
         style: { primaryColor: '#EA580C', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
       },
       {
-        id: 'consultant', category: 'Industry', name: 'Consultant', isPro: false,
+        id: 'consultant', category: 'Industry', name: 'Consultant',
+        effect: 'Ring orbit', photo: RING_PINE,
         desc: 'Purpose-built for consulting and professional services. Tailored layout for your field.',
         style: { primaryColor: '#0D9488', textColor: '#1e293b', fontFamily: 'Arial, Helvetica, sans-serif', dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
       },
@@ -451,10 +465,9 @@
 
     // Build slides and dots
     SLIDES.forEach(function (s, i) {
-      var html = TEMPLATES[s.id].render(D, s.style);
-      var badge = s.isPro
-        ? '<span class="showcase-badge pro">Pro</span>'
-        : '<span class="showcase-badge free">Free</span>';
+      var data = Object.assign({}, D, { photoUrl: s.photo || D.photoUrl });
+      var html = TEMPLATES[s.id].render(data, s.style);
+      var badge = '<span class="showcase-badge animated">' + s.effect + '</span>';
 
       var slide = document.createElement('div');
       slide.className = 'sig-carousel-slide';
