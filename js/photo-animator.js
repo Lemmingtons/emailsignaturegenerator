@@ -31,6 +31,8 @@
       frames: 14,
       delay: 6,
       needsSecondPhoto: false,
+      // Returns to its opening frame, so it can rest and repeat cleanly.
+      loops: true,
     },
     ring: {
       id: 'ring',
@@ -39,6 +41,7 @@
       frames: 18,
       delay: 6,
       needsSecondPhoto: false,
+      loops: true,
     },
     crossfade: {
       id: 'crossfade',
@@ -47,6 +50,9 @@
       frames: 16,
       delay: 8,
       needsSecondPhoto: true,
+      // A one-way transition: it ends on the second photo. Repeating it would
+      // flick back and forth between two faces, so this one always plays once.
+      loops: false,
     },
   });
 

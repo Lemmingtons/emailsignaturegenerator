@@ -118,7 +118,7 @@ function sniffImage(buf) {
 }
 
 // Image slots a Pro user may occupy. One stored file per slot per user.
-const IMAGE_SLOTS = ['photo', 'logo', 'cta'];
+const IMAGE_SLOTS = ['photo', 'logo', 'cta', 'divider'];
 const IMAGE_EXTS = ['jpg', 'png', 'webp', 'gif'];
 
 function apiError(status, code, detail) {
@@ -364,7 +364,7 @@ export default {
       const bucket = uploadBucket(env);
       if (!bucket) return new Response('Storage not configured', { status: 500 });
       // Legacy /u/cus_.../photo.jpg URLs stay readable; `logo` and `gif` are new.
-      const match = url.pathname.match(/^\/u\/([A-Za-z0-9_-]{16,64}|cus_[A-Za-z0-9]+)\/(photo|logo|cta)\.(jpg|png|webp|gif)$/);
+      const match = url.pathname.match(/^\/u\/([A-Za-z0-9_-]{16,64}|cus_[A-Za-z0-9]+)\/(photo|logo|cta|divider)\.(jpg|png|webp|gif)$/);
       if (!match) return new Response('Not found', { status: 404 });
       const key = `users/${match[1]}/${match[2]}.${match[3]}`;
       const obj = await bucket.get(key);

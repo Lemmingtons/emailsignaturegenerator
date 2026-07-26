@@ -16,7 +16,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.4;">
   <tr>
@@ -143,7 +143,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
@@ -516,7 +516,7 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const divider = this._divider(dividerStyle, primaryColor);
+      const divider = this._divider(dividerStyle, primaryColor, data);
       const cta = ctaText || 'Schedule a call';
       const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
 
@@ -817,8 +817,20 @@ const _helpers = {
     return items;
   },
 
-  _divider(style, color) {
+  // `data` is optional so existing callers keep working; when an animated divider
+  // has been generated and hosted, the border rule is replaced by that image.
+  // width="100%" makes it fill the cell exactly as the border does, and a thin
+  // horizontal bar scales without visible distortion. Frame 1 of the GIF is a
+  // plain rule, so older Outlook renders what it renders today.
+  _divider(style, color, data) {
     if (style === 'none') return '';
+
+    const src = data && data.dividerImageUrl ? this.escapeUrl(data.dividerImageUrl, 'src') : '';
+    const height = parseInt(data && data.dividerImageHeight, 10);
+    if (src && height > 0) {
+      return `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="font-size: 1px; line-height: 1px; background-color: #ffffff;" bgcolor="#ffffff"><img src="${src}" width="100%" height="${height}" alt="" style="display: block; border: 0; width: 100%; height: ${height}px;" /></td></tr></table>`;
+    }
+
     const safe = this._safeColor(color);
     const styles = {
       line: `border-top: 2px solid ${safe}`,

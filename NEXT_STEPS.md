@@ -31,12 +31,23 @@ Each slot holds at most one file: uploading a new extension into a slot evicts t
 
 Pro users can render the photo as an animated GIF via `js/photo-animator.js` (effects) and `js/gif-encoder.js` (a self-contained GIF89a writer). Encoding happens in the browser off the existing crop canvas — nothing is rendered server-side.
 
-Three effects: `sweep`, `ring`, `crossfade`. Output is 160x160, plays once, and typically lands between 15 KB and 100 KB.
+Three effects: `sweep`, `ring`, `crossfade`. Output is 160x160 and typically lands between 15 KB and 100 KB.
 
-Two invariants that must not regress:
+Three invariants that must not regress:
 
 - **Frame 0 is the resting photo.** Classic Outlook on Windows renders only the first frame, so every effect is additive over an already-legible image. Never add an effect that fades in from blank.
 - **Error-diffusion dithering stays off for animation.** It propagates change across the whole frame, which defeats inter-frame differencing and roughly triples file size.
+- **All encoding goes through `encodeSignatureGif` in `js/app.js`**, never `GifEncoder.encode` directly, so the loop policy stays in one place.
+
+## Loop policy: the breathing loop
+
+Animations repeat, but rest between passes: one pass, then a 5 second hold on the resting frame, forever (`ANIMATION_HOLD_CS` in `js/app.js`).
+
+Playing once looks correct in a test page and fails in a real inbox: a GIF starts when it decodes, not when it is looked at, so a signature under a long email finishes animating before the reader scrolls to it. A tight loop fixes that but reads as an advert, and a long thread shows every copy moving at once.
+
+The hold costs about 0.1 KB — a held frame is identical to its predecessor, so frame differencing collapses it to a single transparent pixel.
+
+An effect may only loop if it returns to its opening frame; `EFFECTS[*].loops` declares this and the validator enforces it. The two-photo crossfade is `loops: false` because it ends on the second photo, and repeating it would flick between two faces.
 
 ## R2 lifecycle rules
 
@@ -52,15 +63,19 @@ Do not add an Infrequent Access transition to `users/`. Those objects are read e
 
 Check with `npx wrangler r2 bucket lifecycle list email-sig-photos`.
 
-## Animated CTA button
+## Swept artwork: CTA button and divider
 
-`js/cta-animator.js` sweeps a highlight across a rendered call-to-action button and reuses `js/gif-encoder.js` to encode it. The browser draws the button to a canvas at 2x (`renderCtaButtonCanvas` in `js/app.js`), the animator only moves light across the pixels, so the maths stays testable under Node.
+`js/sweep-animator.js` moves a highlight across any rendered artwork and reuses `js/gif-encoder.js` to encode it. The browser draws the artwork to a canvas at 2x; the animator only moves light across the pixels, so the maths stays free of canvas and testable under Node.
 
-Output is roughly 20-25 KB and hosted in the `cta` image slot. `TEMPLATES._ctaButton` swaps the text anchor for the hosted image when `data.ctaImageUrl` is set, keeping the same link and carrying the label as alt text so clients that block images still show something useful.
+**CTA button** (`renderCtaButtonCanvas`, `cta` slot, ~22 KB). `TEMPLATES._ctaButton` swaps the text anchor for the hosted image when `data.ctaImageUrl` is set, keeping the same link and carrying the label as alt text so clients that block images still show a usable link. Only the two filled-button templates (`ctabox`, `realestate`) use it — `banner` and `meetinglink` render text links, where a sheen has nothing to sweep across.
 
-Only the two filled-button templates (`ctabox`, `realestate`) use it. `banner` and `meetinglink` render text links, where a sheen has nothing to sweep across.
+**Divider rule** (`renderDividerCanvas`, `divider` slot, ~5 KB). `TEMPLATES._divider` swaps the CSS border for the hosted image when `data.dividerImageUrl` is set. The artwork is a fixed 300px wide but emitted at `width="100%"`, because the rule stretches to whatever the content beside it is; a thin horizontal bar scales without visible distortion. Alt text is empty — it is decorative. A narrower band and higher strength than the button: on a two-pixel rule a wide soft band just reads as the colour changing.
 
-The label and accent colour are baked into the pixels, so changing either rebuilds the GIF (debounced).
+Labels, accent colour and divider style are baked into the pixels, so changing any of them rebuilds the GIF (debounced).
+
+## One animation per signature
+
+`claimAnimationSlot` in `js/app.js` enforces it: switching one effect on switches the others off. Three moving parts reads as a free template however well each is made. The validator asserts every effect claims the slot.
 
 ## Saved signatures
 

@@ -150,7 +150,7 @@ checkSyntax('js/generator-core.js');
 checkSyntax('js/templates.js');
 checkSyntax('js/gif-encoder.js');
 checkSyntax('js/photo-animator.js');
-checkSyntax('js/cta-animator.js');
+checkSyntax('js/sweep-animator.js');
 checkSyntax('js/motion.js');
 checkSyntax('js/app.js');
 checkSyntax('js/health-check.js');
@@ -225,6 +225,17 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
       delay: built.delay, loop: false, dither: false,
     });
 
+    // Any effect declared loopable must return to its opening frame, or repeating
+    // it would jump. The crossfade is correctly declared non-looping.
+    if (spec.loops) {
+      const opening = built.frames[0];
+      const closing = built.frames[built.frames.length - 1];
+      for (let p = 0; p < opening.length; p += 4) {
+        assert(Math.abs(opening[p] - closing[p]) <= 1,
+          `${id} is declared loopable but does not return to its opening frame`);
+      }
+    }
+
     assert(Buffer.from(bytes.subarray(0, 6)).toString('latin1') === 'GIF89a', `${id} missing GIF89a header`);
     assert(bytes[bytes.length - 1] === 0x3B, `${id} missing GIF trailer`);
     // One image descriptor (0x2C) per frame.
@@ -233,6 +244,47 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
     assert(descriptors >= spec.frames, `${id} encoded ${descriptors} image descriptors for ${spec.frames} frames`);
     // Looping must stay off: the Netscape block is what makes a GIF repeat forever.
     assert(!Buffer.from(bytes).includes(Buffer.from('NETSCAPE2.0')), `${id} must not loop by default`);
+  }
+
+  // The breathing loop: one pass, then a long hold on the resting frame, repeating.
+  // The hold must be near-free, or the whole approach is not worth having.
+  {
+    const size = 64;
+    const spec = PhotoAnimator.EFFECTS.ring;
+    const built = PhotoAnimator.buildFrames({
+      photo, size, effect: 'ring', shape: 'circle',
+      background: '#ffffff', accentColor: '#0891B2',
+    });
+
+    const once = GifEncoder.encode({
+      width: size, height: size, frames: built.frames,
+      delay: built.delay, loop: false, dither: false,
+    });
+    const breathing = GifEncoder.encode({
+      width: size, height: size,
+      frames: built.frames.concat([built.frames[0]]),
+      delay: built.frames.map(() => built.delay).concat([500]),
+      loop: true, dither: false,
+    });
+
+    const netscape = Buffer.from('NETSCAPE2.0');
+    assert(!Buffer.from(once).includes(netscape), 'play-once GIF must omit the looping block');
+    assert(Buffer.from(breathing).includes(netscape), 'breathing GIF must carry the looping block');
+    assert(breathing.length < once.length * 1.05,
+      `held frame is not free: ${once.length} -> ${breathing.length} bytes`);
+    assert(spec.loops === true, 'ring must be declared loopable');
+    assert(PhotoAnimator.EFFECTS.crossfade.loops === false,
+      'crossfade must stay play-once: it ends on the second photo');
+  }
+
+  // The app must route every encode through the shared loop policy rather than
+  // calling the encoder directly, so the two effects cannot drift apart.
+  {
+    const appSource = read('js/app.js');
+    assert(appSource.includes('function encodeSignatureGif'), 'app must define the shared loop policy');
+    assert(!/GifEncoder\.encode\(/.test(appSource.replace(/function encodeSignatureGif[\s\S]*?\n  }\n/, '')),
+      'animation encoding must go through encodeSignatureGif, not GifEncoder.encode directly');
+    assert(/ANIMATION_HOLD_CS = 500/.test(appSource), 'breathing hold should be 5 seconds');
   }
 
   // Frame differencing must actually shrink a static sequence.
@@ -248,7 +300,7 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
 // the templates must degrade to a text anchor when no CTA image is hosted.
 {
   const GifEncoder = require('../js/gif-encoder');
-  const CtaAnimator = require('../js/cta-animator');
+  const SweepAnimator = require('../js/sweep-animator');
 
   const w = 160;
   const h = 40;
@@ -258,8 +310,8 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
     button[i] = 8; button[i + 1] = 145; button[i + 2] = 178; button[i + 3] = 255;
   }
 
-  const built = CtaAnimator.buildFrames({ button, width: w, height: h });
-  assert(built.frames.length === CtaAnimator.DEFAULTS.frames, 'CTA frame count mismatch');
+  const built = SweepAnimator.buildFrames({ artwork: button, width: w, height: h });
+  assert(built.frames.length === SweepAnimator.DEFAULTS.frames, 'CTA frame count mismatch');
 
   // Frame 0 and the final frame are the untouched button — the sheen enters and
   // leaves the canvas, so Outlook's first-frame still is a normal button.
@@ -305,6 +357,49 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
   assert(/alt="Book a Meeting"/.test(animated),
     'Animated CTA needs the label as alt text for clients that block images');
   assert(animated.includes('href="https://example.com"'), 'Animated CTA must stay inside its link');
+}
+
+// Animated divider: swaps the border rule for a hosted image, and degrades to the
+// plain border when none is hosted.
+{
+  const dividerStyle = { ...core.previewStyle, dividerStyle: 'line' };
+  const sample = { fullName: 'Jane Smith', title: 'Marketing Manager', email: 'jane@acme.com' };
+
+  const plain = core.buildSignatureHtml({
+    template: TEMPLATES.classic, data: sample, style: dividerStyle, compliance: null,
+  });
+  assert(plain.includes('border-top: 2px solid'), 'divider must fall back to a CSS border');
+  assert(!plain.includes('divider.gif'), 'divider must not reference an image when none is hosted');
+
+  const animated = core.buildSignatureHtml({
+    template: TEMPLATES.classic,
+    data: { ...sample, dividerImageUrl: 'https://emailsignaturegenerator.ai/u/abcdef0123456789/divider.gif', dividerImageHeight: 6 },
+    style: dividerStyle,
+    compliance: null,
+  });
+  assert(animated.includes('divider.gif'), 'divider must use the hosted image when present');
+  // Full-width so it fills the cell exactly as the border does.
+  assert(/width="100%"[^>]*height="6"|height="6"[^>]*width="100%"/.test(animated),
+    'animated divider must be full width with an explicit height');
+  assert(/alt=""/.test(animated), 'decorative divider must have empty alt text');
+
+  // `none` means no rule at all, animated or otherwise.
+  const hidden = core.buildSignatureHtml({
+    template: TEMPLATES.classic,
+    data: { ...sample, dividerImageUrl: 'https://example.com/u/x/divider.gif', dividerImageHeight: 6 },
+    style: { ...core.previewStyle, dividerStyle: 'none' },
+    compliance: null,
+  });
+  assert(!hidden.includes('divider.gif'), 'divider style "none" must suppress the animated rule too');
+}
+
+// One animation per signature: enabling any effect must clear the others.
+{
+  const appSource = read('js/app.js');
+  assert(appSource.includes('function claimAnimationSlot'), 'app must enforce one animation per signature');
+  for (const slot of ['photo', 'cta', 'divider']) {
+    assert(appSource.includes(`claimAnimationSlot('${slot}')`), `${slot} animation must claim the single slot`);
+  }
 }
 
 // Preview-only images must never survive into an exported signature.

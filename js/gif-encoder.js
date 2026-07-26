@@ -410,7 +410,9 @@
    * @param {number} options.width
    * @param {number} options.height
    * @param {Array<Uint8ClampedArray|Uint8Array>} options.frames RGBA, width*height*4 each
-   * @param {number} [options.delay] frame delay in hundredths of a second
+   * @param {number|number[]} [options.delay] frame delay in hundredths of a second.
+   *   An array sets each frame individually, which is how a looping effect holds on
+   *   its resting frame between passes instead of running continuously.
    * @param {boolean} [options.loop] loop forever (false plays through once)
    * @param {boolean} [options.dither] Floyd-Steinberg dithering. Diffuses error across
    *   the whole frame, which defeats inter-frame differencing — leave off for animation.
@@ -423,6 +425,11 @@
     const height = options.height;
     const frames = options.frames || [];
     const delay = options.delay == null ? 8 : options.delay;
+    const delayAt = (index) => {
+      const value = Array.isArray(delay) ? delay[index] : delay;
+      // GIF stores the delay as an unsigned 16-bit value.
+      return Math.max(0, Math.min(65535, Math.round(value == null ? 8 : value)));
+    };
     const loop = options.loop === true;
     const dither = options.dither === true;
     const optimise = options.optimise !== false;
@@ -474,7 +481,8 @@
 
     let previous = null;
 
-    for (const frame of frames) {
+    for (let frameIndex = 0; frameIndex < frames.length; frameIndex++) {
+      const frame = frames[frameIndex];
       const indices = mapFrame(frame, width, height, palette, nearest, dither);
 
       // Work out which rectangle actually changed.
@@ -507,7 +515,7 @@
       out.byte(0xF9);
       out.byte(0x04);
       out.byte(useTransparency ? 0x05 : 0x04);
-      out.short(delay);
+      out.short(delayAt(frameIndex));
       out.byte(useTransparency ? transparentIndex : 0);
       out.byte(0);
 

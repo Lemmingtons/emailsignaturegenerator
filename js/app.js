@@ -31,6 +31,7 @@
     bindValidation();
     bindPhotoEffect();
     bindCtaAnimation();
+    bindDividerAnimation();
     initPreviewDock();
     initCompliance();
     renderPreview();
@@ -174,7 +175,7 @@
       style[pickerId] = this.value;
       if (hex) hex.value = this.value;
       renderPreview();
-      if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); }
+      if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); scheduleDividerRebuild(); }
     });
 
     if (hex) {
@@ -184,7 +185,7 @@
           style[pickerId] = val;
           picker.value = val;
           renderPreview();
-          if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); }
+          if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); scheduleDividerRebuild(); }
         }
       });
     }
@@ -205,6 +206,7 @@
         style[styleKey] = this.dataset.value;
         renderPreview();
         if (styleKey === 'photoShape') scheduleAnimatedPhotoRebuild();
+        if (styleKey === 'dividerStyle') scheduleDividerRebuild();
       });
     });
   }
@@ -623,6 +625,39 @@
   // stays crisp on retina while keeping files well under a couple of hundred KB.
   const ANIMATED_PHOTO_SIZE = 160;
 
+  // ── Loop policy ──
+  //
+  // Animations repeat, but they rest between passes: one pass, then five seconds
+  // holding the resting frame, forever. Two reasons this beats playing once:
+  //
+  // - A GIF starts when it decodes, not when it is looked at. In a long email the
+  //   signature sits below the fold, so a play-once animation finishes before the
+  //   reader ever scrolls to it.
+  // - Continuous motion reads as an advert, and a long thread shows the signature
+  //   many times at once.
+  //
+  // The pause is effectively free: a held frame is identical to its predecessor, so
+  // frame differencing collapses it to a single transparent pixel.
+  const ANIMATION_HOLD_CS = 500; // hundredths of a second
+
+  // Encodes a finished frame sequence with the signature loop policy applied.
+  // `canLoop` is false for one-way effects such as the two-photo crossfade, which
+  // ends somewhere different from where it started and would jump on repeat.
+  function encodeSignatureGif({ frames, width, height, delay, canLoop }) {
+    if (!canLoop) {
+      return GifEncoder.encode({ width, height, frames, delay, loop: false, dither: false });
+    }
+
+    return GifEncoder.encode({
+      width,
+      height,
+      frames: frames.concat([frames[0]]),
+      delay: frames.map(() => delay).concat([ANIMATION_HOLD_CS]),
+      loop: true,
+      dither: false,
+    });
+  }
+
   function selectedPhotoEffect() {
     const el = document.getElementById('photoEffect');
     return el ? el.value : 'none';
@@ -722,15 +757,15 @@
         accentColor: style.primaryColor,
       });
 
-      const bytes = GifEncoder.encode({
+      // Error-diffusion dithering is off inside encodeSignatureGif: it would defeat
+      // inter-frame differencing and roughly triple the file size for no visible
+      // gain at this resolution.
+      const bytes = encodeSignatureGif({
+        frames: built.frames,
         width: size,
         height: size,
-        frames: built.frames,
         delay: built.delay,
-        loop: false,
-        // Error-diffusion dithering would defeat inter-frame differencing and roughly
-        // triple the file size for no visible gain at this resolution.
-        dither: false,
+        canLoop: spec.loops,
       });
 
       blob = new Blob([bytes], { type: 'image/gif' });
@@ -746,7 +781,7 @@
 
   // ── Animated CTA button ──
   //
-  // The button is drawn to a canvas at 2x for retina, swept by CtaAnimator, then
+  // The button is drawn to a canvas at 2x for retina, swept by SweepAnimator, then
   // encoded and hosted like any other image. Templates swap the text anchor for
   // the resulting <img> when ctaImageUrl is present.
 
@@ -851,19 +886,19 @@
       const ctx = canvas.getContext('2d');
       const rgba = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-      const built = CtaAnimator.buildFrames({
-        button: rgba,
+      const built = SweepAnimator.buildFrames({
+        artwork: rgba,
         width: canvas.width,
         height: canvas.height,
       });
 
-      const bytes = GifEncoder.encode({
+      const bytes = encodeSignatureGif({
+        frames: built.frames,
         width: canvas.width,
         height: canvas.height,
-        frames: built.frames,
         delay: built.delay,
-        loop: false,
-        dither: false,
+        // The sheen enters and leaves the canvas, so it repeats seamlessly.
+        canLoop: true,
       });
 
       blob = new Blob([bytes], { type: 'image/gif' });
@@ -900,7 +935,183 @@
 
   function bindCtaAnimation() {
     const toggle = document.getElementById('ctaAnimate');
-    if (toggle) toggle.addEventListener('change', regenerateCtaAnimation);
+    if (!toggle) return;
+    toggle.addEventListener('change', function() {
+      if (toggle.checked) claimAnimationSlot('cta');
+      regenerateCtaAnimation();
+    });
+  }
+
+  // ── Animated divider rule ──
+  //
+  // The rule is drawn at a generous fixed width and emitted at width="100%", so it
+  // fills its cell exactly as the CSS border does. A thin horizontal bar scales
+  // without visible distortion, and frame 1 is a plain rule, so older Outlook gets
+  // what it renders today.
+
+  const DIVIDER_STYLE = Object.freeze({
+    scale: 2,
+    width: 300,     // CSS px of artwork; stretched or shrunk to fit the cell
+    thickness: 2,   // CSS px, matching the `line` border weight
+    padding: 2,     // CSS px of white above and below, so the bar is not clipped
+  });
+
+  const dividerState = { url: '', height: 0 };
+
+  function setDividerStatus(text, kind) {
+    const el = document.getElementById('dividerStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  function dividerAnimationEnabled() {
+    const el = document.getElementById('dividerAnimate');
+    return !!(el && el.checked);
+  }
+
+  function renderDividerCanvas(background) {
+    const s = DIVIDER_STYLE;
+    const canvas = document.createElement('canvas');
+    canvas.width = s.width * s.scale;
+    canvas.height = (s.thickness + s.padding * 2) * s.scale;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = style.primaryColor;
+    ctx.fillRect(0, s.padding * s.scale, canvas.width, s.thickness * s.scale);
+
+    return canvas;
+  }
+
+  function clearDividerImage() {
+    dividerState.url = '';
+    dividerState.height = 0;
+    renderPreview();
+  }
+
+  async function regenerateDividerAnimation() {
+    if (!dividerAnimationEnabled()) {
+      clearDividerImage();
+      setDividerStatus('');
+      return;
+    }
+
+    if (style.dividerStyle === 'none') {
+      clearDividerImage();
+      setDividerStatus('This template has no divider to animate.');
+      return;
+    }
+
+    if (!isPro) {
+      clearDividerImage();
+      const toggle = document.getElementById('dividerAnimate');
+      if (toggle) toggle.checked = false;
+      showProPrompt();
+      setDividerStatus(`Animated dividers unlock with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
+      return;
+    }
+
+    setDividerStatus('Building divider animation...');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    let blob;
+    let cssHeight;
+    try {
+      const canvas = renderDividerCanvas('#ffffff');
+      const rgba = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+
+      const built = SweepAnimator.buildFrames({
+        artwork: rgba,
+        width: canvas.width,
+        height: canvas.height,
+        frames: 16,
+        // Tighter and brighter than the button sweep: on a two-pixel rule a wide
+        // soft band just looks like the colour changing.
+        bandWidth: 0.07,
+        strength: 0.85,
+        skew: 0,
+        delay: 5,
+      });
+
+      const bytes = encodeSignatureGif({
+        frames: built.frames,
+        width: canvas.width,
+        height: canvas.height,
+        delay: built.delay,
+        canLoop: true,
+      });
+
+      blob = new Blob([bytes], { type: 'image/gif' });
+      cssHeight = Math.round(canvas.height / DIVIDER_STYLE.scale);
+    } catch (err) {
+      setDividerStatus('Could not build the divider animation.', 'error');
+      return;
+    }
+
+    try {
+      const url = await uploadImageBlob(blob, 'divider');
+      dividerState.url = url;
+      dividerState.height = cssHeight;
+      renderPreview();
+      setDividerStatus(`Animated divider ready (${Math.round(blob.size / 1024)} KB).`, 'success');
+    } catch (err) {
+      clearDividerImage();
+      setDividerStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
+
+  let dividerRebuildTimer = null;
+
+  function scheduleDividerRebuild() {
+    if (!dividerAnimationEnabled()) return;
+    clearTimeout(dividerRebuildTimer);
+    setDividerStatus('Divider will rebuild...');
+    dividerRebuildTimer = setTimeout(regenerateDividerAnimation, 700);
+  }
+
+  function bindDividerAnimation() {
+    const toggle = document.getElementById('dividerAnimate');
+    if (!toggle) return;
+    toggle.addEventListener('change', function() {
+      if (toggle.checked) claimAnimationSlot('divider');
+      regenerateDividerAnimation();
+    });
+  }
+
+  // ── One animation per signature ──
+  //
+  // Three moving parts reads as a free template however well each is made, so the
+  // product allows exactly one. Turning something on turns the others off.
+  function claimAnimationSlot(claimed) {
+    if (claimed !== 'photo') {
+      const select = document.getElementById('photoEffect');
+      if (select && select.value !== 'none') {
+        select.value = 'none';
+        const secondGroup = document.getElementById('photoSecondGroup');
+        if (secondGroup) secondGroup.style.display = 'none';
+        regeneratePhotoAsset();
+      }
+    }
+
+    if (claimed !== 'cta') {
+      const toggle = document.getElementById('ctaAnimate');
+      if (toggle && toggle.checked) {
+        toggle.checked = false;
+        clearCtaImage();
+        setCtaStatus('');
+      }
+    }
+
+    if (claimed !== 'divider') {
+      const toggle = document.getElementById('dividerAnimate');
+      if (toggle && toggle.checked) {
+        toggle.checked = false;
+        clearDividerImage();
+        setDividerStatus('');
+      }
+    }
   }
 
   function bindPhotoEffect() {
@@ -923,6 +1134,7 @@
       if (secondGroup) {
         secondGroup.style.display = spec && spec.needsSecondPhoto ? '' : 'none';
       }
+      if (effect !== 'none') claimAnimationSlot('photo');
       await regeneratePhotoAsset();
     });
 
@@ -1066,6 +1278,8 @@
       ctaImageUrl: ctaState.url,
       ctaImageWidth: ctaState.width,
       ctaImageHeight: ctaState.height,
+      dividerImageUrl: dividerState.url,
+      dividerImageHeight: dividerState.height,
     };
   }
 
