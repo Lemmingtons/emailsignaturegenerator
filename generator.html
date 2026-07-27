@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Free Email Signature Generator | Gmail & Outlook Templates</title>
-  <meta name="description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build and preview with all 19 templates, no account. $9 once when you are ready to use it.">
+  <meta name="description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build and preview with all 24 templates, no account. $9 once when you are ready to use it.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/generator">
 
   <!-- Open Graph -->
   <meta property="og:title" content="Free Email Signature Generator | Gmail & Outlook Templates">
-  <meta property="og:description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build with all 19 templates, no account. $9 once to use it.">
+  <meta property="og:description" content="Build a professional email signature for Gmail, Outlook, Apple Mail and more. Free to build with all 24 templates, no account. $9 once to use it.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/generator">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -22,7 +22,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Free Email Signature Generator">
-  <meta name="twitter:description" content="Create a professional Gmail or Outlook signature with 19 templates, hosted photos, and one-click HTML copy.">
+  <meta name="twitter:description" content="Create a professional Gmail or Outlook signature with 24 templates, hosted photos, and one-click HTML copy.">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Structured Data -->
@@ -35,7 +35,7 @@
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
     "featureList": [
-      "19 professional email signature templates",
+      "24 professional email signature templates",
       "Hosted photo upload for email clients",
       "Custom colour picker with hex code input",
       "8 email-safe fonts",
@@ -52,10 +52,10 @@
         "name": "Email Signature Generator",
         "price": "9.00",
         "priceCurrency": "AUD",
-        "description": "All 19 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. Free to build and preview before buying."
+        "description": "All 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. Free to build and preview before buying."
       }
     ],
-    "description": "Professional email signature generator for Gmail, Outlook, Apple Mail, Yahoo Mail, and other email clients. Free to build and preview with all 19 templates and no account; $9 one-time to copy it out, host images, and save an edit link."
+    "description": "Professional email signature generator for Gmail, Outlook, Apple Mail, Yahoo Mail, and other email clients. Free to build and preview with all 24 templates and no account; $9 one-time to copy it out, host images, and save an edit link."
   }
   </script>
 
@@ -93,7 +93,7 @@
 
     <section class="generator-seo-intro" aria-label="Generator introduction">
       <h1>Free Email Signature Generator</h1>
-      <p>Build a professional HTML email signature for Gmail, Outlook, Apple Mail, Yahoo Mail, and Microsoft 365. Choose from all 19 templates, add your contact details, and customise colours and fonts &mdash; free, with no account. Pay $9 once when you are ready to copy it into your email client.</p>
+      <p>Build a professional HTML email signature for Gmail, Outlook, Apple Mail, Yahoo Mail, and Microsoft 365. Choose from all 24 templates, add your contact details, and customise colours and fonts &mdash; free, with no account. Pay $9 once when you are ready to copy it into your email client.</p>
       <div class="generator-intro-links" aria-label="Related guides">
         <a href="email-signature-examples.html">Email signature examples</a>
         <a href="seo/email-signature-generator-for-gmail.html">Gmail setup guide</a>
@@ -192,6 +192,9 @@
                 <option value="none">No animation (still photo)</option>
                 <option value="sweep">Shine sweep — highlight passes across</option>
                 <option value="ring">Ring orbit — accent ring with travelling highlight</option>
+                <option value="drift">Slow drift — barely-there zoom in and out</option>
+                <option value="ringdraw">Ring draw — accent ring draws itself once</option>
+                <option value="monogram">Monogram reveal — initials resolve into your photo</option>
                 <option value="crossfade">Two-photo crossfade</option>
               </select>
               <span class="photo-hint" id="photoEffectHint">Saved as an animated GIF. Older Outlook shows the first frame as a still.</span>
@@ -266,6 +269,38 @@
                 <input type="url" id="google" placeholder="https://g.co/...">
                 <span class="error-message" id="google-error"></span>
               </div>
+            </div>
+
+            <!-- Name link -->
+            <div class="section-label">Your Name Link</div>
+            <div class="form-group">
+              <label for="nameLinkTarget">Make your name clickable</label>
+              <select id="nameLinkTarget">
+                <option value="none">Don't link my name</option>
+                <option value="card">My card page</option>
+                <option value="linkedin">My LinkedIn</option>
+                <option value="website">My website</option>
+              </select>
+              <span class="photo-hint" id="nameLinkHint">Your name is the first thing people look at. Linking it gives them somewhere to go.</span>
+            </div>
+
+            <!-- Card page -->
+            <div class="form-group" id="cardPageGroup">
+              <label for="cardPublishBtn">Card page</label>
+              <p class="photo-hint" id="cardPageBlurb">
+                A page on our site with your photo, contact details and a one-tap "Save contact" button.
+                <strong>It is public and search engines can find it</strong>, so only publish it if you're happy for these details to be online.
+              </p>
+              <label class="checkbox-line" for="cardPageConsent">
+                <input type="checkbox" id="cardPageConsent">
+                <span>I want a public card page with these details on it</span>
+              </label>
+              <div class="card-page-actions">
+                <button type="button" class="btn-secondary" id="cardPublishBtn" disabled>Publish card page</button>
+                <button type="button" class="btn-secondary" id="cardUnpublishBtn" style="display: none;">Unpublish</button>
+              </div>
+              <span class="photo-hint" id="cardStatusHint">Publishing unlocks when you buy.</span>
+              <p class="card-page-url" id="cardPageUrl" style="display: none;"></p>
             </div>
           </div>
         </div>
@@ -382,7 +417,11 @@
                 <input type="checkbox" id="dividerAnimate">
                 Animate the divider <span class="pro-tag">Pro</span>
               </label>
-              <span class="photo-hint" id="dividerStatusHint">A light travels along the rule once. Older Outlook shows a plain line.</span>
+              <select id="dividerEffect" style="margin-top: 8px;">
+                <option value="sweep">Light sweep — a highlight travels along the rule</option>
+                <option value="draw">Draw on — the rule draws itself left to right</option>
+              </select>
+              <span class="photo-hint" id="dividerStatusHint">Plays once, then rests. Older Outlook shows a plain line.</span>
             </div>
 
             <!-- Photo Shape -->

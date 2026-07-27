@@ -27,7 +27,7 @@
       display: '$9',
       displayWithCurrency: '$9 AUD',
     },
-    templateCount: 19,
+    templateCount: 24,
     emailClientCount: '50+',
     proTokenStorageKey: 'sig_pro_token',
     legacyProStorageKey: 'sig_pro',

@@ -2312,3 +2312,63 @@ body {
 .crop-hint { font-size: 12px; color: #6b7280; margin: 0; text-align: center; }
 .crop-actions { display: flex; gap: 10px; width: 100%; }
 .crop-actions .btn { flex: 1; }
+
+/* ══════════════════════════════════════
+   NAME LINK + CARD PAGE
+   ══════════════════════════════════════ */
+
+/* This is a <label>, and `.form-group label` uppercases and letter-spaces every
+   label. That is right for a field caption and wrong for a sentence, so the
+   consent line opts back out — at matching specificity, or it would not win. */
+.form-group label.checkbox-line,
+.checkbox-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  margin: 10px 0;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.checkbox-line > span {
+  flex: 1 1 auto;
+}
+
+.checkbox-line input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  flex: 0 0 auto;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.card-page-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.card-page-actions .btn-secondary {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.card-page-actions .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Long, unbreakable URL — allowed to wrap so it can never widen the form. */
+.card-page-url {
+  font-size: 12px;
+  margin: 6px 0 0;
+  word-break: break-all;
+}

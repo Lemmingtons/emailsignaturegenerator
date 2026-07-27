@@ -32,6 +32,7 @@
     bindPhotoEffect();
     bindCtaAnimation();
     bindDividerAnimation();
+    bindCardControls();
     initPreviewDock();
     initCompliance();
     renderPreview();
@@ -175,7 +176,7 @@
       style[pickerId] = this.value;
       if (hex) hex.value = this.value;
       renderPreview();
-      if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); scheduleDividerRebuild(); }
+      if (pickerId === 'primaryColor') { schedulePhotoRebuild('accent'); scheduleCtaRebuild(); scheduleDividerRebuild(); }
     });
 
     if (hex) {
@@ -185,7 +186,7 @@
           style[pickerId] = val;
           picker.value = val;
           renderPreview();
-          if (pickerId === 'primaryColor') { scheduleAnimatedPhotoRebuild(); scheduleCtaRebuild(); scheduleDividerRebuild(); }
+          if (pickerId === 'primaryColor') { schedulePhotoRebuild('accent'); scheduleCtaRebuild(); scheduleDividerRebuild(); }
         }
       });
     }
@@ -205,21 +206,31 @@
         this.setAttribute('aria-checked', 'true');
         style[styleKey] = this.dataset.value;
         renderPreview();
-        if (styleKey === 'photoShape') scheduleAnimatedPhotoRebuild();
+        if (styleKey === 'photoShape') schedulePhotoRebuild('shape');
         if (styleKey === 'dividerStyle') scheduleDividerRebuild();
       });
     });
   }
 
-  // Photo shape and accent colour are baked into the GIF pixels, so an active
-  // animation has to be re-encoded when either changes. Debounced because the
-  // colour picker fires continuously while dragging.
+  // Photo shape and accent colour are baked into the pixels, so the stored photo
+  // has to be rebuilt when they change. Debounced because the colour picker fires
+  // continuously while dragging.
+  //
+  // Shape now affects the still as well as the animation, because the still carries
+  // its own baked mask for Outlook's benefit. Accent colour only reaches the pixels
+  // through the ring animation, so a still needs no rebuild for it.
   let animatedRebuildTimer = null;
 
-  function scheduleAnimatedPhotoRebuild() {
-    if (selectedPhotoEffect() === 'none' || !photoState.primaryCanvas || !isPro) return;
+  function schedulePhotoRebuild(trigger) {
+    const animated = selectedPhotoEffect() !== 'none' && isPro;
+    if (!photoState.primaryCanvas) return;
+    // Accent colour and name only reach the pixels through an animation — the ring
+    // effects use the accent, the monogram reveal uses both. A still needs neither.
+    if ((trigger === 'accent' || trigger === 'name') && !animated) return;
+    if (trigger === 'name' && selectedPhotoEffect() !== 'monogram') return;
+
     clearTimeout(animatedRebuildTimer);
-    setPhotoStatus('Animation will rebuild...');
+    setPhotoStatus(animated ? 'Animation will rebuild...' : 'Photo will rebuild...');
     animatedRebuildTimer = setTimeout(function() {
       regeneratePhotoAsset();
     }, 700);
@@ -350,6 +361,188 @@
 
   function defaultPhotoStatus() {
     setPhotoStatus(isPro ? PHOTO_STATUS_DEFAULT_PAID : PHOTO_STATUS_DEFAULT_UNPAID);
+  }
+
+  // ── Card page ──
+  //
+  // The public page the signature's name can point at. Publishing is deliberately
+  // gated twice: on Pro, and on an explicit tick-box, because the page carries the
+  // customer's real phone and email and is meant to be indexed. Nothing here runs
+  // on its own — a card only ever exists because someone pressed the button.
+
+  const CARD_SLUG_STORAGE_KEY = 'esg_card_slug';
+
+  function setCardStatus(text, kind) {
+    const el = document.getElementById('cardStatusHint');
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
+  // Reflects the three things that gate the button — Pro, consent, and a name —
+  // and keeps the published URL and Unpublish button in step with cardState.
+  function syncCardControls() {
+    const consent = document.getElementById('cardPageConsent');
+    const publishBtn = document.getElementById('cardPublishBtn');
+    const unpublishBtn = document.getElementById('cardUnpublishBtn');
+    const urlEl = document.getElementById('cardPageUrl');
+    if (!consent || !publishBtn) return;
+
+    const named = !!(document.getElementById('fullName') || {}).value;
+    publishBtn.disabled = !(isPro && consent.checked && named);
+    publishBtn.textContent = cardState.slug ? 'Update card page' : 'Publish card page';
+
+    if (unpublishBtn) unpublishBtn.style.display = cardState.slug ? '' : 'none';
+
+    if (urlEl) {
+      if (cardState.url) {
+        urlEl.style.display = '';
+        urlEl.innerHTML = '';
+        const a = document.createElement('a');
+        a.href = cardState.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = cardState.url;
+        urlEl.appendChild(a);
+      } else {
+        urlEl.style.display = 'none';
+        urlEl.textContent = '';
+      }
+    }
+  }
+
+  function bindCardControls() {
+    const consent = document.getElementById('cardPageConsent');
+    const publishBtn = document.getElementById('cardPublishBtn');
+    const unpublishBtn = document.getElementById('cardUnpublishBtn');
+    const target = document.getElementById('nameLinkTarget');
+
+    if (consent) consent.addEventListener('change', syncCardControls);
+    if (publishBtn) publishBtn.addEventListener('click', publishCardPage);
+    if (unpublishBtn) unpublishBtn.addEventListener('click', unpublishCardPage);
+    if (target) target.addEventListener('change', function() {
+      renderPreview();
+      if (this.value === 'card' && !cardState.url) {
+        setCardStatus('Publish your card page and the name link will point at it.', 'error');
+      } else if (cardState.url) {
+        setCardStatus('Card page is live.', 'success');
+      } else {
+        // Clear the prompt again when the name stops pointing at a card page, so a
+        // stale warning does not sit under an unrelated choice.
+        setCardStatus(isPro ? 'Tick the box above, then publish whenever you\'re ready.' : 'Publishing unlocks when you buy.');
+      }
+    });
+
+    const name = document.getElementById('fullName');
+    if (name) name.addEventListener('input', function() {
+      syncCardControls();
+      // The monogram reveal draws the initials into the GIF, so a name change has
+      // to re-encode it. Every other effect ignores this.
+      schedulePhotoRebuild('name');
+    });
+
+    const savedSlug = localStorage.getItem(CARD_SLUG_STORAGE_KEY);
+    if (savedSlug) {
+      cardState.slug = savedSlug;
+      cardState.url = `${window.location.origin}/c/${savedSlug}`;
+      if (consent) consent.checked = true;
+    }
+    syncCardControls();
+  }
+
+  async function publishCardPage() {
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!isPro || !token) {
+      setCardStatus(`A card page unlocks with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
+      showProPrompt();
+      return;
+    }
+
+    const data = getFormData();
+    if (!data.fullName) {
+      setCardStatus('Add your name before publishing.', 'error');
+      return;
+    }
+
+    // A preview-only data: URI cannot be fetched by anyone else, so the card would
+    // render with a broken photo. Only a hosted URL is worth sending.
+    const photoUrl = /^https?:\/\//.test(data.photoUrl || '') ? data.photoUrl : '';
+
+    setCardStatus('Publishing...');
+    try {
+      const resp = await fetch('/api/card', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: cardState.slug || undefined,
+          fullName: data.fullName,
+          title: data.title,
+          company: data.company,
+          phone: data.phone,
+          email: data.email,
+          website: data.website,
+          linkedin: data.linkedin,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          google: data.google,
+          photoUrl: photoUrl,
+        }),
+      });
+
+      if (!resp.ok) {
+        let code = '';
+        try {
+          const body = await resp.json();
+          code = body.code || body.error || '';
+        } catch {}
+        // A stored slug that the server no longer recognises would otherwise wedge
+        // the button forever, so drop it and let the next press mint a fresh page.
+        if (code === 'not_found' || code === 'not_your_card') {
+          cardState.slug = '';
+          cardState.url = '';
+          localStorage.removeItem(CARD_SLUG_STORAGE_KEY);
+          syncCardControls();
+          setCardStatus('That card page is gone. Press publish again to create a new one.', 'error');
+          return;
+        }
+        throw new Error(code);
+      }
+
+      const { slug, url } = await resp.json();
+      cardState.slug = slug;
+      cardState.url = url;
+      localStorage.setItem(CARD_SLUG_STORAGE_KEY, slug);
+      syncCardControls();
+      setCardStatus('Card page is live.', 'success');
+      renderPreview();
+    } catch (err) {
+      setCardStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
+
+  async function unpublishCardPage() {
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!cardState.slug || !token) return;
+
+    setCardStatus('Removing...');
+    try {
+      const resp = await fetch('/api/card/' + encodeURIComponent(cardState.slug), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      // A card that is already gone is the outcome the button asked for, so a 404
+      // is treated as success rather than an error the customer has to interpret.
+      if (!resp.ok && resp.status !== 404) throw new Error('unpublish_failed');
+
+      cardState.slug = '';
+      cardState.url = '';
+      localStorage.removeItem(CARD_SLUG_STORAGE_KEY);
+      syncCardControls();
+      setCardStatus('Card page removed.', 'success');
+      renderPreview();
+    } catch {
+      setCardStatus('Could not remove the card page. Try again.', 'error');
+    }
   }
 
   // ── Shared hosted-image upload ──
@@ -621,9 +814,10 @@
 
   const photoState = { primaryCanvas: null, secondaryCanvas: null };
 
-  // Square edge of the generated GIF. Templates render photos at 60-100px, so this
-  // stays crisp on retina while keeping files well under a couple of hundred KB.
-  const ANIMATED_PHOTO_SIZE = 160;
+  // Square edge of the generated GIF. The largest photo any template renders is
+  // 100px (Executive), so 200 is a true 2x for every template rather than the 1.6x
+  // that 160 gave the biggest one. Files stay well inside the 3 MB upload cap.
+  const ANIMATED_PHOTO_SIZE = 200;
 
   // ── Loop policy ──
   //
@@ -661,6 +855,67 @@
   function selectedPhotoEffect() {
     const el = document.getElementById('photoEffect');
     return el ? el.value : 'none';
+  }
+
+  // Bakes the chosen photo shape into the still that gets stored and pasted.
+  // Without this the shape lives only in the template's CSS `border-radius`, which
+  // classic Outlook ignores, so every circular photo lands there as a hard square.
+  // Square photos need no mask, and a missing PhotoAnimator degrades to the
+  // unshaped canvas rather than losing the photo altogether.
+  function shapedStillCanvas(source) {
+    const shape = style.photoShape || 'circle';
+    if (shape === 'square' || !window.PhotoAnimator || !PhotoAnimator.shapeStill) return source;
+
+    const size = source.width;
+    const shaped = document.createElement('canvas');
+    shaped.width = size;
+    shaped.height = size;
+    const ctx = shaped.getContext('2d');
+    ctx.drawImage(source, 0, 0);
+
+    try {
+      const image = ctx.getImageData(0, 0, size, size);
+      image.data.set(PhotoAnimator.shapeStill({
+        photo: image.data,
+        size,
+        shape,
+        // Matches the white background the templates already force for dark-mode
+        // safety, so the matte is invisible against the signature.
+        background: '#ffffff',
+      }));
+      ctx.putImageData(image, 0, 0);
+    } catch {
+      return source;
+    }
+
+    return shaped;
+  }
+
+  // Draws the initials tile the monogram animation dissolves from. Lives here
+  // rather than in PhotoAnimator because drawing glyphs needs a font, and that
+  // module is kept to pure pixel maths so it runs the same under Node.
+  function monogramRgba(size) {
+    const name = (document.getElementById('fullName') || {}).value || '';
+    const words = String(name).trim().split(/\s+/).filter(Boolean);
+    const initials = (words.length
+      ? (words.length === 1 ? words[0].slice(0, 1) : words[0].slice(0, 1) + words[words.length - 1].slice(0, 1))
+      : '·').toUpperCase();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = style.primaryColor || '#0891B2';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `600 ${Math.round(size * 0.36)}px Georgia, 'Times New Roman', serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Georgia's optical centre sits slightly below the geometric one.
+    ctx.fillText(initials, size / 2, size / 2 + size * 0.02);
+
+    return ctx.getImageData(0, 0, size, size).data;
   }
 
   function canvasToRgba(source, size) {
@@ -724,16 +979,17 @@
     const effect = selectedPhotoEffect();
     const spec = window.PhotoAnimator && PhotoAnimator.EFFECTS[effect];
 
-    // Still photo: the original path.
+    // Still photo: the original path, with the chosen shape baked in.
     if (effect === 'none' || !spec || !isPro) {
-      showPhotoPreview(canvas.toDataURL('image/jpeg', 0.92));
-      const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92);
+      const still = shapedStillCanvas(canvas);
+      showPhotoPreview(still.toDataURL('image/jpeg', 0.92));
+      const blob = await canvasToBlob(still, 'image/jpeg', 0.92);
       await uploadPhotoBlob(blob, 'Hosted photo ready for Gmail and Outlook.');
       return;
     }
 
     if (spec.needsSecondPhoto && !photoState.secondaryCanvas) {
-      showPhotoPreview(canvas.toDataURL('image/jpeg', 0.92));
+      showPhotoPreview(shapedStillCanvas(canvas).toDataURL('image/jpeg', 0.92));
       setPhotoStatus('Add a second photo to build the crossfade.');
       return;
     }
@@ -748,6 +1004,7 @@
       const built = PhotoAnimator.buildFrames({
         photo: canvasToRgba(canvas, size),
         secondPhoto: spec.needsSecondPhoto ? canvasToRgba(photoState.secondaryCanvas, size) : null,
+        monogram: spec.needsMonogram ? monogramRgba(size) : null,
         size,
         effect,
         shape: style.photoShape,
@@ -958,6 +1215,11 @@
 
   const dividerState = { url: '', height: 0 };
 
+  // The published card page, when the customer has opted into having one. `slug`
+  // is kept so a second publish updates the same page instead of stranding the
+  // URL already pasted into their signature.
+  const cardState = { url: '', slug: '' };
+
   function setDividerStatus(text, kind) {
     const el = document.getElementById('dividerStatusHint');
     if (!el) return;
@@ -1022,18 +1284,30 @@
       const canvas = renderDividerCanvas('#ffffff');
       const rgba = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
 
-      const built = SweepAnimator.buildFrames({
-        artwork: rgba,
-        width: canvas.width,
-        height: canvas.height,
-        frames: 16,
-        // Tighter and brighter than the button sweep: on a two-pixel rule a wide
-        // soft band just looks like the colour changing.
-        bandWidth: 0.07,
-        strength: 0.85,
-        skew: 0,
-        delay: 5,
-      });
+      const effectEl = document.getElementById('dividerEffect');
+      const drawOn = effectEl && effectEl.value === 'draw';
+
+      const built = drawOn
+        ? SweepAnimator.buildDrawFrames({
+          artwork: rgba,
+          width: canvas.width,
+          height: canvas.height,
+          frames: 18,
+          background: [255, 255, 255],
+          delay: 4,
+        })
+        : SweepAnimator.buildFrames({
+          artwork: rgba,
+          width: canvas.width,
+          height: canvas.height,
+          frames: 16,
+          // Tighter and brighter than the button sweep: on a two-pixel rule a wide
+          // soft band just looks like the colour changing.
+          bandWidth: 0.07,
+          strength: 0.85,
+          skew: 0,
+          delay: 5,
+        });
 
       const bytes = encodeSignatureGif({
         frames: built.frames,
@@ -1077,6 +1351,13 @@
     toggle.addEventListener('change', function() {
       if (toggle.checked) claimAnimationSlot('divider');
       regenerateDividerAnimation();
+    });
+
+    // Switching between sweep and draw only matters once the divider is animated;
+    // otherwise there is nothing to re-encode.
+    const effect = document.getElementById('dividerEffect');
+    if (effect) effect.addEventListener('change', function() {
+      if (toggle.checked) regenerateDividerAnimation();
     });
   }
 
@@ -1260,8 +1541,20 @@
       }
     }
 
+    // Where the name points. The card page is only available once one has actually
+    // been published, so 'card' resolves to '' until then and templates fall back
+    // to plain bold text rather than rendering a dead link.
+    const linkTargetEl = document.getElementById('nameLinkTarget');
+    const linkTarget = linkTargetEl ? linkTargetEl.value : 'none';
+    const nameLinkUrl =
+      linkTarget === 'card' ? cardState.url
+        : linkTarget === 'linkedin' ? get('linkedin')
+          : linkTarget === 'website' ? get('website')
+            : '';
+
     return {
       fullName: get('fullName'),
+      nameLinkUrl: nameLinkUrl,
       title: get('title'),
       phone: get('phone'),
       email: get('email'),
@@ -1642,6 +1935,14 @@
       data: CORE.withoutPreviewOnlyImages(data),
       compliance: complianceState || null,
       photoEffect: selectedPhotoEffect(),
+      dividerEffect: (document.getElementById('dividerEffect') || {}).value || 'sweep',
+      // Where the name pointed, and which card page it pointed at. Without the slug
+      // a restored signature would keep the rendered link but lose the ability to
+      // update the page behind it.
+      nameLink: {
+        target: (document.getElementById('nameLinkTarget') || {}).value || 'none',
+        cardSlug: cardState.slug || '',
+      },
     };
   }
 
@@ -1737,8 +2038,31 @@
       renderTemplateGrid();
     }
 
+    restoreNameLinkState(state);
     restoreAnimationState(state);
     renderPreview();
+  }
+
+  // Signatures saved before name links existed have no `nameLink` block, so the
+  // control is left at its default rather than being reset to something the
+  // customer never chose.
+  function restoreNameLinkState(state) {
+    const saved = state && state.nameLink;
+    if (!saved || typeof saved !== 'object') return;
+
+    const target = document.getElementById('nameLinkTarget');
+    if (target && ['none', 'card', 'linkedin', 'website'].includes(saved.target)) {
+      target.value = saved.target;
+    }
+
+    if (saved.cardSlug && /^[a-z0-9-]{1,64}$/.test(saved.cardSlug)) {
+      cardState.slug = saved.cardSlug;
+      cardState.url = `${window.location.origin}/c/${saved.cardSlug}`;
+      localStorage.setItem(CARD_SLUG_STORAGE_KEY, saved.cardSlug);
+      const consent = document.getElementById('cardPageConsent');
+      if (consent) consent.checked = true;
+    }
+    syncCardControls();
   }
 
   // Animated CTAs and dividers are hosted images whose URLs ride along in `data`,
@@ -1772,6 +2096,11 @@
       ctaState.height = parseInt(data.ctaImageHeight, 10) || 0;
       if (ctaToggle) ctaToggle.checked = true;
       return;
+    }
+
+    const dividerEffect = document.getElementById('dividerEffect');
+    if (dividerEffect && ['sweep', 'draw'].includes(state && state.dividerEffect)) {
+      dividerEffect.value = state.dividerEffect;
     }
 
     if (data.dividerImageUrl) {
@@ -1871,6 +2200,8 @@
     // Refresh upload hint copy now that hosting is unlocked
     defaultPhotoStatus();
     defaultLogoStatus();
+    setCardStatus('Tick the box above, then publish whenever you\'re ready.');
+    syncCardControls();
 
     // Re-render to remove badges and branding
     renderTemplateGrid();

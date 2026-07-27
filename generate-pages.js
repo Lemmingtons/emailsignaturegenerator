@@ -61,7 +61,7 @@ function ensureOutputDir() {
 function rolePageHTML({ slug, label, singular, description, keywords }) {
   const url = `${SITE_URL}/seo/email-signature-for-${slug}`;
   const title = `Email Signature for ${label} — Free Builder | Email Signature Generator`;
-  const metaDesc = `Build a professional email signature for ${label.toLowerCase()} in under 2 minutes. Free to build, all 19 templates, $9 once to use it. Works with Gmail and Outlook.`;
+  const metaDesc = `Build a professional email signature for ${label.toLowerCase()} in under 2 minutes. Free to build, all ${TEMPLATE_COUNT} templates, $9 once to use it. Works with Gmail and Outlook.`;
   const h1 = `Professional Email Signature for ${label}`;
 
   return pageHTML({
@@ -107,7 +107,7 @@ function platformPageHTML({
 }) {
   const url = `${SITE_URL}/seo/email-signature-generator-for-${slug}`;
   const title = seoTitle || `Email Signature Generator for ${label} — Free Builder`;
-  const metaDesc = metaDescription || `Build a professional ${label} email signature in under 2 minutes. Free to build with all 19 templates, $9 once to use it. Works perfectly in ${label}.`;
+  const metaDesc = metaDescription || `Build a professional ${label} email signature in under 2 minutes. Free to build with all ${TEMPLATE_COUNT} templates, $9 once to use it. Works perfectly in ${label}.`;
   const h1 = heading || `Email Signature Generator for ${label}`;
 
   return pageHTML({
