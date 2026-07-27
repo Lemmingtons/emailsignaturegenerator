@@ -119,7 +119,7 @@ const TEMPLATES = {
   ${this._logoRow(data, primaryColor)}
   <tr><td style="padding-bottom: 12px;">
     <table cellpadding="0" cellspacing="0" border="0"><tr>
-      ${this._photoTile(data, photoRadius, 60) ? `<td style="vertical-align: middle; padding-right: 14px;">${this._photoTile(data, photoRadius, 60)}</td>` : ''}
+      ${this._photoCellCustom(data, photoRadius, 60, 'vertical-align: middle; padding-right: 14px;')}
       <td style="vertical-align: middle;">
         ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}<br/>
         <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}</span>
@@ -217,7 +217,7 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
-    ${this._photoTile(data, photoRadius, 90) ? `<td style="vertical-align: top; padding-right: 18px;">${this._photoTile(data, photoRadius, 90, `border: 3px solid ${primaryColor}; `)}</td>` : ''}
+    ${this._photoCellCustom(data, photoRadius, 90, 'vertical-align: top; padding-right: 18px;', `border: 3px solid ${primaryColor}; `)}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
         ${this._logoRow(data, primaryColor)}
@@ -252,7 +252,7 @@ const TEMPLATES = {
   ${this._logoRow(data, primaryColor)}
   <tr><td>
     <table cellpadding="0" cellspacing="0" border="0"><tr>
-      ${this._photoTile(data, photoRadius, 80) ? `<td style="vertical-align: top; padding-right: 16px;">${this._photoTile(data, photoRadius, 80)}</td>` : ''}
+      ${this._photoCellCustom(data, photoRadius, 80, 'vertical-align: top; padding-right: 16px;')}
       <td style="vertical-align: top;">
         ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}<br/>
         <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
@@ -563,7 +563,7 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
-    ${this._photoTile(data, photoRadius, 100) ? `<td style="vertical-align: top; padding-right: 18px;">${this._photoTile(data, photoRadius, 100)}</td>` : ''}
+    ${this._photoCellCustom(data, photoRadius, 100, 'vertical-align: top; padding-right: 18px;')}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
         ${this._logoRow(data, primaryColor)}
@@ -604,7 +604,7 @@ const TEMPLATES = {
   ${this._logoRow(data, primaryColor, 'left')}
   <tr><td>
     <table cellpadding="0" cellspacing="0" border="0"><tr>
-      ${this._photoTile(data, photoRadius, 65) ? `<td style="vertical-align: middle; padding-right: 14px;">${this._photoTile(data, photoRadius, 65)}</td>` : ''}
+      ${this._photoCellCustom(data, photoRadius, 65, 'vertical-align: middle; padding-right: 14px;')}
       <td style="vertical-align: middle;">
         ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}<br/>
         <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 700;">${this.escapeAttr(data.title || '')}</span>
@@ -683,7 +683,7 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff; font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5; border-collapse: collapse;">
   <tr>
-    ${this._photoTile(data, photoRadius, 76) ? `<td style="vertical-align: top; padding-right: 20px;">${this._photoTile(data, photoRadius, 76)}</td>` : ''}
+    ${this._photoCellCustom(data, photoRadius, 76, 'vertical-align: top; padding-right: 20px;')}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
         ${this._logoRow(data, primaryColor)}
@@ -1055,6 +1055,14 @@ const _helpers = {
     return `<td style="vertical-align: top; padding-right: 18px; background-color: #ffffff;" bgcolor="#ffffff">
       ${tile}
     </td>`;
+  },
+
+  // Same as _photoCell but with the cell styling chosen by the template, for the
+  // layouts that need their own padding, alignment or photo border. Returns ''
+  // when there is no photo, so the row simply loses the column.
+  _photoCellCustom(data, radius, size, cellStyle, extraImgStyle) {
+    const tile = this._photoTile(data, radius, size, extraImgStyle);
+    return tile ? `<td style="${cellStyle}">${tile}</td>` : '';
   },
 
   // Company logo row — drop-in for the first row of any template's inner or

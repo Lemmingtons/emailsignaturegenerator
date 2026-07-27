@@ -647,10 +647,24 @@ export default {
       const bucket = uploadBucket(env);
       if (!bucket) return notFoundResponse();
 
-      const listed = await bucket.list({ prefix: 'cards/', limit: 1000 });
-      const urls = listed.objects
-        .map((o) => o.key.replace(/^cards\//, '').replace(/\.json$/, ''))
-        .filter((slug) => /^[a-z0-9-]{1,64}$/.test(slug))
+      // R2 returns at most 1000 keys per call. Listing only the first page would
+      // silently cap the feature's whole point once more than 1000 cards exist,
+      // so this pages through them. The ceiling is the sitemap protocol's own
+      // 50,000-URL limit; past that a sitemap index would be needed.
+      const SITEMAP_URL_LIMIT = 50_000;
+      const slugs = [];
+      let cursor;
+      do {
+        const listed = await bucket.list({ prefix: 'cards/', limit: 1000, cursor });
+        for (const obj of listed.objects) {
+          const slug = obj.key.replace(/^cards\//, '').replace(/\.json$/, '');
+          if (/^[a-z0-9-]{1,64}$/.test(slug)) slugs.push(slug);
+        }
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor && slugs.length < SITEMAP_URL_LIMIT);
+
+      const urls = slugs
+        .slice(0, SITEMAP_URL_LIMIT)
         .map((slug) => `  <url><loc>${url.origin}/c/${slug}</loc><changefreq>monthly</changefreq></url>`)
         .join('\n');
 

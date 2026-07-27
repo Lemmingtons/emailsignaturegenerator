@@ -65,7 +65,15 @@ function checkWorkerBehavior() {
     "    if (!value) return null;",
     "    return { body: value.body, httpMetadata: value.httpMetadata, httpEtag: 'test-etag', text: async () => String(value.body), writeHttpMetadata(headers) { headers.set('Content-Type', value.httpMetadata.contentType); } };",
     "  },",
-    "  list: async ({ prefix, limit }) => ({ objects: [...stored.keys()].filter((k) => k.startsWith(prefix)).slice(0, limit).map((key) => ({ key })) }),",
+    // Mirrors R2's paging contract, so a Worker that fails to follow the cursor
+    // is caught here rather than silently listing only the first page in production.
+    "  list: async ({ prefix, limit, cursor }) => {",
+    "    const all = [...stored.keys()].filter((k) => k.startsWith(prefix));",
+    "    const start = cursor ? parseInt(cursor, 10) : 0;",
+    "    const page = all.slice(start, start + limit);",
+    "    const next = start + page.length;",
+    "    return { objects: page.map((key) => ({ key })), truncated: next < all.length, cursor: String(next) };",
+    "  },",
     "};",
     "const assetRequests = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async (request) => {",
