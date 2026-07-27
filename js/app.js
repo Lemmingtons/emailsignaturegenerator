@@ -1705,6 +1705,10 @@
 
     if (state.style && typeof state.style === 'object') {
       Object.assign(style, state.style);
+      // Signatures saved before the dead 'rounded'/'square' icon styles were
+      // removed still carry them. They always rendered as mono, so map them back
+      // onto mono — otherwise the toggle group would show no selected option.
+      if (style.iconStyle !== 'color') style.iconStyle = 'mono';
       syncStyleControls();
     }
 

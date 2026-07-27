@@ -5,3 +5,10 @@ graphify-out/
 
 # Local wrangler dev secrets
 .dev.vars
+
+# Claude Code runtime state — session transcripts, counters, local memory.
+# .claude/launch.json is real project config and stays tracked.
+.claude/logs/
+.claude/memory/
+.claude/sessions/
+.claude/state/

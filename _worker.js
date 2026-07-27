@@ -1,5 +1,9 @@
 // Cloudflare Worker for Email Signature Generator
-// Handles: clean URL rewriting, security headers, and Pro payment verification
+// Handles: clean URL rewriting, security headers, Pro payment verification, and
+// on-demand social icon rendering.
+
+import PngEncoder from './js/png-encoder.js';
+import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
@@ -116,6 +120,12 @@ function sniffImage(buf) {
       (b[4] === 0x37 || b[4] === 0x39) && b[5] === 0x61) return { ext: 'gif', mime: 'image/gif' };
   return null;
 }
+
+// Social icons rendered by /i/{platform}-{hex}.png. Masks live in
+// assets/icon-masks/ as raw 8-bit alpha, ICON_SIZE square (2x the 22px display
+// size, for retina). Keep this list in step with TEMPLATES._iconUrl.
+const ICON_PLATFORMS = ['website', 'linkedin', 'instagram', 'facebook', 'google'];
+const ICON_SIZE = ICON_MASK_SIZE;
 
 // Image slots a Pro user may occupy. One stored file per slot per user.
 const IMAGE_SLOTS = ['photo', 'logo', 'cta', 'divider'];
@@ -357,6 +367,43 @@ export default {
         JSON.stringify({ url: publicUrl, bytes: buf.byteLength, contentType: sniffed.mime }),
         { headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // ── Public: Social icon, tinted on demand ────────────────────────────────
+    //
+    // Email clients render neither `data:` URIs nor SVG, so icons have to be real
+    // hosted PNGs. Their colour follows the customer's brand, so there is no fixed
+    // file to pre-render — this tints a stored alpha mask instead. Output is a few
+    // KB and immutable, so it is served from cache after the first request.
+    if (url.pathname.startsWith('/i/')) {
+      const match = url.pathname.match(/^\/i\/([a-z]+)-([0-9a-fA-F]{6})\.png$/);
+      if (!match) return notFoundResponse();
+
+      const [, platform, hex] = match;
+      if (!ICON_PLATFORMS.includes(platform)) return notFoundResponse();
+
+      const mask = decodeMask(platform);
+      if (!mask || mask.length !== ICON_SIZE * ICON_SIZE) return notFoundResponse();
+
+      const rgb = [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+      ];
+      const png = PngEncoder.encode(
+        PngEncoder.tintMask(mask, ICON_SIZE, ICON_SIZE, rgb),
+        ICON_SIZE,
+        ICON_SIZE
+      );
+
+      return new Response(png, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
     }
 
     // ── Public: Serve uploaded image ─────────────────────────────────────────

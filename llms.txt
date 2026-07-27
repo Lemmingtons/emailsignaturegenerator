@@ -27,7 +27,7 @@ No subscription. No recurring charges. No account needed.
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
 - 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
 - Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
-- Social icon links: website, LinkedIn, Instagram, Facebook — 4 icon styles (mono, colour, rounded, square)
+- Social icon links: website, LinkedIn, Instagram, Facebook — 2 icon styles (mono, colour)
 - CTA buttons: customisable text and URL (e.g. "Book a Meeting")
 - One-click copy: rich HTML for Gmail / plain text for any client
 - Works in 50+ email clients: Gmail, Outlook, Apple Mail, Yahoo Mail, and more
