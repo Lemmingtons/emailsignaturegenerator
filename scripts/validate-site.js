@@ -11,6 +11,18 @@ function fail(message) {
   process.exitCode = 1;
 }
 
+// The icon styles the generator actually offers, read from the markup rather than
+// hardcoded, so a new toggle is covered by the checks below the moment it ships.
+function iconStylesOffered() {
+  const html = fs.readFileSync(fromRoot('generator.html'), 'utf8');
+  const group = html.match(/id="icon-style-toggles"[\s\S]*?<\/div>/);
+  if (!group) {
+    fail('generator.html no longer has an #icon-style-toggles group');
+    return [];
+  }
+  return [...group[0].matchAll(/data-value="([^"]+)"/g)].map((m) => m[1]);
+}
+
 function checkSyntax(file, mode) {
   const args = ['--check'];
   const options = { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] };
@@ -447,7 +459,7 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
 // anything that reaches a signature this way is invisible to the recipient — which
 // is exactly how the social icons shipped broken.
 {
-  const iconStyles = ['mono', 'color', 'rounded', 'square'];
+  const iconStyles = iconStylesOffered();
   const rich = {
     fullName: 'Jane Smith', title: 'Marketing Manager', company: 'Acme Corp',
     phone: '+61 400 000 000', email: 'jane@acme.com',
@@ -486,6 +498,21 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
     style: core.createStyle({ iconStyle: 'color', primaryColor: '#EA580C' }), compliance: null,
   });
   assert(tinted.includes('-ea580c.png'), 'colour icon style must tint with the primary colour');
+
+  // Every icon style on offer must change the signature. 'rounded' and 'square'
+  // shipped for a while producing output byte-identical to 'mono', so the picker
+  // had two options that silently did nothing.
+  assert(iconStyles.length > 0, 'generator.html must offer at least one icon style');
+  const renderedByStyle = new Map();
+  for (const iconStyle of iconStyles) {
+    const html = core.buildSignatureHtml({
+      template: TEMPLATES.classic, data: rich,
+      style: core.createStyle({ iconStyle, primaryColor: '#EA580C' }), compliance: null,
+    });
+    const twin = renderedByStyle.get(html);
+    assert(!twin, `icon styles "${twin}" and "${iconStyle}" produce identical output; remove one`);
+    renderedByStyle.set(html, iconStyle);
+  }
 }
 
 // Preview-only images must never survive into an exported signature.

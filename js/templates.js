@@ -848,8 +848,9 @@ const _helpers = {
   // every signature showed a row of broken-image placeholders. The Worker renders
   // them on demand at /i/{platform}-{hex}.png and caches them forever.
   //
-  // `rounded` and `square` are currently drawn the same as `mono`; the original
-  // code computed a background and radius for them but never used either.
+  // Only `mono` and `color` are offered. Older saved signatures may still carry
+  // `rounded` or `square`, which never differed from `mono` — anything that isn't
+  // `color` falls through to the grey tint.
   _iconUrl(platform, iconStyle, primaryColor) {
     const known = ['website', 'linkedin', 'instagram', 'facebook', 'google'];
     const safePlatform = known.includes(platform) ? platform : 'website';
