@@ -1,6 +1,6 @@
 # Email Signature Generator
 
-> A browser-based email signature generator with 19 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
+> A browser-based email signature generator with 24 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
 
 ## What this tool does
 
@@ -12,9 +12,9 @@ The **Email Signature Examples** hub at /email-signature-examples provides 52 ro
 
 ## Pricing
 
-One plan, one price: **$9 AUD, one-time**. It includes all 19 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
+One plan, one price: **$9 AUD, one-time**. It includes all 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
 
-The builder itself is free to use with no account: anyone can pick any of the 19 templates, customise it fully, and see a live preview of exactly what they will get. Payment is required to copy the signature out, host images, or save an edit link.
+The builder itself is free to use with no account: anyone can pick any of the 24 templates, customise it fully, and see a live preview of exactly what they will get. Payment is required to copy the signature out, host images, or save an edit link.
 
 No subscription. No recurring charges. No account needed.
 
@@ -23,7 +23,7 @@ No subscription. No recurring charges. No account needed.
 - Free **signature health check** — paste any signature HTML, get a full audit (contrast, Gmail dark-mode, Outlook, trackers, accessibility) in seconds
 - Gmail dark-mode safe — every template renders correctly in both light and dark inboxes
 - **Jurisdiction-aware compliance** — auto-fills your regulatory licence number (bar, NPI, AFSL, CRD, GMC, AHPRA, SRA, etc.) and appends the correct country-specific disclaimer (HIPAA, Circular 230, FCA, FINRA Reg BI, Legal Professional Privilege, etc.) for 7 regulated professions across US, UK, AU, and CA
-- 19 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
+- 24 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
 - 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
 - Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
@@ -46,7 +46,7 @@ No subscription. No recurring charges. No account needed.
 ## Frequently asked questions
 
 **Is this a one-time payment?**
-Yes. Pay $9 AUD once and get lifetime access to all 19 templates, including future templates. No subscription, no recurring charges.
+Yes. Pay $9 AUD once and get lifetime access to all 24 templates, including future templates. No subscription, no recurring charges.
 
 **Does it work in Gmail and Outlook?**
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.

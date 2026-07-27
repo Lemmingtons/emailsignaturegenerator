@@ -63,7 +63,16 @@ function checkWorkerBehavior() {
     "  get: async (key) => {",
     "    const value = stored.get(key);",
     "    if (!value) return null;",
-    "    return { body: value.body, httpMetadata: value.httpMetadata, httpEtag: 'test-etag', writeHttpMetadata(headers) { headers.set('Content-Type', value.httpMetadata.contentType); } };",
+    "    return { body: value.body, httpMetadata: value.httpMetadata, httpEtag: 'test-etag', text: async () => String(value.body), writeHttpMetadata(headers) { headers.set('Content-Type', value.httpMetadata.contentType); } };",
+    "  },",
+    // Mirrors R2's paging contract, so a Worker that fails to follow the cursor
+    // is caught here rather than silently listing only the first page in production.
+    "  list: async ({ prefix, limit, cursor }) => {",
+    "    const all = [...stored.keys()].filter((k) => k.startsWith(prefix));",
+    "    const start = cursor ? parseInt(cursor, 10) : 0;",
+    "    const page = all.slice(start, start + limit);",
+    "    const next = start + page.length;",
+    "    return { objects: page.map((key) => ({ key })), truncated: next < all.length, cursor: String(next) };",
     "  },",
     "};",
     "const assetRequests = [];",
@@ -146,6 +155,48 @@ function checkWorkerBehavior() {
     "if (sigBadJson.status !== 400) throw new Error('malformed signature save returned ' + sigBadJson.status);",
     "const sigMissing = await worker.default.fetch(new Request('https://example.com/api/signature/" + 'A'.repeat(43) + "'), env);",
     "if (sigMissing.status !== 404) throw new Error('unknown signature id returned ' + sigMissing.status);",
+    // Card pages: Pro-gated publish, public server-rendered page, owner-only replace.
+    // These are deliberately public and indexable, which is why the ownership and
+    // escaping checks below matter more here than anywhere else in the Worker.
+    "const cardBody = JSON.stringify({ fullName: 'Jane Smith', title: 'Marketing Manager', company: 'Acme Corp', phone: '0400 000 000', email: 'jane@acme.com', website: 'https://acme.com', linkedin: 'https://linkedin.com/in/janesmith' });",
+    "const cardPub = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: cardBody }), env);",
+    "if (cardPub.status !== 200) throw new Error('card publish returned ' + cardPub.status + ': ' + await cardPub.text());",
+    "const card = await cardPub.json();",
+    "if (!/^jane-smith-[0-9a-f]{6}$/.test(card.slug)) throw new Error('card slug mismatch: ' + card.slug);",
+    "const cardPage = await worker.default.fetch(new Request('https://example.com/c/' + card.slug), env);",
+    "if (cardPage.status !== 200) throw new Error('card page returned ' + cardPage.status);",
+    "const cardHtml = await cardPage.text();",
+    "if (!cardHtml.includes('Jane Smith')) throw new Error('card page did not render the name server-side');",
+    "if (!cardHtml.includes('\"@type\":\"Person\"')) throw new Error('card page is missing Person JSON-LD');",
+    "if (!cardHtml.includes('<link rel=\"canonical\"')) throw new Error('card page is missing a canonical link');",
+    "if (cardHtml.includes('cus_TEST123')) throw new Error('card page leaks the Stripe customer id');",
+    "const vcf = await worker.default.fetch(new Request('https://example.com/c/' + card.slug + '.vcf'), env);",
+    "if (vcf.status !== 200) throw new Error('vcard returned ' + vcf.status);",
+    "const vcfText = await vcf.text();",
+    "if (!vcfText.includes('FN:Jane Smith') || !vcfText.trim().endsWith('END:VCARD')) throw new Error('vcard body malformed');",
+    "if (!vcfText.includes('\\r\\n')) throw new Error('vcard must use CRLF line endings');",
+    "const otherToken = await signJwt({ sub: 'cus_OTHER', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
+    "const steal = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + otherToken, 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: 'Mallory', slug: card.slug }) }), env);",
+    "if (steal.status !== 403) throw new Error('another customer overwrote a card: ' + steal.status);",
+    "const stealDelete = await worker.default.fetch(new Request('https://example.com/api/card/' + card.slug, { method: 'DELETE', headers: { Authorization: 'Bearer ' + otherToken } }), env);",
+    "if (stealDelete.status !== 403) throw new Error('another customer deleted a card: ' + stealDelete.status);",
+    "const cardNoAuth = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: cardBody }), env);",
+    "if (cardNoAuth.status !== 401) throw new Error('unauthenticated card publish returned ' + cardNoAuth.status);",
+    "const cardNoName = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'x' }) }), env);",
+    "if (cardNoName.status !== 400) throw new Error('nameless card publish returned ' + cardNoName.status);",
+    "const cardBadSlug = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: 'x', slug: '../../etc/passwd' }) }), env);",
+    "if (cardBadSlug.status !== 400) throw new Error('path traversal slug returned ' + cardBadSlug.status);",
+    "const evilCardRes = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: 'Evil', title: '\"><img src=x onerror=alert(1)>', website: 'javascript:alert(1)', photoUrl: 'javascript:alert(1)' }) }), env);",
+    "const evilCard = await evilCardRes.json();",
+    "const evilHtml = await (await worker.default.fetch(new Request('https://example.com/c/' + evilCard.slug), env)).text();",
+    "if (/<img(?![^>]*class=\"avatar\")/i.test(evilHtml)) throw new Error('card page allowed an injected tag to open');",
+    "if (evilHtml.includes('javascript:')) throw new Error('card page rendered a javascript: URL');",
+    "const cardMissing = await worker.default.fetch(new Request('https://example.com/c/does-not-exist'), env);",
+    "if (cardMissing.status !== 404) throw new Error('unknown card returned ' + cardMissing.status);",
+    "const cardSitemap = await worker.default.fetch(new Request('https://example.com/sitemap-cards.xml'), env);",
+    "if (cardSitemap.status !== 200) throw new Error('cards sitemap returned ' + cardSitemap.status);",
+    "const sitemapXml = await cardSitemap.text();",
+    "if (!sitemapXml.includes('https://example.com/c/' + card.slug)) throw new Error('cards sitemap omitted a published card');",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
     "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
@@ -212,11 +263,14 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
   const size = 64;
   const photo = new Uint8ClampedArray(size * size * 4);
   const second = new Uint8ClampedArray(size * size * 4);
+  // Stands in for the initials tile the browser draws with a real font.
+  const monogram = new Uint8ClampedArray(size * size * 4);
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
       photo[i] = 40 + x * 2; photo[i + 1] = 90; photo[i + 2] = 200 - y; photo[i + 3] = 255;
       second[i] = 200 - x; second[i + 1] = 30 + y; second[i + 2] = 80; second[i + 3] = 255;
+      monogram[i] = 8; monogram[i + 1] = 145; monogram[i + 2] = 178; monogram[i + 3] = 255;
     }
   }
 
@@ -225,6 +279,7 @@ assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come bac
       photo, size, effect: id, shape: 'circle',
       background: '#ffffff', accentColor: '#0891B2',
       secondPhoto: spec.needsSecondPhoto ? second : null,
+      monogram: spec.needsMonogram ? monogram : null,
     });
 
     assert(built.frames.length === spec.frames, `${id} produced ${built.frames.length} frames, expected ${spec.frames}`);

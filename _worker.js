@@ -497,6 +497,183 @@ export default {
       });
     }
 
+    // ── API: Publish a public card page (Pro only) ───────────────────────────
+    //
+    // Unlike a saved signature, this is deliberately public and indexable — it is
+    // what the signature's name links to, and every published card is a page on
+    // our own domain. That is exactly why publishing is opt-in in the UI and why
+    // the stored record carries its owner: a card can only be replaced by the
+    // customer who created it.
+    if (url.pathname === '/api/card') {
+      if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+      if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
+      const bucket = uploadBucket(env);
+      if (!bucket) return apiError(500, 'storage_not_configured');
+
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) return apiError(401, 'invalid_token', 'missing');
+      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
+      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const sub = verified.payload && verified.payload.sub;
+      if (!sub || !/^cus_[A-Za-z0-9]+$/.test(sub)) return apiError(401, 'invalid_token', 'bad_subject');
+
+      const MAX_CARD_BYTES = 16_000;
+      const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
+      if (declaredLen > MAX_CARD_BYTES) return apiError(413, 'too_large');
+
+      const raw = await request.text();
+      if (!raw) return apiError(400, 'empty_body');
+      if (raw.length > MAX_CARD_BYTES) return apiError(413, 'too_large');
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return apiError(400, 'invalid_json');
+      }
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return apiError(400, 'invalid_json');
+      }
+      if (!parsed.fullName || typeof parsed.fullName !== 'string') {
+        return apiError(400, 'name_required');
+      }
+
+      const card = normaliseCard(parsed);
+
+      // Reusing a slug replaces that page, so the link already pasted into a
+      // signature keeps working. Only the original owner may do it.
+      let slug = typeof parsed.slug === 'string' ? parsed.slug : '';
+      if (slug) {
+        if (!/^[a-z0-9-]{1,64}$/.test(slug)) return apiError(400, 'invalid_slug');
+        const existing = await bucket.get(`cards/${slug}.json`);
+        if (!existing) return apiError(404, 'not_found');
+        let owner = null;
+        try {
+          owner = JSON.parse(await existing.text()).owner;
+        } catch {
+          owner = null;
+        }
+        if (owner !== sub) return apiError(403, 'not_your_card');
+      } else {
+        slug = `${slugifyName(card.fullName)}-${randomSuffix()}`;
+      }
+
+      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+      });
+
+      return new Response(
+        JSON.stringify({ slug, url: `${url.origin}/c/${slug}` }),
+        { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
+    }
+
+    // ── API: Unpublish a card page ───────────────────────────────────────────
+    if (url.pathname.startsWith('/api/card/') && request.method === 'DELETE') {
+      if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
+      const bucket = uploadBucket(env);
+      if (!bucket) return apiError(500, 'storage_not_configured');
+
+      const match = url.pathname.match(/^\/api\/card\/([a-z0-9-]{1,64})$/);
+      if (!match) return apiError(404, 'not_found');
+
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+      if (!token) return apiError(401, 'invalid_token', 'missing');
+      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
+      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const sub = verified.payload && verified.payload.sub;
+
+      const existing = await bucket.get(`cards/${match[1]}.json`);
+      if (!existing) return apiError(404, 'not_found');
+      let owner = null;
+      try {
+        owner = JSON.parse(await existing.text()).owner;
+      } catch {
+        owner = null;
+      }
+      if (owner !== sub) return apiError(403, 'not_your_card');
+
+      await bucket.delete(`cards/${match[1]}.json`);
+      return new Response(JSON.stringify({ deleted: true }), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    // ── Public: vCard download ───────────────────────────────────────────────
+    // Checked before the page route because the page pattern would otherwise
+    // swallow the .vcf suffix.
+    if (url.pathname.startsWith('/c/') && url.pathname.endsWith('.vcf')) {
+      const match = url.pathname.match(/^\/c\/([a-z0-9-]{1,64})\.vcf$/);
+      if (!match) return notFoundResponse();
+      const card = await readCard(env, match[1]);
+      if (!card) return notFoundResponse();
+
+      return new Response(buildVCard(card), {
+        headers: {
+          'Content-Type': 'text/vcard; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${match[1]}.vcf"`,
+          'Cache-Control': 'public, max-age=300',
+        },
+      });
+    }
+
+    // ── Public: Card page ────────────────────────────────────────────────────
+    // Rendered server-side rather than hydrated in the browser, because the whole
+    // point of these pages is that search engines and AI crawlers can read them
+    // without executing JavaScript.
+    if (url.pathname.startsWith('/c/')) {
+      const match = url.pathname.match(/^\/c\/([a-z0-9-]{1,64})$/);
+      if (!match) return notFoundResponse();
+      const card = await readCard(env, match[1]);
+      if (!card) return notFoundResponse();
+
+      const html = renderCardPage(card, match[1], url.origin);
+      const headers = addSecurityHeaders(new Response(null, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          // Short, because a customer republishing should see the change quickly.
+          'Cache-Control': 'public, max-age=300',
+        },
+      }));
+      return new Response(html, { headers });
+    }
+
+    // ── Public: Sitemap of published card pages ──────────────────────────────
+    // Kept separate from the static sitemap because this set changes whenever a
+    // customer publishes, and the static one is generated at build time.
+    if (url.pathname === '/sitemap-cards.xml') {
+      const bucket = uploadBucket(env);
+      if (!bucket) return notFoundResponse();
+
+      // R2 returns at most 1000 keys per call. Listing only the first page would
+      // silently cap the feature's whole point once more than 1000 cards exist,
+      // so this pages through them. The ceiling is the sitemap protocol's own
+      // 50,000-URL limit; past that a sitemap index would be needed.
+      const SITEMAP_URL_LIMIT = 50_000;
+      const slugs = [];
+      let cursor;
+      do {
+        const listed = await bucket.list({ prefix: 'cards/', limit: 1000, cursor });
+        for (const obj of listed.objects) {
+          const slug = obj.key.replace(/^cards\//, '').replace(/\.json$/, '');
+          if (/^[a-z0-9-]{1,64}$/.test(slug)) slugs.push(slug);
+        }
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor && slugs.length < SITEMAP_URL_LIMIT);
+
+      const urls = slugs
+        .slice(0, SITEMAP_URL_LIMIT)
+        .map((slug) => `  <url><loc>${url.origin}/c/${slug}</loc><changefreq>monthly</changefreq></url>`)
+        .join('\n');
+
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+        { headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' } }
+      );
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/upload') {
       return apiError(410, 'legacy_upload_removed', 'Use /api/upload-image with a Pro token.');
     }
@@ -530,6 +707,206 @@ export default {
     });
   },
 };
+
+// ── Card pages ───────────────────────────────────────────────────────────────
+
+const CARD_TEXT_FIELDS = ['fullName', 'title', 'company'];
+const CARD_LINK_FIELDS = ['website', 'linkedin', 'instagram', 'facebook', 'google'];
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Only http(s) survives. Everything the card page renders as a link goes through
+// here, so a stored `javascript:` URL from any source cannot become a live link.
+function safeHttpUrl(value) {
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+// Accepts only the fields a card page renders, each clamped to a sane length, so
+// an oversized or unexpected key can never reach storage or the rendered page.
+function normaliseCard(input) {
+  const out = {};
+  for (const field of CARD_TEXT_FIELDS) {
+    out[field] = String(input[field] == null ? '' : input[field]).trim().slice(0, 120);
+  }
+  for (const field of CARD_LINK_FIELDS) {
+    out[field] = safeHttpUrl(input[field]).slice(0, 300);
+  }
+  out.email = String(input.email == null ? '' : input.email).trim().slice(0, 160);
+  out.phone = String(input.phone == null ? '' : input.phone).trim().slice(0, 40);
+  out.photoUrl = safeHttpUrl(input.photoUrl).slice(0, 300);
+  return out;
+}
+
+function slugifyName(name) {
+  const slug = String(name || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+  return slug || 'card';
+}
+
+function randomSuffix() {
+  const bytes = new Uint8Array(3);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function readCard(env, slug) {
+  const bucket = uploadBucket(env);
+  if (!bucket) return null;
+  const obj = await bucket.get(`cards/${slug}.json`);
+  if (!obj) return null;
+  try {
+    const parsed = JSON.parse(await obj.text());
+    // `owner` is storage bookkeeping, not page content — drop it before rendering
+    // so a customer id can never leak into public HTML.
+    const { owner, ...card } = parsed;
+    return card;
+  } catch {
+    return null;
+  }
+}
+
+// RFC 6350 escaping: backslash, comma, semicolon and newline all carry meaning
+// inside a vCard value.
+function vcardEscape(value) {
+  return String(value == null ? '' : value)
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+}
+
+function buildVCard(card) {
+  const words = String(card.fullName || '').trim().split(/\s+/).filter(Boolean);
+  const last = words.length > 1 ? words[words.length - 1] : '';
+  const first = words.length ? words[0] : '';
+
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${vcardEscape(card.fullName)}`,
+    `N:${vcardEscape(last)};${vcardEscape(first)};;;`,
+  ];
+  if (card.title) lines.push(`TITLE:${vcardEscape(card.title)}`);
+  if (card.company) lines.push(`ORG:${vcardEscape(card.company)}`);
+  if (card.phone) lines.push(`TEL;TYPE=CELL:${vcardEscape(card.phone)}`);
+  if (card.email) lines.push(`EMAIL;TYPE=INTERNET:${vcardEscape(card.email)}`);
+  if (card.website) lines.push(`URL:${vcardEscape(card.website)}`);
+  if (card.photoUrl) lines.push(`PHOTO;VALUE=URI:${vcardEscape(card.photoUrl)}`);
+  for (const field of ['linkedin', 'instagram', 'facebook']) {
+    if (card[field]) lines.push(`X-SOCIALPROFILE;TYPE=${field}:${vcardEscape(card[field])}`);
+  }
+  lines.push('END:VCARD');
+
+  // vCard requires CRLF line endings.
+  return lines.join('\r\n') + '\r\n';
+}
+
+function renderCardPage(card, slug, origin) {
+  const name = escapeHtml(card.fullName);
+  const role = [card.title, card.company].filter(Boolean).join(', ');
+  const roleSafe = escapeHtml(role);
+  const description = role ? `${card.fullName} — ${role}. Contact details and vCard.` : `${card.fullName} — contact details and vCard.`;
+
+  const links = [
+    card.website && { href: card.website, label: 'Website' },
+    card.linkedin && { href: card.linkedin, label: 'LinkedIn' },
+    card.instagram && { href: card.instagram, label: 'Instagram' },
+    card.facebook && { href: card.facebook, label: 'Facebook' },
+    card.google && { href: card.google, label: 'Google' },
+  ].filter(Boolean);
+
+  // sameAs is what lets an AI or search crawler tie this page to the same person
+  // across platforms, which is the entire reason these pages exist.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: card.fullName,
+    url: `${origin}/c/${slug}`,
+  };
+  if (card.title) jsonLd.jobTitle = card.title;
+  if (card.company) jsonLd.worksFor = { '@type': 'Organization', name: card.company };
+  if (card.photoUrl) jsonLd.image = card.photoUrl;
+  if (card.email) jsonLd.email = card.email;
+  if (card.phone) jsonLd.telephone = card.phone;
+  const sameAs = links.map((l) => l.href);
+  if (sameAs.length) jsonLd.sameAs = sameAs;
+
+  // `new URL().toString()` normalises a bare host to a trailing slash. Correct for
+  // the href, untidy as display text on a page whose whole job is to look sharp.
+  const displayUrl = (href) => href.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  const contactRow = (label, href, text) =>
+    `<a class="row" href="${escapeHtml(href)}"><span class="label">${label}</span><span class="value">${escapeHtml(text)}</span></a>`;
+
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${name}${roleSafe ? ' — ' + roleSafe : ''}</title>
+<meta name="description" content="${escapeHtml(description)}">
+<link rel="canonical" href="${escapeHtml(origin)}/c/${escapeHtml(slug)}">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="${name}">
+<meta property="og:description" content="${escapeHtml(description)}">
+${card.photoUrl ? `<meta property="og:image" content="${escapeHtml(card.photoUrl)}">` : ''}
+<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>
+<style>
+ :root { color-scheme: light dark; }
+ body { margin:0; background:#f6f7f8; color:#141719;
+        font:16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+        display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+ .card { background:#fff; border:1px solid #e6e8eb; border-radius:16px; padding:32px; max-width:420px; width:100%; }
+ img.avatar { width:88px; height:88px; border-radius:50%; object-fit:cover; display:block; margin-bottom:20px; }
+ h1 { font-size:24px; letter-spacing:-0.3px; margin:0 0 4px; }
+ .role { color:#6b7280; font-size:14px; margin:0 0 24px; }
+ .row { display:flex; gap:12px; padding:10px 0; border-top:1px solid #eef1f4; text-decoration:none; color:inherit; }
+ /* Fixed, and wide enough for the longest label (INSTAGRAM) so every value in the
+    column starts on the same vertical line. */
+ .label { flex:0 0 88px; font-size:10px; text-transform:uppercase; letter-spacing:1.1px; color:#9aa3ad; padding-top:4px; }
+ .value { font-size:14px; color:#374151; word-break:break-word; }
+ .save { display:inline-block; margin-top:24px; padding:11px 20px; border-radius:8px;
+         background:#0891B2; color:#fff; text-decoration:none; font-size:14px; font-weight:600; }
+ .footer { margin-top:24px; font-size:12px; color:#9aa3ad; }
+ .footer a { color:#6b7280; }
+ @media (prefers-color-scheme: dark) {
+   body { background:#0f1214; color:#e8eaec; }
+   .card { background:#171a1d; border-color:#272b30; }
+   .row { border-color:#272b30; }
+   .value { color:#c8ccd0; }
+ }
+</style>
+</head><body>
+<main class="card">
+  ${card.photoUrl ? `<img class="avatar" src="${escapeHtml(card.photoUrl)}" alt="${name}">` : ''}
+  <h1>${name}</h1>
+  ${roleSafe ? `<p class="role">${roleSafe}</p>` : ''}
+  ${card.phone ? contactRow('Phone', 'tel:' + String(card.phone).replace(/\s/g, ''), card.phone) : ''}
+  ${card.email ? contactRow('Email', 'mailto:' + card.email, card.email) : ''}
+  ${links.map((l) => contactRow(l.label, l.href, displayUrl(l.href))).join('\n  ')}
+  <a class="save" href="/c/${escapeHtml(slug)}.vcf">Save contact</a>
+  <p class="footer">Card by <a href="${escapeHtml(origin)}">Email Signature Generator</a></p>
+</main>
+</body></html>`;
+}
 
 async function handleLegacyPhoto(env, url) {
   const bucket = uploadBucket(env);

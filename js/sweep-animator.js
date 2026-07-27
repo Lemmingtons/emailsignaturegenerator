@@ -122,8 +122,73 @@
     return { frames, delay: options.delay || DEFAULTS.delay };
   }
 
+  /**
+   * Draws the artwork on from left to right instead of passing a light over it.
+   *
+   * Frame 0 is deliberately the completed artwork, for the same reason as
+   * everything else here: classic Outlook renders only the first frame, and a
+   * half-drawn rule there would look like a broken image rather than a design.
+   * Frames 1..n-1 sweep from empty back to complete, so a loop reads as the rule
+   * redrawing itself and then resting.
+   *
+   * Unrevealed pixels are painted with `background` rather than left transparent,
+   * because GIF has no soft alpha.
+   *
+   * @param {object} options
+   * @param {Uint8ClampedArray|Uint8Array} options.artwork RGBA, width*height*4
+   * @param {number} options.width
+   * @param {number} options.height
+   * @param {Array<number>} [options.background] RGB the rule sits on; defaults to white
+   * @param {number} [options.frames]
+   * @returns {{frames: Array<Uint8ClampedArray>, delay: number}}
+   */
+  function buildDrawFrames(options) {
+    const width = options.width;
+    const height = options.height;
+    const artwork = options.artwork;
+
+    if (!width || !height) throw new Error('sweep_dimensions_required');
+    if (!artwork || artwork.length !== width * height * 4) throw new Error('sweep_size_mismatch');
+
+    const count = Math.max(2, options.frames || DEFAULTS.frames);
+    const bg = options.background || [255, 255, 255];
+    // Softens the leading edge over roughly two pixels so the rule does not
+    // terminate in a hard vertical step as it grows.
+    const feather = 2;
+
+    const frames = [];
+    for (let f = 0; f < count; f++) {
+      const t = f === 0 ? 1 : f / (count - 1);
+      const edge = t * width;
+      const frame = new Uint8ClampedArray(width * height * 4);
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          const reveal = clamp01((edge - x) / feather);
+
+          if (reveal >= 1) {
+            frame[i] = artwork[i];
+            frame[i + 1] = artwork[i + 1];
+            frame[i + 2] = artwork[i + 2];
+          } else {
+            frame[i] = bg[0] + (artwork[i] - bg[0]) * reveal;
+            frame[i + 1] = bg[1] + (artwork[i + 1] - bg[1]) * reveal;
+            frame[i + 2] = bg[2] + (artwork[i + 2] - bg[2]) * reveal;
+          }
+          frame[i + 3] = 255;
+        }
+      }
+
+      frames.push(frame);
+    }
+
+    return { frames, delay: options.delay || DEFAULTS.delay };
+  }
+
   return Object.freeze({
     DEFAULTS,
     buildFrames,
+    buildDrawFrames,
   });
 });
