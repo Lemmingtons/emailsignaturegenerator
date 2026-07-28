@@ -95,7 +95,10 @@ async function verifyJwt(token, secret) {
   try {
     const payloadJson = new TextDecoder().decode(payloadBytes);
     const payload = JSON.parse(payloadJson);
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+    if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+      return { valid: false, reason: 'invalid_expiry' };
+    }
+    if (payload.exp <= Math.floor(Date.now() / 1000)) {
       return { valid: false, reason: 'expired' };
     }
     return { valid: true, payload };
@@ -186,23 +189,48 @@ function notFoundResponse() {
   return new Response('Not found', { status: 404 });
 }
 
-function isPrivateAssetPath(pathname) {
-  return (
-    pathname === '/package.json' ||
-    pathname === '/NEXT_STEPS.md' ||
-    pathname === '/generate-pages.js' ||
-    pathname === '/update-sitemap.js' ||
-    pathname === '/wrangler.toml' ||
-    pathname === '/test.html' ||
-    pathname === '/_worker.js' ||
-    pathname.startsWith('/automation/') ||
-    pathname.startsWith('/graphify-out/') ||
-    pathname.startsWith('/scripts/') ||
-    pathname.startsWith('/templates/') ||
-    pathname.startsWith('/.git/') ||
-    pathname.startsWith('/.wrangler/') ||
-    pathname.startsWith('/.claude/')
-  );
+const PUBLIC_ROOT_ASSETS = new Set([
+  '/',
+  '/app',
+  '/blog',
+  '/blog/',
+  '/create',
+  '/generate',
+  '/index.html',
+  '/generator.html',
+  '/health-check.html',
+  '/email-signature-examples.html',
+  '/privacy.html',
+  '/favicon.svg',
+  '/robots.txt',
+  '/llms.txt',
+  '/sitemap.xml',
+]);
+
+const PUBLIC_CLIENT_SCRIPTS = new Set([
+  '/js/app.js',
+  '/js/generator-core.js',
+  '/js/gif-encoder.js',
+  '/js/health-check.js',
+  '/js/motion.js',
+  '/js/photo-animator.js',
+  '/js/site-facts.js',
+  '/js/sweep-animator.js',
+  '/js/templates.js',
+]);
+
+function isPublicStaticAssetPath(pathname) {
+  if (PUBLIC_ROOT_ASSETS.has(pathname) || PUBLIC_CLIENT_SCRIPTS.has(pathname)) return true;
+  if (/^\/css\/[A-Za-z0-9_-]+\.css$/.test(pathname)) return true;
+  if (/^\/assets\/[A-Za-z0-9_-]+\.(?:gif|jpe?g|png|svg|webp)$/.test(pathname)) return true;
+  if (pathname === '/datasets/compliance.json') return true;
+  if (/^\/(?:blog|seo)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
+
+  // Clean URLs are public only when their corresponding HTML path is public.
+  if (!pathname.endsWith('/') && !/\.[A-Za-z0-9]+$/.test(pathname)) {
+    return isPublicStaticAssetPath(`${pathname}.html`);
+  }
+  return false;
 }
 
 async function fetchStaticAsset(env, request) {
@@ -291,8 +319,8 @@ export default {
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json' },
         });
-      } catch (err) {
-        return new Response(JSON.stringify({ valid: false, reason: 'server_error', detail: String(err) }), {
+      } catch {
+        return new Response(JSON.stringify({ valid: false, reason: 'server_error' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -324,14 +352,19 @@ export default {
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
       if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
 
-      // Rate limit: 25 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable).
-      // Raised from 10 — photo, logo and animated-GIF retries now share one budget.
-      if (env.RATE_LIMIT) {
-        const hourBucket = Math.floor(Date.now() / 3_600_000);
-        const rlKey = `rl:upload:${sub}:${hourBucket}`;
-        const current = parseInt((await env.RATE_LIMIT.get(rlKey)) || '0', 10);
-        if (current >= 25) return apiError(429, 'rate_limited');
-        await env.RATE_LIMIT.put(rlKey, String(current + 1), { expirationTtl: 7200 });
+      // Cloudflare's native binding enforces 25 uploads / minute / customer.
+      // Photo, logo and animated-GIF retries all share the same customer budget.
+      if (!env.RATE_LIMIT || typeof env.RATE_LIMIT.limit !== 'function') {
+        return apiError(503, 'rate_limit_not_configured');
+      }
+      try {
+        const limited = await env.RATE_LIMIT.limit({ key: `upload:${sub}` });
+        if (!limited || typeof limited.success !== 'boolean') {
+          return apiError(503, 'rate_limit_unavailable');
+        }
+        if (!limited.success) return apiError(429, 'rate_limited');
+      } catch {
+        return apiError(503, 'rate_limit_unavailable');
       }
 
       // Read body and re-check actual size
@@ -683,7 +716,9 @@ export default {
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
-    if (isPrivateAssetPath(url.pathname)) return notFoundResponse();
+    if ((request.method !== 'GET' && request.method !== 'HEAD') || !isPublicStaticAssetPath(url.pathname)) {
+      return notFoundResponse();
+    }
 
     let response = await fetchStaticAsset(env, request);
 

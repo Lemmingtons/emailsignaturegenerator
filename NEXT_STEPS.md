@@ -23,7 +23,7 @@ The active upload path is:
 
 The client sends the Pro JWT from `localStorage.sig_pro_token` as a bearer token. The Worker validates the token, verifies image magic bytes, stores the image in R2 under a deterministic opaque upload ID, and serves the public URL needed by email clients.
 
-Each slot holds at most one file: uploading a new extension into a slot evicts the old one, but `photo` and `logo` are independent. Size cap is 3 MB; rate limit is 25 uploads per hour per customer.
+Each slot holds at most one file: uploading a new extension into a slot evicts the old one, but `photo` and `logo` are independent. Size cap is 3 MB; Cloudflare's native rate-limiting binding allows 25 uploads per minute per customer.
 
 `/api/upload` is legacy and returns `410`. Existing `/u/cus_...` image URLs remain readable for old signatures, but new uploads must not expose Stripe customer IDs.
 

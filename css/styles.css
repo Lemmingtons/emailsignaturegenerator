@@ -74,6 +74,20 @@ body {
   border-radius: 4px;
 }
 
+.file-input-accessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+label:has(+ .file-input-accessible:focus-visible) {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -1371,7 +1385,35 @@ body {
   display: flex;
   justify-content: center;
   gap: 8px;
+}
+
+.sig-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
   margin-top: 20px;
+}
+
+.sig-carousel-toggle {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  font: 600 12px/1.4 var(--font-body);
+  cursor: pointer;
+}
+
+.sig-carousel-toggle:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.sig-carousel-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .sig-dot {
@@ -2293,7 +2335,7 @@ body {
 .crop-modal-header {
   width: 100%; display: flex; justify-content: space-between; align-items: center;
 }
-.crop-modal-header span { font-weight: 600; font-size: 15px; }
+.crop-modal-header h2 { font-weight: 600; font-size: 15px; }
 .crop-viewport {
   width: 260px; height: 260px;
   border-radius: 50%;

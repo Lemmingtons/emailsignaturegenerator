@@ -12,6 +12,15 @@
   let isPro = false;
   let style = CORE.createStyle();
 
+  function updateLiveStatus(el, text, kind) {
+    if (!el) return;
+    el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+    el.setAttribute('aria-atomic', 'true');
+    el.textContent = text;
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+  }
+
   // Compliance state — populated after compliance.json loads
   let complianceData = null;
   const complianceState = {
@@ -61,7 +70,7 @@
     const container = document.getElementById('category-tabs');
     if (!container) return;
     container.innerHTML = CATEGORIES.map(cat =>
-      `<button class="category-tab${cat.id === currentCategory ? ' active' : ''}" data-category="${cat.id}" aria-label="Filter ${cat.name} templates">${cat.name}</button>`
+      `<button type="button" class="category-tab${cat.id === currentCategory ? ' active' : ''}" data-category="${cat.id}" aria-pressed="${cat.id === currentCategory}">${cat.name}</button>`
     ).join('');
 
     container.querySelectorAll('.category-tab').forEach(btn => {
@@ -89,7 +98,7 @@
         t._previewHtml = t.preview(previewStyle);
       }
       // Every template is available to build with. Payment gates export, not design.
-      return `<button class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-label="Select ${t.name} template">
+      return `<button type="button" class="template-card${id === currentTemplate ? ' active' : ''}" data-template="${id}" aria-pressed="${id === currentTemplate}" aria-label="${t.name} template">
         <div class="template-preview">${t._previewHtml}</div>
         <div class="template-name">${t.name}</div>
       </button>`;
@@ -353,10 +362,7 @@
   const PHOTO_STATUS_DEFAULT_PAID = 'Upload — we\'ll host it for Gmail-ready use.';
 
   function setPhotoStatus(text, kind) {
-    const el = document.getElementById('photoStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('photoStatusHint'), text, kind);
   }
 
   function defaultPhotoStatus() {
@@ -373,10 +379,7 @@
   const CARD_SLUG_STORAGE_KEY = 'esg_card_slug';
 
   function setCardStatus(text, kind) {
-    const el = document.getElementById('cardStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('cardStatusHint'), text, kind);
   }
 
   // Reflects the three things that gate the button — Pro, consent, and a name —
@@ -578,7 +581,7 @@
   async function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
-    showCropUI(file);
+    showCropUI(file, 'primary', input);
   }
 
   function removePhoto() {
@@ -618,10 +621,7 @@
   const LOGO_MAX_EDGE = 400;
 
   function setLogoStatus(text, kind) {
-    const el = document.getElementById('logoStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('logoStatusHint'), text, kind);
   }
 
   function defaultLogoStatus() {
@@ -718,11 +718,13 @@
   // ── Photo Crop ──
   const cropState = { file: null, slot: 'primary', scale: 1, x: 0, y: 0, dragging: false, lastX: 0, lastY: 0, naturalW: 0, naturalH: 0 };
   let cropHandlersReady = false;
+  let cropReturnFocus = null;
 
   // `slot` is 'primary' for the signature photo, or 'secondary' for the second
   // frame of a crossfade animation.
-  function showCropUI(file, slot) {
+  function showCropUI(file, slot, trigger) {
     if (!cropHandlersReady) { initCropHandlers(); cropHandlersReady = true; }
+    cropReturnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     cropState.file = file;
     cropState.slot = slot || 'primary';
 
@@ -742,7 +744,10 @@
       updateCropTransform();
     };
     img.src = blobUrl;
-    document.getElementById('cropModal').style.display = 'flex';
+    const modal = document.getElementById('cropModal');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('cropModalTitle').focus();
   }
 
   function updateCropTransform() {
@@ -762,13 +767,17 @@
 
   function closeCropUI() {
     const modal = document.getElementById('cropModal');
+    if (!modal || modal.getAttribute('aria-hidden') === 'true') return;
     modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
     const img = document.getElementById('cropImage');
     if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
     // Reset file inputs so re-selecting the same file triggers change again
     document.getElementById('photoFile').value = '';
     const secondFile = document.getElementById('photoSecondFile');
     if (secondFile) secondFile.value = '';
+    if (cropReturnFocus && document.contains(cropReturnFocus)) cropReturnFocus.focus();
+    cropReturnFocus = null;
   }
 
   async function applyCrop() {
@@ -1056,10 +1065,7 @@
   const ctaState = { url: '', width: 0, height: 0 };
 
   function setCtaStatus(text, kind) {
-    const el = document.getElementById('ctaStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('ctaStatusHint'), text, kind);
   }
 
   function ctaAnimationEnabled() {
@@ -1221,10 +1227,7 @@
   const cardState = { url: '', slug: '' };
 
   function setDividerStatus(text, kind) {
-    const el = document.getElementById('dividerStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('dividerStatusHint'), text, kind);
   }
 
   function dividerAnimationEnabled() {
@@ -1422,16 +1425,44 @@
     if (secondFile) {
       secondFile.addEventListener('change', function() {
         const file = this.files[0];
-        if (file) showCropUI(file, 'secondary');
+        if (file) showCropUI(file, 'secondary', this);
       });
     }
   }
 
   function initCropHandlers() {
+    const modal = document.getElementById('cropModal');
     const viewport = document.getElementById('cropViewport');
 
     document.getElementById('cropCancel').addEventListener('click', closeCropUI);
     document.getElementById('cropApply').addEventListener('click', applyCrop);
+
+    modal.addEventListener('keydown', function(e) {
+      if (modal.getAttribute('aria-hidden') === 'true') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeCropUI();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusable = Array.from(modal.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+        .filter(el => el.offsetParent !== null);
+      if (!focusable.length) {
+        e.preventDefault();
+        document.getElementById('cropModalTitle').focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === document.getElementById('cropModalTitle'))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
 
     // Mouse drag
     viewport.addEventListener('mousedown', function(e) {
@@ -1619,10 +1650,7 @@
   }
 
   function setExportStatus(text, kind) {
-    const el = document.getElementById('exportStatusHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('exportStatusHint'), text, kind);
   }
 
   function getActiveCompliance() {
@@ -1797,10 +1825,12 @@
     const msg = CORE.validateFieldValue(id, el.value);
     if (msg) {
       el.classList.add('input-error');
+      el.setAttribute('aria-invalid', 'true');
       if (errorEl) errorEl.textContent = msg;
       return false;
     } else {
       el.classList.remove('input-error');
+      el.setAttribute('aria-invalid', 'false');
       if (errorEl) errorEl.textContent = '';
       return true;
     }
@@ -1809,7 +1839,10 @@
   function clearFieldError(id) {
     const el = document.getElementById(id);
     const errorEl = document.getElementById(id + '-error');
-    if (el) el.classList.remove('input-error');
+    if (el) {
+      el.classList.remove('input-error');
+      el.setAttribute('aria-invalid', 'false');
+    }
     if (errorEl) errorEl.textContent = '';
   }
 
@@ -1884,6 +1917,7 @@
         staging.remove();
         showCopied(btn);
       } catch (e) {
+        setExportStatus('Could not copy the signature. Select the preview and copy it manually.', 'error');
         alert('Could not copy. Please select the preview manually and press Ctrl+C.');
       }
     }
@@ -1903,12 +1937,15 @@
       await navigator.clipboard.writeText(CORE.plainTextFromData(data));
       showCopied(btn);
     } catch (e) {
+      setExportStatus('Could not copy the plain-text signature.', 'error');
       alert('Could not copy to clipboard.');
     }
   }
 
   function showCopied(btn) {
     btn.classList.add('copied');
+    if (btn.id === 'copyHtmlBtn') setExportStatus('HTML signature copied to the clipboard.', 'success');
+    if (btn.id === 'copyTextBtn') setExportStatus('Plain-text signature copied to the clipboard.', 'success');
     setTimeout(() => btn.classList.remove('copied'), 2000);
   }
 
@@ -1918,10 +1955,7 @@
   // is the only credential, which is why the UI says so plainly next to the button.
 
   function setSaveLinkStatus(text, kind) {
-    const el = document.getElementById('saveLinkHint');
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    updateLiveStatus(document.getElementById('saveLinkHint'), text, kind);
   }
 
   function collectSignatureState() {
