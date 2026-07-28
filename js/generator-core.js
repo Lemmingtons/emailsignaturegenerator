@@ -144,7 +144,7 @@
     switch (code) {
       case 'not_pro': return 'Pro is required to host images for Gmail and Outlook.';
       case 'invalid_type': return 'That image slot is not supported.';
-      case 'rate_limited': return 'Too many uploads this hour. Try again later.';
+      case 'rate_limited': return 'Too many uploads in this one-minute window. Try again shortly.';
       case 'too_large': return 'Image too large. Use a smaller JPG, PNG, or WebP.';
       case 'unsupported_format': return 'JPG, PNG, or WebP only.';
       case 'invalid_token': return 'Pro session expired. Refresh Pro access and try again.';

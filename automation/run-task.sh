@@ -52,6 +52,27 @@ fi
 mkdir -p "$LOG_DIR"
 cd "$SITE_DIR"
 
+REPORT_EXISTED=0
+REPORT_MUST_CHANGE=0
+REPORT_SNAPSHOT="$(mktemp)"
+REPORT_READY=0
+cleanup_report_snapshot() {
+  if [ "$REPORT_EXISTED" = "1" ] && [ "$REPORT_READY" != "1" ]; then
+    cp "$REPORT_SNAPSHOT" "$REPORT_FILE"
+  fi
+  rm -f "$REPORT_SNAPSHOT"
+}
+trap cleanup_report_snapshot EXIT
+if [ -f "$REPORT_FILE" ]; then
+  REPORT_EXISTED=1
+  cp "$REPORT_FILE" "$REPORT_SNAPSHOT"
+  if [ "$TASK" = "weekly-content" ]; then
+    REPORT_MUST_CHANGE=1
+  else
+    rm -f "$REPORT_FILE"
+  fi
+fi
+
 echo "[$(date '+%Y-%m-%d %H:%M')] Starting $TASK"
 "$AGENT_CLI" --print "$(printf 'Repository root: %s\nRequired report output: %s\nRun all repository commands from the repository root and write the report to the exact path above.\n\n' "$SITE_DIR" "$REPORT_FILE"; cat "$PROMPT_FILE")"
 
@@ -59,6 +80,15 @@ if [ ! -s "$REPORT_FILE" ]; then
   echo "Expected report is missing or empty: $REPORT_FILE" >&2
   exit 1
 fi
+if [ "$REPORT_MUST_CHANGE" = "1" ]; then
+  SNAPSHOT_SIZE="$(wc -c < "$REPORT_SNAPSHOT" | tr -d ' ')"
+  REPORT_SIZE="$(wc -c < "$REPORT_FILE" | tr -d ' ')"
+  if [ "$REPORT_SIZE" -le "$SNAPSHOT_SIZE" ] || ! head -c "$SNAPSHOT_SIZE" "$REPORT_FILE" | cmp -s "$REPORT_SNAPSHOT" -; then
+    echo "Expected report was not appended during this run: $REPORT_FILE" >&2
+    exit 1
+  fi
+fi
+REPORT_READY=1
 
 SEND_REQUESTED=0
 DEPLOY_REQUESTED=0
@@ -90,16 +120,16 @@ if [ "$DEPLOY_REQUESTED" = "1" ]; then
   fi
 fi
 
-if [ "$SEND_REQUESTED" = "1" ]; then
-  echo "[$(date '+%Y-%m-%d %H:%M')] Sending report email"
-  "${NODE_BIN:-node}" "$SCRIPT_DIR/send-email.js" "$REPORT_FILE" "$EMAIL_SUBJECT"
-fi
-
 if [ "$DEPLOY_REQUESTED" = "1" ]; then
   echo "[$(date '+%Y-%m-%d %H:%M')] Running pre-deploy checks"
   npm run check
   echo "[$(date '+%Y-%m-%d %H:%M')] Deploying"
   npx wrangler deploy >> "$LOG_DIR/cron-$TASK.log" 2>&1
+fi
+
+if [ "$SEND_REQUESTED" = "1" ]; then
+  echo "[$(date '+%Y-%m-%d %H:%M')] Sending report email"
+  "${NODE_BIN:-node}" "$SCRIPT_DIR/send-email.js" "$REPORT_FILE" "$EMAIL_SUBJECT"
 fi
 
 echo "[$(date '+%Y-%m-%d %H:%M')] Complete $TASK"

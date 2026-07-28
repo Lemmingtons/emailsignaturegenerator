@@ -28,6 +28,10 @@ if [ "${FAKE_AGENT_MODE:-write}" = "fail" ]; then exit 9; fi
 if [ "${FAKE_AGENT_MODE:-write}" = "write" ]; then
   report_file="$(printf '%s\n' "${2:-}" | sed -n 's/^Required report output: //p' | head -1)"
   mkdir -p "$(dirname "$report_file")"
+  printf 'generated report\n' >> "$report_file"
+elif [ "${FAKE_AGENT_MODE:-write}" = "overwrite" ]; then
+  report_file="$(printf '%s\n' "${2:-}" | sed -n 's/^Required report output: //p' | head -1)"
+  mkdir -p "$(dirname "$report_file")"
   printf 'generated report\n' > "$report_file"
 fi
 EOF
@@ -43,6 +47,7 @@ cat > "$FAKE_BIN/npx" <<'EOF'
 #!/bin/bash
 set -euo pipefail
 printf 'npx %s\n' "$*" >> "$ACTION_LOG"
+[ "${FAKE_NPX_FAIL:-0}" != "1" ] || exit 7
 EOF
 
 cat > "$FAKE_BIN/send-email" <<'EOF'
@@ -73,6 +78,7 @@ assert_rejected() {
   if "$@" >/dev/null 2>&1; then fail "command unexpectedly succeeded: $*"; fi
 }
 run_weekly() { bash "$FIXTURE/automation/run-weekly.sh"; }
+run_daily() { bash "$FIXTURE/automation/run-daily.sh"; }
 
 # Defaults generate a report but perform no external write.
 : > "$ACTION_LOG"
@@ -98,6 +104,35 @@ assert_actions 'agent'
 grep -Fq "Required report output: $CUSTOM_REPORT_DIR/weekly-log.md" "$PROMPT_LOG" || fail 'explicit REPORT_DIR was not respected'
 [ -s "$CUSTOM_REPORT_DIR/weekly-log.md" ] || fail 'explicit report output was not created'
 [ -z "$(git -C "$FIXTURE" status --porcelain --untracked-files=all)" ] || fail 'explicit external report output dirtied the checkout'
+
+# A stale report from an earlier run cannot satisfy this run's output contract.
+printf 'previous report\n' > "$DEFAULT_REPORT_DIR/weekly-log.md"
+: > "$ACTION_LOG"
+assert_rejected env FAKE_AGENT_MODE=missing bash "$FIXTURE/automation/run-weekly.sh"
+assert_actions 'agent'
+grep -Fxq 'previous report' "$DEFAULT_REPORT_DIR/weekly-log.md" || fail 'failed run did not restore the previous report'
+
+# A successful weekly append preserves the accumulated log.
+: > "$ACTION_LOG"
+FAKE_AGENT_MODE=write run_weekly
+assert_actions 'agent'
+grep -Fq 'previous report' "$DEFAULT_REPORT_DIR/weekly-log.md" || fail 'successful weekly run discarded the previous log'
+grep -Fq 'generated report' "$DEFAULT_REPORT_DIR/weekly-log.md" || fail 'successful weekly run omitted the new log entry'
+
+# Replacing the accumulated weekly log is rejected and restores prior content.
+printf 'previous report\n' > "$DEFAULT_REPORT_DIR/weekly-log.md"
+: > "$ACTION_LOG"
+assert_rejected env FAKE_AGENT_MODE=overwrite bash "$FIXTURE/automation/run-weekly.sh"
+assert_actions 'agent'
+grep -Fxq 'previous report' "$DEFAULT_REPORT_DIR/weekly-log.md" || fail 'destructive weekly replacement was not rolled back'
+
+# Daily reports are fresh when recreated during this run, even with identical content.
+DAILY_REPORT="$DEFAULT_REPORT_DIR/health-$(date '+%Y-%m-%d').md"
+printf 'generated report\n' > "$DAILY_REPORT"
+: > "$ACTION_LOG"
+FAKE_AGENT_MODE=overwrite run_daily
+assert_actions 'agent'
+grep -Fxq 'generated report' "$DAILY_REPORT" || fail 'identical regenerated daily report was not retained'
 
 # Email requires the shared external-write approval and uses mapped safe arguments.
 : > "$ACTION_LOG"
@@ -143,9 +178,18 @@ rm "$FIXTURE/untracked.txt"
 FAKE_AGENT_MODE=write DEPLOY_AFTER=1 ALLOW_EXTERNAL_WRITES=1 DEPLOY_APPROVED_COMMIT="$APPROVED_COMMIT" run_weekly
 assert_actions "$(printf 'agent\nnpm run check\nnpx wrangler deploy')"
 
+# When both writes are approved, email is sent only after validation and deploy succeed.
 : > "$ACTION_LOG"
-assert_rejected env FAKE_AGENT_MODE=write FAKE_NPM_FAIL=1 DEPLOY_AFTER=1 ALLOW_EXTERNAL_WRITES=1 DEPLOY_APPROVED_COMMIT="$APPROVED_COMMIT" bash "$FIXTURE/automation/run-weekly.sh"
+FAKE_AGENT_MODE=write SEND_EMAIL=1 DEPLOY_AFTER=1 ALLOW_EXTERNAL_WRITES=1 DEPLOY_APPROVED_COMMIT="$APPROVED_COMMIT" run_weekly
+assert_actions "$(printf 'agent\nnpm run check\nnpx wrangler deploy\nemail %s | %s | %s' "$FIXTURE/automation/send-email.js" "$DEFAULT_REPORT_DIR/weekly-log.md" 'Weekly SEO Update — New Article Published')"
+
+: > "$ACTION_LOG"
+assert_rejected env FAKE_AGENT_MODE=write FAKE_NPM_FAIL=1 SEND_EMAIL=1 DEPLOY_AFTER=1 ALLOW_EXTERNAL_WRITES=1 DEPLOY_APPROVED_COMMIT="$APPROVED_COMMIT" bash "$FIXTURE/automation/run-weekly.sh"
 assert_actions "$(printf 'agent\nnpm run check')"
+
+: > "$ACTION_LOG"
+assert_rejected env FAKE_AGENT_MODE=write FAKE_NPX_FAIL=1 SEND_EMAIL=1 DEPLOY_AFTER=1 ALLOW_EXTERNAL_WRITES=1 DEPLOY_APPROVED_COMMIT="$APPROVED_COMMIT" bash "$FIXTURE/automation/run-weekly.sh"
+assert_actions "$(printf 'agent\nnpm run check\nnpx wrangler deploy')"
 
 # Missing, empty, or failed output prevents all side effects.
 rm -f "$DEFAULT_REPORT_DIR/weekly-log.md"

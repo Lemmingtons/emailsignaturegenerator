@@ -7,6 +7,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const generator = read('generator.html');
 const landing = read('index.html');
 const app = read('js/app.js');
+const core = require('../js/generator-core');
 
 assert.match(generator, /id="cropModal"[^>]+aria-labelledby="cropModalTitle"[^>]+aria-hidden="true"/);
 assert.match(generator, /id="cropModalTitle"[^>]+tabindex="-1"/);
@@ -44,5 +45,10 @@ assert.match(landing, /mouseenter[^\n]+stopAuto\(\)/);
 assert.match(landing, /focusin[^\n]+stopAuto\(\)/);
 assert.match(landing, /rotationToggle\.setAttribute\('aria-pressed', stopped \? 'true' : 'false'\)/);
 assert.match(landing, /slide\.inert = i !== current/);
+
+assert.equal(
+  core.describeUploadError('rate_limited'),
+  'Too many uploads in this one-minute window. Try again shortly.'
+);
 
 console.log('Frontend accessibility regression checks passed');

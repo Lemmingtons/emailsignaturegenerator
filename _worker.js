@@ -227,8 +227,8 @@ function isPublicStaticAssetPath(pathname) {
   if (/^\/(?:blog|seo)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
 
   // Clean URLs are public only when their corresponding HTML path is public.
-  if (!pathname.endsWith('/') && !/\.[A-Za-z0-9]+$/.test(pathname)) {
-    return isPublicStaticAssetPath(`${pathname}.html`);
+  if (!/\.[A-Za-z0-9]+$/.test(pathname)) {
+    return isPublicStaticAssetPath(`${pathname.replace(/\/$/, '')}.html`);
   }
   return false;
 }

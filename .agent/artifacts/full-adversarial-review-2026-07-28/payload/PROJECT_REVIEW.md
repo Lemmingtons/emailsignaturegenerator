@@ -355,3 +355,15 @@ One early public-preview attempt returned 502 and showed an upstream-error page.
 ## 10. Final launch recommendation
 
 **Ready after minor fixes.** The repository is reviewer-ready and no known Critical or High code issue remains. Treat the four external acceptance checks above as release gates. If production must launch without those checks, the recommendation becomes “Not ready until remaining high-priority issues are resolved” because payment, live uploads, and email-client rendering are central customer outcomes that local tests cannot prove.
+
+## 11. Pull-request review follow-up
+
+Automated review of the first pull-request commit identified five valid Medium-priority gaps. All were repaired and independently retested:
+
+- Weekly accumulated reports now require strict append behavior. Missing, unchanged, or destructively replaced logs are rejected and the prior report is restored. Daily and monthly reports must be freshly recreated, while a legitimately identical regenerated report remains valid.
+- When email and deployment are both explicitly approved, the email is sent only after validation and deployment succeed. A failed validation or deployment sends no publication email.
+- Public clean URLs retain their trailing-slash forms, while private files and directories with trailing slashes remain blocked before static asset serving.
+- `npm run check` now runs Worker/site validation, frontend accessibility checks, and automation safety checks exactly once without recursion.
+- Upload-throttle wording now matches the configured one-minute Cloudflare limit.
+
+Final follow-up verification passed `npm run check`, shell and JavaScript syntax checks, `git diff --check`, Cloudflare deployment dry run, targeted local Worker route checks, real public-preview browser checks, and independent review with no remaining actionable finding.
