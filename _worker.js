@@ -291,7 +291,7 @@ export default {
       );
 
       // Redirect to generator with the token
-      const redirectUrl = new URL('/generator.html', url.origin);
+      const redirectUrl = new URL('/generator', url.origin);
       redirectUrl.searchParams.set('token', token);
       return Response.redirect(redirectUrl.toString(), 302);
     }

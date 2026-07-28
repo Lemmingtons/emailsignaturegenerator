@@ -1,4 +1,4 @@
 # Redirect bare paths to generator
-/create /generator.html 301
-/generate /generator.html 301
-/app /generator.html 301
+/create /generator 301
+/generate /generator 301
+/app /generator 301
