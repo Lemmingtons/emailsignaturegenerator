@@ -76,17 +76,49 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async (request) => {",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
+    "const limiterKeys = [];",
+    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
     "  assetRequests.push(pathname);",
-    "  if (pathname === '/does-not-exist' || pathname === '/does-not-exist.html' || pathname === '/missing.js') return new Response('asset failure', { status: 500 });",
-    "  if (pathname === '/scripts/validate-site.js') throw new Error('private asset path reached');",
+    "  if (['/app', '/create', '/generate'].includes(pathname)) return Response.redirect('https://example.com/generator.html', 301);",
+    "  if (publicAssets.has(pathname)) return new Response('public asset', { status: 200 });",
     "  return new Response('missing', { status: 404 });",
     "} } };",
     "const token = await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
+    // JWT expiry is mandatory, numeric, finite, and in the future.
+    "const verifyToken = async (candidate, body) => {",
+    "  const response = await worker.default.fetch(new Request('https://example.com/api/verify-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? JSON.stringify({ token: candidate }) : body }), env);",
+    "  return { response, result: await response.json() };",
+    "};",
+    "const validCheck = await verifyToken(token);",
+    "if (validCheck.response.status !== 200 || !validCheck.result.valid) throw new Error('future numeric exp was rejected');",
+    "for (const [label, exp] of [['absent', undefined], ['string', String(Math.floor(Date.now() / 1000) + 60)], ['null', null]]) {",
+    "  const payload = { sub: 'cus_TEST123' }; if (exp !== undefined) payload.exp = exp;",
+    "  const checked = await verifyToken(await signJwt(payload, env.PRO_SIGNING_SECRET));",
+    "  if (checked.result.valid || checked.result.reason !== 'invalid_expiry') throw new Error(label + ' exp was accepted');",
+    "}",
+    "const expiredCheck = await verifyToken(await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) }, env.PRO_SIGNING_SECRET));",
+    "if (expiredCheck.result.valid || expiredCheck.result.reason !== 'expired') throw new Error('expired exp was accepted');",
+    "const verifyException = await verifyToken('', '{not json');",
+    "if (verifyException.response.status !== 500 || verifyException.result.reason !== 'server_error' || 'detail' in verifyException.result) throw new Error('verify-token exposed an exception detail');",
     "const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0]);",
+    // Missing, failed, malformed, and exhausted native limiter bindings all fail closed.
+    "const noLimiterEnv = { PRO_SIGNING_SECRET: env.PRO_SIGNING_SECRET, UPLOADS: bucket };",
+    "const noLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), noLimiterEnv);",
+    "if (noLimiter.status !== 503 || (await noLimiter.json()).code !== 'rate_limit_not_configured') throw new Error('production upload did not fail closed without RATE_LIMIT');",
+    "const brokenLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => { throw new Error('binding unavailable'); } } };",
+    "const brokenLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), brokenLimiterEnv);",
+    "if (brokenLimiter.status !== 503 || (await brokenLimiter.json()).code !== 'rate_limit_unavailable') throw new Error('failed RATE_LIMIT binding did not fail closed');",
+    "const malformedLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => ({}) } };",
+    "const malformedLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), malformedLimiterEnv);",
+    "if (malformedLimiter.status !== 503 || (await malformedLimiter.json()).code !== 'rate_limit_unavailable') throw new Error('malformed RATE_LIMIT response did not fail closed');",
+    "const exhaustedLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => ({ success: false }) } };",
+    "const exhaustedLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), exhaustedLimiterEnv);",
+    "if (exhaustedLimiter.status !== 429 || (await exhaustedLimiter.json()).code !== 'rate_limited') throw new Error('exhausted RATE_LIMIT binding was not enforced');",
     "const upload = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), env);",
     "if (upload.status !== 200) throw new Error('upload returned ' + upload.status + ': ' + await upload.text());",
+    "if (!limiterKeys.includes('upload:cus_TEST123')) throw new Error('native limiter did not receive the customer key');",
     "const uploaded = await upload.json();",
     "if (uploaded.url.includes('cus_TEST123')) throw new Error('public upload URL exposes Stripe customer id');",
     "const served = await worker.default.fetch(new Request(uploaded.url), env);",
@@ -199,13 +231,31 @@ function checkWorkerBehavior() {
     "if (!sitemapXml.includes('https://example.com/c/' + card.slug)) throw new Error('cards sitemap omitted a published card');",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
+    // The static binding is reachable only through the explicit public policy.
+    "for (const pathname of ['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/datasets/compliance.json', '/blog/index.html', '/seo/email-signature-checker.html', '/robots.txt']) {",
+    "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
+    "}",
+    "for (const pathname of ['/app', '/create', '/generate']) {",
+    "  const redirect = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator.html') throw new Error('public redirect failed: ' + pathname);",
+    "}",
+    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-checker', '/seo/email-signature-checker.html']]) {",
+    "  const before = assetRequests.length;",
+    "  const cleanAsset = await worker.default.fetch(new Request('https://example.com' + clean), env);",
+    "  if (cleanAsset.status !== 200 || assetRequests[before] !== clean || assetRequests[before + 1] !== html) throw new Error('clean route failed: ' + clean);",
+    "}",
     "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
     "if (missingRoute.status !== 404) throw new Error('missing clean route returned ' + missingRoute.status);",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
-    "const privateAsset = await worker.default.fetch(new Request('https://example.com/scripts/validate-site.js'), env);",
-    "if (privateAsset.status !== 404) throw new Error('private asset returned ' + privateAsset.status);",
-    "if (assetRequests.includes('/scripts/validate-site.js')) throw new Error('private asset reached static asset binding');",
+    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
+    "for (const pathname of blockedPaths) {",
+    "  const before = assetRequests.length;",
+    "  const blocked = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (blocked.status !== 404) throw new Error('private asset returned ' + blocked.status + ': ' + pathname);",
+    "  if (assetRequests.length !== before) throw new Error('private asset reached static binding: ' + pathname);",
+    "}",
     "const noAssets = await worker.default.fetch(new Request('https://example.com/does-not-exist'), { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket });",
     "if (noAssets.status !== 404) throw new Error('missing asset binding returned ' + noAssets.status);",
     "const googleVerify = await worker.default.fetch(new Request('https://example.com/googlee8f6af86faea90b4.html'), {});",
@@ -671,6 +721,15 @@ const worker = read('_worker.js');
 assert(worker.includes("url.pathname === '/api/upload-image'"), 'Worker missing /api/upload-image');
 assert(worker.includes('legacy_upload_removed'), 'Worker must explicitly reject legacy upload writes');
 assert(worker.includes('publicUploadId'), 'Worker must use opaque public upload ids');
+const wrangler = read('wrangler.toml');
+assert(/^binding\s*=\s*["']ASSETS["']$/m.test(wrangler), 'Static asset binding must be explicitly configured');
+assert(/^run_worker_first\s*=\s*true$/m.test(wrangler), 'Worker security policy must run before static assets');
+assert(/^\[\[ratelimits\]\]$/m.test(wrangler), 'Native rate limiting binding must be configured');
+assert(/^name\s*=\s*["']RATE_LIMIT["']$/m.test(wrangler), 'Native rate limiter must bind as RATE_LIMIT');
+assert(/^namespace_id\s*=\s*["']1001["']$/m.test(wrangler), 'Native rate limiter namespace must be configured');
+assert(/^\[ratelimits\.simple\]$/m.test(wrangler), 'Native rate limiter simple configuration is missing');
+assert(/^limit\s*=\s*25$/m.test(wrangler) && /^period\s*=\s*60$/m.test(wrangler),
+  'Native rate limiter must allow 25 uploads per minute');
 checkWorkerBehavior();
 
 const contentFiles = [

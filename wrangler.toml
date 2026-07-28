@@ -4,12 +4,17 @@ compatibility_date = "2025-04-01"
 
 [assets]
 directory = "."
+binding = "ASSETS"
+run_worker_first = true
 
 [[r2_buckets]]
 binding = "UPLOADS"
 bucket_name = "email-sig-photos"
 
-# ── KV rate limiting (add once KV namespace is created) ──
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT"
-# id = "PASTE_KV_NAMESPACE_ID_HERE"
+[[ratelimits]]
+name = "RATE_LIMIT"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 25
+period = 60

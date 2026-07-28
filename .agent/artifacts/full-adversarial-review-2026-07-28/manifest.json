@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "artifact_id": "full-adversarial-review-2026-07-28",
+  "description": "Adversarial review report with exact browser evidence and recordings",
+  "source_basename": "email-signature-review-artifact",
+  "created_at": "2026-07-28T02:52:08Z",
+  "repository": "Lemmingtons/emailsignaturegenerator",
+  "source_commit": "a015eff00b2a0d10f91716da0175ad59da67c2a8",
+  "checksums": "files.sha256",
+  "payload": "payload/",
+  "proof_boundary": "A tracked artifact proves only the recorded payload and checksums; it does not prove deployment, external-system state, or live user-visible behavior."
+}

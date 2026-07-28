@@ -11,7 +11,13 @@ if [ -z "${AGENT_CLI:-}" ]; then
     AGENT_CLI="$HOME/.claude/local/claude"
   fi
 fi
-LOG_DIR="${REPORT_DIR:-$SITE_DIR/reports}"
+STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+LOG_DIR="${REPORT_DIR:-$STATE_HOME/emailsignaturegenerator}"
+if [ -n "${REPORT_DIR:-}" ]; then
+  STATE_DIRECTORY_LABEL="REPORT_DIR override"
+else
+  STATE_DIRECTORY_LABEL="default outside checkout"
+fi
 
 # Ensure log directory exists
 mkdir -p "$LOG_DIR"
@@ -24,14 +30,15 @@ fi
 echo "Installing cron jobs for emailsignaturegenerator.ai SEO automation..."
 echo "   Agent CLI: $AGENT_CLI"
 echo "   Site directory: $SITE_DIR"
+echo "   Operational state directory ($STATE_DIRECTORY_LABEL): $LOG_DIR"
 echo ""
 
 # Build crontab entries (wrapper scripts used to avoid inline quoting issues)
 START_MARKER="# BEGIN emailsignaturegenerator.ai SEO automation"
 END_MARKER="# END emailsignaturegenerator.ai SEO automation"
-DAILY_JOB="43 6 * * *  AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-daily.sh\" >> \"$LOG_DIR/cron-daily.log\" 2>&1"
-WEEKLY_JOB="17 7 * * 1  AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-weekly.sh\" >> \"$LOG_DIR/cron-weekly.log\" 2>&1"
-MONTHLY_JOB="23 8 1 * *  AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-monthly.sh\" >> \"$LOG_DIR/cron-monthly.log\" 2>&1"
+DAILY_JOB="43 6 * * *  SEND_EMAIL=0 DEPLOY_AFTER=0 REPORT_DIR=\"$LOG_DIR\" AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-daily.sh\" >> \"$LOG_DIR/cron-daily.log\" 2>&1"
+WEEKLY_JOB="17 7 * * 1  SEND_EMAIL=0 DEPLOY_AFTER=0 REPORT_DIR=\"$LOG_DIR\" AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-weekly.sh\" >> \"$LOG_DIR/cron-weekly.log\" 2>&1"
+MONTHLY_JOB="23 8 1 * *  SEND_EMAIL=0 DEPLOY_AFTER=0 REPORT_DIR=\"$LOG_DIR\" AGENT_CLI=\"$AGENT_CLI\" bash \"$SITE_DIR/automation/run-monthly.sh\" >> \"$LOG_DIR/cron-monthly.log\" 2>&1"
 
 # Install to crontab (preserving existing jobs)
 TMPFILE=$(mktemp)
@@ -59,8 +66,8 @@ echo "   Daily:   6:43am - Technical SEO health check"
 echo "   Weekly:  Monday 7:17am - New blog article + sitemap update"
 echo "   Monthly: 1st of month 8:23am - Full SEO + GEO audit report"
 echo ""
-echo "Logs will be written to: $LOG_DIR/"
-echo "   daily-health-YYYY-MM-DD.md"
+echo "Reports and logs will be written to: $LOG_DIR/"
+echo "   health-YYYY-MM-DD.md"
 echo "   weekly-log.md"
 echo "   monthly-YYYY-MM.md"
 echo ""

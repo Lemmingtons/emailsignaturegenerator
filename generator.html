@@ -123,8 +123,8 @@
             Templates
           </div>
           <div class="card-body">
-            <div class="category-tabs" id="category-tabs" role="tablist" aria-label="Template categories"></div>
-            <div class="template-grid" id="template-grid" role="listbox" aria-label="Template selection"></div>
+            <div class="category-tabs" id="category-tabs" role="group" aria-label="Filter templates by category"></div>
+            <div class="template-grid" id="template-grid" role="group" aria-label="Choose a template"></div>
           </div>
         </div>
 
@@ -138,8 +138,8 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" placeholder="Jane Smith" autocomplete="name">
-                <span class="error-message" id="fullName-error"></span>
+                <input type="text" id="fullName" placeholder="Jane Smith" autocomplete="name" aria-describedby="fullName-error" aria-invalid="false">
+                <span class="error-message" id="fullName-error" role="alert"></span>
               </div>
               <div class="form-group">
                 <label for="title">Job Title</label>
@@ -157,8 +157,8 @@
               </div>
               <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email">
-                <span class="error-message" id="email-error"></span>
+                <input type="email" id="email" placeholder="jane@acme.com" autocomplete="email" aria-describedby="email-error" aria-invalid="false">
+                <span class="error-message" id="email-error" role="alert"></span>
               </div>
             </div>
 
@@ -178,9 +178,9 @@
                   <label class="btn btn-secondary btn-sm" for="photoFile" style="cursor: pointer;">
                     Upload photo
                   </label>
-                  <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload photo">
+                  <input type="file" id="photoFile" class="file-input-accessible" accept="image/jpeg,image/png,image/webp" aria-label="Upload photo">
                   <button class="btn btn-secondary btn-sm" id="photoRemoveBtn" style="display: none;" aria-label="Remove photo">Remove</button>
-                  <span class="photo-hint" id="photoStatusHint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint" id="photoStatusHint" role="status" aria-live="polite" aria-atomic="true">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
             </div>
@@ -197,7 +197,7 @@
                 <option value="monogram">Monogram reveal — initials resolve into your photo</option>
                 <option value="crossfade">Two-photo crossfade</option>
               </select>
-              <span class="photo-hint" id="photoEffectHint">Saved as an animated GIF. Older Outlook shows the first frame as a still.</span>
+              <span class="photo-hint" id="photoEffectHint" role="status" aria-live="polite" aria-atomic="true">Saved as an animated GIF. Older Outlook shows the first frame as a still.</span>
             </div>
             <div class="form-group" id="photoSecondGroup" style="display: none;">
               <div class="photo-upload-area">
@@ -208,7 +208,7 @@
                   <label class="btn btn-secondary btn-sm" for="photoSecondFile" style="cursor: pointer;">
                     Upload 2nd photo
                   </label>
-                  <input type="file" id="photoSecondFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload second photo for crossfade">
+                  <input type="file" id="photoSecondFile" class="file-input-accessible" accept="image/jpeg,image/png,image/webp" aria-label="Upload second photo for crossfade">
                   <span class="photo-hint">The photo your signature dissolves into.</span>
                 </div>
               </div>
@@ -230,9 +230,9 @@
                   <label class="btn btn-secondary btn-sm" for="logoFile" style="cursor: pointer;">
                     Upload logo
                   </label>
-                  <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" style="display: none;" aria-label="Upload company logo">
+                  <input type="file" id="logoFile" class="file-input-accessible" accept="image/jpeg,image/png,image/webp" aria-label="Upload company logo">
                   <button class="btn btn-secondary btn-sm" id="logoRemoveBtn" style="display: none;" aria-label="Remove logo">Remove</button>
-                  <span class="photo-hint" id="logoStatusHint">Upload for preview only. Use a hosted URL for Gmail.</span>
+                  <span class="photo-hint" id="logoStatusHint" role="status" aria-live="polite" aria-atomic="true">Upload for preview only. Use a hosted URL for Gmail.</span>
                 </div>
               </div>
             </div>
@@ -242,32 +242,32 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="website">Website</label>
-                <input type="url" id="website" placeholder="https://acme.com">
-                <span class="error-message" id="website-error"></span>
+                <input type="url" id="website" placeholder="https://acme.com" aria-describedby="website-error" aria-invalid="false">
+                <span class="error-message" id="website-error" role="alert"></span>
               </div>
               <div class="form-group">
                 <label for="linkedin">LinkedIn</label>
-                <input type="url" id="linkedin" placeholder="https://linkedin.com/in/...">
-                <span class="error-message" id="linkedin-error"></span>
+                <input type="url" id="linkedin" placeholder="https://linkedin.com/in/..." aria-describedby="linkedin-error" aria-invalid="false">
+                <span class="error-message" id="linkedin-error" role="alert"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="instagram">Instagram</label>
-                <input type="url" id="instagram" placeholder="https://instagram.com/...">
-                <span class="error-message" id="instagram-error"></span>
+                <input type="url" id="instagram" placeholder="https://instagram.com/..." aria-describedby="instagram-error" aria-invalid="false">
+                <span class="error-message" id="instagram-error" role="alert"></span>
               </div>
               <div class="form-group">
                 <label for="facebook">Facebook</label>
-                <input type="url" id="facebook" placeholder="https://facebook.com/...">
-                <span class="error-message" id="facebook-error"></span>
+                <input type="url" id="facebook" placeholder="https://facebook.com/..." aria-describedby="facebook-error" aria-invalid="false">
+                <span class="error-message" id="facebook-error" role="alert"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="google">Google</label>
-                <input type="url" id="google" placeholder="https://g.co/...">
-                <span class="error-message" id="google-error"></span>
+                <input type="url" id="google" placeholder="https://g.co/..." aria-describedby="google-error" aria-invalid="false">
+                <span class="error-message" id="google-error" role="alert"></span>
               </div>
             </div>
 
@@ -299,7 +299,7 @@
                 <button type="button" class="btn-secondary" id="cardPublishBtn" disabled>Publish card page</button>
                 <button type="button" class="btn-secondary" id="cardUnpublishBtn" style="display: none;">Unpublish</button>
               </div>
-              <span class="photo-hint" id="cardStatusHint">Publishing unlocks when you buy.</span>
+              <span class="photo-hint" id="cardStatusHint" role="status" aria-live="polite" aria-atomic="true">Publishing unlocks when you buy.</span>
               <p class="card-page-url" id="cardPageUrl" style="display: none;"></p>
             </div>
           </div>
@@ -421,7 +421,7 @@
                 <option value="sweep">Light sweep — a highlight travels along the rule</option>
                 <option value="draw">Draw on — the rule draws itself left to right</option>
               </select>
-              <span class="photo-hint" id="dividerStatusHint">Plays once, then rests. Older Outlook shows a plain line.</span>
+              <span class="photo-hint" id="dividerStatusHint" role="status" aria-live="polite" aria-atomic="true">Plays once, then rests. Older Outlook shows a plain line.</span>
             </div>
 
             <!-- Photo Shape -->
@@ -454,7 +454,7 @@
                 <input type="checkbox" id="ctaAnimate">
                 Animate the button <span class="pro-tag">Pro</span>
               </label>
-              <span class="photo-hint" id="ctaStatusHint">A highlight sweeps across once. Older Outlook shows a normal button.</span>
+              <span class="photo-hint" id="ctaStatusHint" role="status" aria-live="polite" aria-atomic="true">A highlight sweeps across once. Older Outlook shows a normal button.</span>
             </div>
           </div>
         </div>
@@ -489,8 +489,8 @@
                   <span class="btn-feedback">Link copied!</span>
                 </button>
               </div>
-              <p class="photo-hint" id="exportStatusHint"></p>
-              <p class="photo-hint" id="saveLinkHint">Save your signature and reopen it later on any device. Anyone with the link can view it.</p>
+              <p class="photo-hint" id="exportStatusHint" role="status" aria-live="polite" aria-atomic="true"></p>
+              <p class="photo-hint" id="saveLinkHint" role="status" aria-live="polite" aria-atomic="true">Save your signature and reopen it later on any device. Anyone with the link can view it.</p>
               <button class="mobile-back-to-form" id="mobileBackToForm" aria-label="Back to form">↑ Back to form</button>
 
               <details class="instructions">
@@ -570,15 +570,15 @@
   <script src="js/app.js"></script>
 
   <!-- Photo Crop Modal -->
-  <div id="cropModal" class="crop-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Adjust photo">
+  <div id="cropModal" class="crop-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="cropModalTitle" aria-describedby="cropModalHint" aria-hidden="true">
     <div class="crop-modal-inner">
       <div class="crop-modal-header">
-        <span>Adjust your photo</span>
+        <h2 id="cropModalTitle" tabindex="-1">Adjust your photo</h2>
       </div>
       <div class="crop-viewport" id="cropViewport">
         <img id="cropImage" alt="" draggable="false">
       </div>
-      <p class="crop-hint">Drag to reposition &middot; Scroll or pinch to zoom</p>
+      <p class="crop-hint" id="cropModalHint">Drag to reposition &middot; Scroll or pinch to zoom</p>
       <div class="crop-actions">
         <button class="btn btn-secondary" id="cropCancel">Cancel</button>
         <button class="btn btn-primary" id="cropApply">Use this photo</button>
