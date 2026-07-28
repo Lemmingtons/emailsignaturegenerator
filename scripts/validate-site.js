@@ -856,6 +856,21 @@ for (const file of contentFiles) {
   }
 }
 
+const internalLinkFiles = [
+  ...fs.readdirSync(root).filter(f => f.endsWith('.html')),
+  'generate-pages.js',
+  ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
+  ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`),
+];
+
+for (const file of internalLinkFiles) {
+  const text = read(file);
+  assert(!/href=["'][^"']*generator\.html(?:[?#][^"']*)?["']/i.test(text),
+    `${file} links to the redirecting generator.html URL instead of /generator`);
+  assert(!/href=["'][^"']*how-to-add-email-signature-in-outlook\.html(?:[?#][^"']*)?["']/i.test(text),
+    `${file} links to the redirecting Outlook .html URL instead of its canonical path`);
+}
+
 if (!process.exitCode) {
   console.log('Validation passed');
 }
