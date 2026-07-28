@@ -57,7 +57,7 @@
       window.history.replaceState({}, '', window.location.pathname + (savedSignatureId ? '?s=' + encodeURIComponent(savedSignatureId) : ''));
     }
 
-    // Verify Pro status (new token-based or legacy fallback)
+    // Verify Pro status from the server-backed signed token.
     checkProStatus();
 
     // Reopening a saved signature is independent of Pro status — the link itself
@@ -2188,7 +2188,6 @@
 
   // ── Pro Unlock ──
   async function checkProStatus() {
-    // 1. Try new token-based verification first
     const token = localStorage.getItem(FACTS.proTokenStorageKey);
     if (token) {
       const result = await verifyToken(token);
@@ -2200,12 +2199,6 @@
       localStorage.removeItem(FACTS.proTokenStorageKey);
     }
 
-    // 2. Legacy fallback for existing customers (30-day grace period)
-    // TODO: Remove this block after 2026-05-22 (30 days from deploy)
-    const legacy = localStorage.getItem(FACTS.legacyProStorageKey);
-    if (legacy === 'true') {
-      showLegacyMigrationBanner();
-    }
   }
 
   async function verifyToken(token) {
@@ -2249,25 +2242,6 @@
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
-  }
-
-  function showLegacyMigrationBanner() {
-    // Don't show if already dismissed
-    if (localStorage.getItem(FACTS.legacyDismissedStorageKey) === 'true') return;
-
-    var banner = document.createElement('div');
-    banner.id = 'legacy-migration-banner';
-    banner.innerHTML = '<strong>Security upgrade:</strong> We\'ve strengthened Pro verification. ' +
-      '<a href="' + FACTS.paymentLink + '" style="color:#0f766e;text-decoration:underline;font-weight:600;">Click here to refresh your Pro access</a> ' +
-      '(no charge if you already paid). ' +
-      '<button id="dismiss-migration" style="margin-left:12px;background:#0f766e;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;">Dismiss</button>';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ccfbf1;color:#115e59;padding:12px 16px;text-align:center;font-size:13px;z-index:10000;border-bottom:1px solid #99f6e4;';
-    document.body.appendChild(banner);
-
-    document.getElementById('dismiss-migration').addEventListener('click', function() {
-      localStorage.setItem(FACTS.legacyDismissedStorageKey, 'true');
-      banner.remove();
-    });
   }
 
   function showProPrompt() {

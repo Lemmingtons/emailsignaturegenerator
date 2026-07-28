@@ -52,7 +52,7 @@
         "@type": "Offer",
         "name": "Email Signature Generator",
         "price": "9.00",
-        "priceCurrency": "AUD",
+        "priceCurrency": "USD",
         "description": "All 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. One-time payment, no subscription. Free to build and preview before buying."
       }
     ],
@@ -71,7 +71,7 @@
         "name": "Is this really a one-time payment?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Pay $9 AUD once and you get lifetime access to all 24 templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
+          "text": "Yes. Pay US$9 once and you get lifetime access to all 24 templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
         }
       },
       {
@@ -131,7 +131,7 @@
       "email": "info@emailsignaturegenerator.ai",
       "contactType": "customer support"
     },
-    "description": "Professional email signature generator. 24 templates, full customisation, one-time payment of $9 AUD. No subscription.",
+    "description": "Professional email signature generator. 24 templates, full customisation, one-time payment of US$9. No subscription.",
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
       "name": "Email Signature Templates",
@@ -334,7 +334,7 @@
               <li>No branding on your signature, ever</li>
               <li>Lifetime access to future templates</li>
             </ul>
-            <a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
+            <a href="generator.html" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
             <p class="pricing-try-note">Or <a href="generator.html">try the builder first</a> — free, no account.</p>
           </div>
 
@@ -397,9 +397,15 @@
     </p>
   </footer>
 
+  <script src="js/site-facts.js"></script>
   <script src="js/templates.js"></script>
   <script>
   (function () {
+    var checkoutButton = document.getElementById('checkoutBtn');
+    if (checkoutButton && window.SiteFacts) {
+      checkoutButton.href = window.SiteFacts.paymentLink;
+    }
+
     var D = {
       fullName: 'Sarah Mitchell',
       title: 'Senior Account Manager',

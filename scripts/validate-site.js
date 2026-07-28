@@ -56,6 +56,11 @@ function checkWorkerBehavior() {
     "  const sig = await crypto.subtle.sign('HMAC', key, text(input));",
     "  return input + '.' + b64url(sig);",
     "}",
+    "async function signWebhook(payload, secret, timestamp = Math.floor(Date.now() / 1000)) {",
+    "  const key = await crypto.subtle.importKey('raw', text(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);",
+    "  const sig = await crypto.subtle.sign('HMAC', key, text(timestamp + '.' + payload));",
+    "  return 't=' + timestamp + ',v1=' + Buffer.from(sig).toString('hex');",
+    "}",
     "const stored = new Map();",
     "const bucket = {",
     "  delete: async (key) => { stored.delete(key); },",
@@ -78,13 +83,17 @@ function checkWorkerBehavior() {
     "const assetRequests = [];",
     "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
     "const limiterKeys = [];",
-    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
+    "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
     "  assetRequests.push(pathname);",
     "  if (['/app', '/create', '/generate'].includes(pathname)) return Response.redirect('https://example.com/generator.html', 301);",
     "  if (publicAssets.has(pathname)) return new Response('public asset', { status: 200 });",
     "  return new Response('missing', { status: 404 });",
     "} } };",
+    "const postStripeEvent = async (event, targetEnv = env) => {",
+    "  const payload = JSON.stringify(event);",
+    "  return worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(payload, targetEnv.STRIPE_WEBHOOK_SECRET) }, body: payload }), targetEnv);",
+    "};",
     "const token = await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
     // JWT expiry is mandatory, numeric, finite, and in the future.
     "const verifyToken = async (candidate, body) => {",
@@ -93,6 +102,7 @@ function checkWorkerBehavior() {
     "};",
     "const validCheck = await verifyToken(token);",
     "if (validCheck.response.status !== 200 || !validCheck.result.valid) throw new Error('future numeric exp was rejected');",
+    "if ('payload' in validCheck.result) throw new Error('verify-token exposed its signed payload');",
     "for (const [label, exp] of [['absent', undefined], ['string', String(Math.floor(Date.now() / 1000) + 60)], ['null', null]]) {",
     "  const payload = { sub: 'cus_TEST123' }; if (exp !== undefined) payload.exp = exp;",
     "  const checked = await verifyToken(await signJwt(payload, env.PRO_SIGNING_SECRET));",
@@ -102,7 +112,56 @@ function checkWorkerBehavior() {
     "if (expiredCheck.result.valid || expiredCheck.result.reason !== 'expired') throw new Error('expired exp was accepted');",
     "const verifyException = await verifyToken('', '{not json');",
     "if (verifyException.response.status !== 500 || verifyException.result.reason !== 'server_error' || 'detail' in verifyException.result) throw new Error('verify-token exposed an exception detail');",
+    // New Stripe purchases use opaque, durable entitlements and can be revoked.
+    "const pendingPurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '2') throw new Error('checkout redirect did not wait safely for its signed webhook');",
+    "const purchaseSession = { id: 'cs_test_PURCHASE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_PURCHASE' };",
+    "const purchaseWebhook = await postStripeEvent({ id: 'evt_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: purchaseSession } });",
+    "if (purchaseWebhook.status !== 200) throw new Error('paid checkout webhook returned ' + purchaseWebhook.status);",
+    "const purchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (purchase.status !== 302) throw new Error('paid checkout did not redirect: ' + purchase.status);",
+    "const purchaseLocation = purchase.headers.get('Location') || '';",
+    "if (purchaseLocation.includes('pi_PURCHASE') || purchaseLocation.includes('cus_')) throw new Error('payment redirect exposed a Stripe identifier');",
+    "const purchaseToken = new URL(purchaseLocation).searchParams.get('token');",
+    "if (!purchaseToken) throw new Error('paid checkout did not issue a token');",
+    "const purchaseCheck = await verifyToken(purchaseToken);",
+    "if (!purchaseCheck.result.valid || 'payload' in purchaseCheck.result) throw new Error('durable entitlement was not accepted safely');",
+    "const liveEnv = { ...env, STRIPE_LIVEMODE: 'true' };",
+    "const liveSession = { ...purchaseSession, id: 'cs_live_PURCHASE', livemode: true, payment_intent: 'pi_LIVEPURCHASE' };",
+    "const liveWebhook = await postStripeEvent({ id: 'evt_LIVEPURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: true, data: { object: liveSession } }, liveEnv);",
+    "if (liveWebhook.status !== 200) throw new Error('live checkout webhook returned ' + liveWebhook.status);",
+    "const livePurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_live_PURCHASE'), liveEnv);",
+    "if (livePurchase.status !== 302) throw new Error('live checkout session id was rejected: ' + livePurchase.status);",
+    "const wrongLinkSession = { ...purchaseSession, id: 'cs_test_WRONG', payment_intent: 'pi_WRONG', payment_link: 'plink_OTHER' };",
+    "await postStripeEvent({ id: 'evt_WRONG', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: wrongLinkSession } });",
+    "const wrongLink = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_WRONG'), env);",
+    "if (wrongLink.status === 302) throw new Error('checkout from an unexpected payment link was accepted');",
+    "const unsignedWebhook = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': 't=1,v1=00' }, body: '{}' }), env);",
+    "if (unsignedWebhook.status !== 400) throw new Error('invalid Stripe webhook signature was accepted');",
+    "const stalePayload = JSON.stringify({ id: 'evt_STALE', type: 'ignored', created: 1, livemode: false, data: { object: {} } });",
+    "const staleWebhook = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(stalePayload, env.STRIPE_WEBHOOK_SECRET, 1) }, body: stalePayload }), env);",
+    "if (staleWebhook.status !== 400) throw new Error('stale Stripe webhook signature was accepted');",
+    "const refundEvent = JSON.stringify({ id: 'evt_REFUND', type: 'refund.created', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 're_TEST', status: 'succeeded', payment_intent: 'pi_PURCHASE' } } });",
+    "const refundResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(refundEvent, env.STRIPE_WEBHOOK_SECRET) }, body: refundEvent }), env);",
+    "if (refundResponse.status !== 200) throw new Error('valid refund webhook returned ' + refundResponse.status);",
+    "const revokedCheck = await verifyToken(purchaseToken);",
+    "if (revokedCheck.result.valid || revokedCheck.result.reason !== 'entitlement_revoked') throw new Error('refund did not revoke entitlement');",
+    "const replayedCheckout = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (replayedCheckout.status !== 403) throw new Error('checkout replay reactivated a refunded entitlement');",
+    "const disputeSession = { id: 'cs_test_DISPUTE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_DISPUTE' };",
+    "await postStripeEvent({ id: 'evt_DISPUTE_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: disputeSession } });",
+    "const disputePurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_DISPUTE'), env);",
+    "if (disputePurchase.status !== 302) throw new Error('dispute fixture purchase did not redirect');",
+    "const disputeToken = new URL(disputePurchase.headers.get('Location')).searchParams.get('token');",
+    "const disputeEvent = JSON.stringify({ id: 'evt_DISPUTE', type: 'charge.dispute.created', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 'dp_TEST', payment_intent: 'pi_DISPUTE' } } });",
+    "const disputeResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(disputeEvent, env.STRIPE_WEBHOOK_SECRET) }, body: disputeEvent }), env);",
+    "if (disputeResponse.status !== 200 || (await verifyToken(disputeToken)).result.valid) throw new Error('dispute did not revoke entitlement');",
+    "const wonDisputeEvent = JSON.stringify({ id: 'evt_DISPUTE_WON', type: 'charge.dispute.closed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 'dp_TEST', status: 'won', payment_intent: 'pi_DISPUTE' } } });",
+    "const wonDisputeResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(wonDisputeEvent, env.STRIPE_WEBHOOK_SECRET) }, body: wonDisputeEvent }), env);",
+    "if (wonDisputeResponse.status !== 200 || !(await verifyToken(disputeToken)).result.valid) throw new Error('won dispute did not restore paid entitlement');",
     "const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0]);",
+    "const revokedUpload = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + purchaseToken, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), env);",
+    "if (revokedUpload.status !== 401 || (await revokedUpload.json()).detail !== 'entitlement_revoked') throw new Error('protected action accepted a refunded entitlement');",
     // Missing, failed, malformed, and exhausted native limiter bindings all fail closed.
     "const noLimiterEnv = { PRO_SIGNING_SECRET: env.PRO_SIGNING_SECRET, UPLOADS: bucket };",
     "const noLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), noLimiterEnv);",
@@ -296,6 +355,7 @@ const facts = require('../js/site-facts');
 global.SiteFacts = facts;
 const core = require('../js/generator-core');
 const { TEMPLATES } = require('../js/templates');
+const landingHtml = fs.readFileSync(fromRoot('index.html'), 'utf8');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
@@ -303,6 +363,15 @@ assert(templates.length === facts.templateCount, `Expected ${facts.templateCount
 // site-facts should reintroduce a free/paid template split.
 assert(facts.freeTemplateCount === undefined, 'freeTemplateCount must not come back — there is one plan');
 assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come back — signatures carry no branding');
+assert(facts.proPrice.amount === 9, 'Canonical Pro price must remain 9');
+assert(facts.proPrice.currency === 'USD', 'Canonical Pro price currency must be USD');
+assert(facts.proPrice.displayWithCurrency === 'US$9', 'Canonical Pro price label must identify US dollars');
+assert(!facts.paymentLink.includes('/test_'), 'Non-browser validation must resolve the live payment link');
+assert(landingHtml.includes('<script src="js/site-facts.js"></script>'), 'Landing page must load canonical site facts');
+assert(landingHtml.includes("checkoutButton.href = window.SiteFacts.paymentLink"), 'Landing checkout must use the environment-aware canonical payment link');
+assert(!landingHtml.includes('buy.stripe.com'), 'Landing HTML must not hardcode an environment-specific payment link');
+assert(landingHtml.includes('"priceCurrency": "USD"'), 'Landing structured data must use the canonical USD currency');
+assert(!landingHtml.includes('$9 AUD'), 'Landing copy must not retain the retired AUD price');
 
 // Animated photo pipeline: the GIF must be structurally valid, animate, and keep
 // frame 0 as the resting image (classic Outlook renders only that frame).
@@ -675,6 +744,8 @@ for (const [id, template] of templates) {
 const app = read('js/app.js');
 assert(app.includes('/api/upload-image'), 'Client must upload through /api/upload-image');
 assert(!app.includes("fetch('/api/upload'"), 'Client still uploads through legacy /api/upload');
+assert(!app.includes('no charge if you already paid'), 'Expired migration flow still promises a no-charge checkout');
+assert(!app.includes('legacyProStorageKey'), 'Expired local-only Pro migration fallback still exists');
 assert(app.includes("uploadImageBlob(blob, 'logo')"), 'Logo uploads must be hosted, not preview-only data URIs');
 assert(app.includes('CORE.previewOnlyImageSlots'), 'Copy path must guard against preview-only data: URIs');
 assert(!/range\.selectNodeContents\(preview\)/.test(app), 'Clipboard fallback must not copy from the live preview');
@@ -719,6 +790,9 @@ assert(coreSource.includes('previewOnlyImageSlots'), 'generator-core must expose
 
 const worker = read('_worker.js');
 assert(worker.includes("url.pathname === '/api/upload-image'"), 'Worker missing /api/upload-image');
+assert(!worker.includes('STRIPE_SECRET_KEY'), 'Worker must not require a broad Stripe API key');
+assert(!worker.includes('api.stripe.com'), 'Worker must rely on signed Stripe events, not broad API access');
+assert(worker.includes("url.pathname === '/api/stripe-webhook'"), 'Worker missing Stripe entitlement webhook');
 assert(worker.includes('legacy_upload_removed'), 'Worker must explicitly reject legacy upload writes');
 assert(worker.includes('publicUploadId'), 'Worker must use opaque public upload ids');
 const wrangler = read('wrangler.toml');
@@ -730,6 +804,17 @@ assert(/^namespace_id\s*=\s*["']1001["']$/m.test(wrangler), 'Native rate limiter
 assert(/^\[ratelimits\.simple\]$/m.test(wrangler), 'Native rate limiter simple configuration is missing');
 assert(/^limit\s*=\s*25$/m.test(wrangler) && /^period\s*=\s*60$/m.test(wrangler),
   'Native rate limiter must allow 25 uploads per minute');
+const sandboxWrangler = read('wrangler.sandbox.toml');
+assert(/^name\s*=\s*["']emailsignaturegenerator-sandbox["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must stay isolated from the production Worker');
+assert(/^bucket_name\s*=\s*["']email-sig-photos-sandbox["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must not write to the production R2 bucket');
+assert(/^SANDBOX_MODE\s*=\s*["']true["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must emit noindex headers');
+const assetsIgnore = read('.assetsignore');
+for (const privateAsset of ['.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
+  assert(assetsIgnore.split(/\r?\n/).includes(privateAsset), `.assetsignore must exclude ${privateAsset}`);
+}
 checkWorkerBehavior();
 
 const contentFiles = [
