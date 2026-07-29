@@ -8,7 +8,7 @@ Email Signature Generator (emailsignaturegenerator.ai) lets professionals create
 
 A companion **Email Signature Health Check** at /health-check audits any pasted signature HTML for contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and size. It runs entirely in the browser and is free.
 
-The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures.
+The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures. Its selection framework checks four things: identity, message context, the recipient's next route, and restraint.
 
 ## Pricing
 
@@ -36,9 +36,9 @@ No subscription. No recurring charges. No account needed.
 
 ## Template categories
 
-1. **Professional** — Clean corporate layouts with photo, contact info, and social links (4 templates)
-2. **Creative** — Bold colours, gradient accents, modern typography (3 templates)
-3. **Minimal** — Text-focused, ultra-lightweight, no images (3 templates)
+1. **Professional** — Clean corporate layouts with photo, contact info, and social links (7 templates)
+2. **Creative** — Bold colours, gradient accents, modern typography (4 templates)
+3. **Minimal** — Text-focused, ultra-lightweight layouts (5 templates)
 4. **Social-First** — Large social icons, ideal for creators and influencers (2 templates)
 5. **Sales / CTA** — Built-in call-to-action buttons for meetings and demos (3 templates)
 6. **Industry** — Purpose-built for real estate, trades, consulting (3 templates)

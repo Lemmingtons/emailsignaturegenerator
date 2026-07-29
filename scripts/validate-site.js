@@ -356,9 +356,23 @@ global.SiteFacts = facts;
 const core = require('../js/generator-core');
 const { TEMPLATES } = require('../js/templates');
 const landingHtml = fs.readFileSync(fromRoot('index.html'), 'utf8');
+const examplesHtml = fs.readFileSync(fromRoot('email-signature-examples.html'), 'utf8');
+const llmsText = fs.readFileSync(fromRoot('llms.txt'), 'utf8');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
+const llmsCategoryLabels = {
+  professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
+  social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',
+};
+const templateCategoryCounts = templates.reduce((counts, [, template]) => {
+  counts[template.category] = (counts[template.category] || 0) + 1;
+  return counts;
+}, {});
+for (const [category, label] of Object.entries(llmsCategoryLabels)) {
+  assert(llmsText.includes(`**${label}**`) && llmsText.includes(`(${templateCategoryCounts[category]} templates)`),
+    `llms.txt must report the live ${label} template count`);
+}
 // Single paid plan: every template is available in the builder, and nothing in
 // site-facts should reintroduce a free/paid template split.
 assert(facts.freeTemplateCount === undefined, 'freeTemplateCount must not come back — there is one plan');
@@ -372,6 +386,21 @@ assert(landingHtml.includes("checkoutButton.href = window.SiteFacts.paymentLink"
 assert(!landingHtml.includes('buy.stripe.com'), 'Landing HTML must not hardcode an environment-specific payment link');
 assert(landingHtml.includes('"priceCurrency": "USD"'), 'Landing structured data must use the canonical USD currency');
 assert(!landingHtml.includes('$9 AUD'), 'Landing copy must not retain the retired AUD price');
+const landingTitle = landingHtml.match(/<title>([^<]+)<\/title>/)?.[1] || '';
+const landingDescription = landingHtml.match(/<meta name="description" content="([^"]+)">/)?.[1] || '';
+assert(landingTitle.length > 0 && landingTitle.length <= 60,
+  `Landing title must stay within 60 characters, found ${landingTitle.length}`);
+assert(landingDescription.length > 0 && landingDescription.length <= 160,
+  `Landing description must stay within 160 characters, found ${landingDescription.length}`);
+assert(examplesHtml.includes('<title>52 Email Signature Examples for Gmail &amp; Outlook</title>'),
+  'Examples page must target examples without mislabelling them as product templates');
+assert(!examplesHtml.includes('52 Professional Templates'),
+  'Examples page must not conflate 52 examples with the canonical 24 product templates');
+for (const officialSource of ['support.google.com/mail/answer/8395', 'support.microsoft.com/', 'support.apple.com/guide/mail/mail11943/mac']) {
+  assert(examplesHtml.includes(officialSource), `Examples page must retain official source: ${officialSource}`);
+}
+assert(examplesHtml.includes('"dateModified": "2026-07-29"'),
+  'Examples structured data must expose the genuine content refresh date');
 
 // Animated photo pipeline: the GIF must be structurally valid, animate, and keep
 // frame 0 as the resting image (classic Outlook renders only that frame).
