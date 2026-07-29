@@ -4,13 +4,7 @@ Current architecture notes after the May 2026 cleanup.
 
 ## Canonical product facts
 
-Shared product facts live in `js/site-facts.js`.
-
-- Pro price: `$9 AUD`
-- Templates: `19`
-- Free templates: `8`
-- Contact/report email: `info@emailsignaturegenerator.ai`
-- Stripe Payment Link: `https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01`
+Shared pricing, template counts, contact details, and payment links live in `js/site-facts.js`.
 
 Run `npm run validate` after changing pricing, counts, contact details, generated SEO copy, or payment links.
 

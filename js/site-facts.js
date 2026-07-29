@@ -9,6 +9,9 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function() {
   const origin = 'https://emailsignaturegenerator.ai';
   const contactEmail = 'info@emailsignaturegenerator.ai';
+  const hostname = typeof location === 'object' && location ? location.hostname : '';
+  const useSandboxPayments = hostname === 'localhost' ||
+    (hostname.endsWith('.workers.dev') && hostname.includes('sandbox'));
 
   return {
     siteName: 'Email Signature Generator',
@@ -19,18 +22,18 @@
     contactEmail,
     supportEmail: contactEmail,
     reportEmail: contactEmail,
-    paymentLink: 'https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01',
+    paymentLink: useSandboxPayments
+      ? 'https://buy.stripe.com/test_eVqbJ01JQ8i8gsgd0C2go01'
+      : 'https://buy.stripe.com/3cIdR84XH6vdcfKahF5Ne00',
     proPrice: {
       amount: 9,
       amountText: '9.00',
-      currency: 'AUD',
+      currency: 'USD',
       display: '$9',
-      displayWithCurrency: '$9 AUD',
+      displayWithCurrency: 'US$9',
     },
     templateCount: 24,
     emailClientCount: '50+',
     proTokenStorageKey: 'sig_pro_token',
-    legacyProStorageKey: 'sig_pro',
-    legacyDismissedStorageKey: 'sig_pro_migration_dismissed',
   };
 });

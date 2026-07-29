@@ -1,24 +1,26 @@
-name = "emailsignaturegenerator"
+name = "emailsignaturegenerator-sandbox"
 main = "_worker.js"
 compatibility_date = "2025-04-01"
+workers_dev = true
 
 [assets]
 directory = "."
 binding = "ASSETS"
 run_worker_first = true
 
-[vars]
-STRIPE_LIVEMODE = "true"
-STRIPE_PAYMENT_LINK_ID = "plink_1TyARMBjqL7zQu5V2oL0hWyd"
-
 [[r2_buckets]]
 binding = "UPLOADS"
-bucket_name = "email-sig-photos"
+bucket_name = "email-sig-photos-sandbox"
 
 [[ratelimits]]
 name = "RATE_LIMIT"
-namespace_id = "1001"
+namespace_id = "1002"
 
 [ratelimits.simple]
 limit = 25
 period = 60
+
+[vars]
+SANDBOX_MODE = "true"
+STRIPE_LIVEMODE = "false"
+STRIPE_PAYMENT_LINK_ID = "plink_1Ty9ruBbbCddizce8Ihdj7jx"

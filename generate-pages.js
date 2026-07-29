@@ -302,7 +302,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <nav class="site-nav" aria-label="Main navigation">
       <a href="../index.html#templates">Templates</a>
       <a href="../index.html#pricing">Pricing</a>
-      <a href="../generator.html" class="nav-cta">Create Signature</a>
+      <a href="/generator" class="nav-cta">Create Signature</a>
     </nav>
   </header>
 
@@ -318,7 +318,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
       <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Free to build and preview. ${PRICE_SHORT} once when you are ready to use it.</p>
-      <a href="../generator.html" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
+      <a href="/generator" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
     </div>
 
     <section aria-label="Features">
@@ -365,7 +365,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <div class="seo-cta-box" style="margin-top: 48px;">
       <h2>Ready to create your professional email signature?</h2>
       <p>Join thousands of professionals who've ditched the $108/year subscription for a ${PRICE_SHORT} one-time tool.</p>
-      <a href="../generator.html" class="btn btn-primary">Create Free Signature</a>
+      <a href="/generator" class="btn btn-primary">Create Free Signature</a>
     </div>
 
   </main>
@@ -374,7 +374,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
   <footer class="site-footer" role="contentinfo">
     <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
     <p style="margin-top: 8px;">
-      <a href="../generator.html">Generator</a>
+      <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
       <a href="../index.html#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
