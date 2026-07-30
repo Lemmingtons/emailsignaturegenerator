@@ -293,15 +293,15 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
   <!-- Header -->
   <header class="site-header" role="banner">
-    <a href="../index.html" class="site-logo" aria-label="Email Signature Generator home">
+    <a href="/" class="site-logo" aria-label="Email Signature Generator home">
       <span class="logo-icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       </span>
       Email Signature Generator
     </a>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="../index.html#templates">Templates</a>
-      <a href="../index.html#pricing">Pricing</a>
+      <a href="/#templates">Templates</a>
+      <a href="/#pricing">Pricing</a>
       <a href="/generator" class="nav-cta">Create Signature</a>
     </nav>
   </header>
@@ -309,7 +309,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
   <main id="main-content" class="seo-page">
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../index.html">Home</a> › ${escapeHtml(h1)}
+      <a href="/">Home</a> › ${escapeHtml(h1)}
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
@@ -376,7 +376,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <p style="margin-top: 8px;">
       <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
-      <a href="../index.html#pricing">Pricing</a>
+      <a href="/#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
       <a href="mailto:${SITE_FACTS.contactEmail}">Contact</a>
     </p>
