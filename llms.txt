@@ -71,6 +71,7 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
 - [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
 - [Health Check](https://emailsignaturegenerator.ai/health-check) — Free signature auditor: paste any HTML to test dark-mode, contrast, Outlook compat, trackers, and accessibility
+- [Social Media Icons for Email Signatures](https://emailsignaturegenerator.ai/blog/email-signature-social-media-icons) — How to choose, link, size, and test social icons across Gmail, Outlook, and mobile inboxes
 
 ## Competitor comparison
 
