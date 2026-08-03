@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Anatomy of a useful student email signature</title>
+  <desc id="desc">A sample student signature annotated with identity, study context, one relevant proof link, and direct contact information.</desc>
+  <rect width="1200" height="700" rx="28" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif">
+    <text x="64" y="78" fill="#0f172a" font-size="34" font-weight="700">Four jobs for a student signature</text>
+    <text x="64" y="116" fill="#475569" font-size="20">Keep every line only when it answers a useful recipient question.</text>
+    <rect x="64" y="166" width="650" height="430" rx="22" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="104" y="210" width="6" height="322" rx="3" fill="#0891b2"/>
+    <text x="142" y="264" fill="#0f172a" font-size="34" font-weight="700">Jordan Williams</text>
+    <text x="142" y="310" fill="#334155" font-size="23">Business Analytics Student · Expected May 2027</text>
+    <text x="142" y="352" fill="#334155" font-size="23">Northbridge University</text>
+    <text x="142" y="418" fill="#0369a1" font-size="21">jordan.williams@example.edu</text>
+    <text x="142" y="458" fill="#0369a1" font-size="21">linkedin.com/in/jordanwilliams</text>
+    <text x="142" y="520" fill="#64748b" font-size="18">Sent from a tested, table-safe signature</text>
+    <path d="M714 250H774" stroke="#0891b2" stroke-width="3"/><circle cx="714" cy="250" r="6" fill="#0891b2"/>
+    <rect x="774" y="205" width="360" height="88" rx="16" fill="#ecfeff" stroke="#67e8f9"/>
+    <text x="800" y="240" fill="#155e75" font-size="17" font-weight="700">1 · IDENTITY</text><text x="800" y="268" fill="#334155" font-size="18">Who sent this?</text>
+    <path d="M714 330H774" stroke="#2563eb" stroke-width="3"/><circle cx="714" cy="330" r="6" fill="#2563eb"/>
+    <rect x="774" y="305" width="360" height="88" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="800" y="340" fill="#1d4ed8" font-size="17" font-weight="700">2 · STUDY CONTEXT</text><text x="800" y="368" fill="#334155" font-size="18">Why is this student relevant?</text>
+    <path d="M714 416H774" stroke="#7c3aed" stroke-width="3"/><circle cx="714" cy="416" r="6" fill="#7c3aed"/>
+    <rect x="774" y="405" width="360" height="88" rx="16" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="800" y="440" fill="#6d28d9" font-size="17" font-weight="700">3 · DIRECT CONTACT</text><text x="800" y="468" fill="#334155" font-size="18">How should I reply or connect?</text>
+    <path d="M714 472H774" stroke="#ea580c" stroke-width="3"/><circle cx="714" cy="472" r="6" fill="#ea580c"/>
+    <rect x="774" y="505" width="360" height="88" rx="16" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="800" y="540" fill="#c2410c" font-size="17" font-weight="700">4 · RELEVANT PROOF</text><text x="800" y="568" fill="#334155" font-size="18">Where can I see the work?</text>
+    <text x="64" y="652" fill="#64748b" font-size="18">Example details are fictional. Replace them and follow your institution's signature policy.</text>
+  </g>
+</svg>
