@@ -462,7 +462,7 @@ const PUBLIC_CLIENT_SCRIPTS = new Set([
 function isPublicStaticAssetPath(pathname) {
   if (PUBLIC_ROOT_ASSETS.has(pathname) || PUBLIC_CLIENT_SCRIPTS.has(pathname)) return true;
   if (/^\/css\/[A-Za-z0-9_-]+\.css$/.test(pathname)) return true;
-  if (/^\/assets\/[A-Za-z0-9_-]+\.(?:gif|jpe?g|png|svg|webp)$/.test(pathname)) return true;
+  if (/^\/assets\/(?:blog\/)?[A-Za-z0-9_-]+\.(?:gif|jpe?g|png|svg|webp)$/.test(pathname)) return true;
   if (pathname === '/datasets/compliance.json') return true;
   if (/^\/(?:blog|seo)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
 
