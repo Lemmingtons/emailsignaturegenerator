@@ -81,7 +81,7 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
     "const limiterKeys = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
@@ -291,7 +291,7 @@ function checkWorkerBehavior() {
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
     // The static binding is reachable only through the explicit public policy.
-    "for (const pathname of ['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/datasets/compliance.json', '/blog/index.html', '/seo/email-signature-checker.html', '/robots.txt']) {",
+    "for (const pathname of ['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/seo/email-signature-checker.html', '/robots.txt']) {",
     "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
     "}",
