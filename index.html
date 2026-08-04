@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Signature Generator — Professional Templates. $9. No Subscription.</title>
-  <meta name="description" content="Create a professional email signature in under 2 minutes. 24 templates, full customisation, works with Gmail and Outlook. Pay once, own forever. No subscription.">
+  <title>Email Signature Generator | 24 Templates, US$9 Once</title>
+  <meta name="description" content="Create a professional email signature for Gmail or Outlook with 24 templates. Build free, preview instantly, then pay US$9 once to copy, save and host images.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Email Signature Generator — Professional Templates for $9">
-  <meta property="og:description" content="24 templates. Full customisation. No subscription. Pay once, use forever.">
+  <meta property="og:title" content="Email Signature Generator | 24 Templates, US$9 Once">
+  <meta property="og:description" content="Build and preview a professional Gmail or Outlook signature free, then pay US$9 once to copy, save and host images.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -21,8 +21,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Email Signature Generator — $9 One-Time">
-  <meta name="twitter:description" content="Professional email signatures. No subscription. Pay once.">
+  <meta name="twitter:title" content="Email Signature Generator | 24 Templates">
+  <meta name="twitter:description" content="Build free, preview instantly, then pay US$9 once to use your signature. No subscription.">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
   <!-- Structured Data -->
@@ -52,11 +52,11 @@
         "@type": "Offer",
         "name": "Email Signature Generator",
         "price": "9.00",
-        "priceCurrency": "AUD",
+        "priceCurrency": "USD",
         "description": "All 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved signatures, no branding, lifetime access. One-time payment, no subscription. Free to build and preview before buying."
       }
     ],
-    "description": "Professional email signature generator. 24 templates, full customisation, works with Gmail and Outlook. Free to build and preview; $9 once to use it. No subscription."
+    "description": "Create a professional email signature for Gmail or Outlook with 24 templates. Build and preview free, then pay US$9 once to copy, save and host images."
   }
   </script>
 
@@ -71,7 +71,7 @@
         "name": "Is this really a one-time payment?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Pay $9 AUD once and you get lifetime access to all 24 templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
+          "text": "Yes. Pay US$9 once and you get lifetime access to all 24 templates, including any templates added in the future. No subscription, no recurring charges, no hidden fees."
         }
       },
       {
@@ -131,7 +131,7 @@
       "email": "info@emailsignaturegenerator.ai",
       "contactType": "customer support"
     },
-    "description": "Professional email signature generator. 24 templates, full customisation, one-time payment of $9 AUD. No subscription.",
+    "description": "Professional email signature generator. 24 templates, full customisation, one-time payment of US$9. No subscription.",
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
       "name": "Email Signature Templates",
@@ -147,7 +147,7 @@
     "@type": "WebSite",
     "name": "Email Signature Generator",
     "url": "https://emailsignaturegenerator.ai/",
-    "description": "Create professional email signatures in under 2 minutes. 24 templates, full customisation, works with Gmail and Outlook. Pay once, own forever."
+    "description": "Create a professional email signature for Gmail or Outlook with 24 templates. Build and preview free, then pay US$9 once to use it."
   }
   </script>
 
@@ -251,14 +251,17 @@
       </div>
 
       <div class="sig-carousel-wrap">
-        <div class="sig-carousel" id="sigCarousel" aria-live="polite" aria-atomic="true">
+        <div class="sig-carousel" id="sigCarousel" role="region" aria-roledescription="carousel" aria-label="Template previews" aria-live="off" aria-atomic="true">
           <div class="sig-carousel-track" id="sigCarouselTrack"></div>
         </div>
         <button class="sig-carousel-arrow sig-carousel-prev" id="sigPrev" aria-label="Previous template">&#8249;</button>
         <button class="sig-carousel-arrow sig-carousel-next" id="sigNext" aria-label="Next template">&#8250;</button>
       </div>
 
-      <div class="sig-carousel-dots" id="sigDots" role="tablist" aria-label="Template navigation"></div>
+      <div class="sig-carousel-controls">
+        <div class="sig-carousel-dots" id="sigDots" role="group" aria-label="Choose a template preview"></div>
+        <button type="button" class="sig-carousel-toggle" id="sigCarouselToggle" aria-pressed="false">Pause carousel</button>
+      </div>
 
       <div class="sig-carousel-cta">
         <a href="/generator" class="btn btn-primary" style="font-family: var(--font-heading); font-size: 16px; font-weight: 700; padding: 14px 36px;">Start Building &mdash; Free</a>
@@ -331,7 +334,7 @@
               <li>No branding on your signature, ever</li>
               <li>Lifetime access to future templates</li>
             </ul>
-            <a href="https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
+            <a href="/generator" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
             <p class="pricing-try-note">Or <a href="/generator">try the builder first</a> — free, no account.</p>
           </div>
 
@@ -394,9 +397,15 @@
     </p>
   </footer>
 
+  <script src="js/site-facts.js"></script>
   <script src="js/templates.js"></script>
   <script>
   (function () {
+    var checkoutButton = document.getElementById('checkoutBtn');
+    if (checkoutButton && window.SiteFacts) {
+      checkoutButton.href = window.SiteFacts.paymentLink;
+    }
+
     var D = {
       fullName: 'Sarah Mitchell',
       title: 'Senior Account Manager',
@@ -464,8 +473,14 @@
     var track = document.getElementById('sigCarouselTrack');
     var dotsContainer = document.getElementById('sigDots');
     var carousel = document.getElementById('sigCarousel');
+    var carouselSection = document.querySelector('.sig-carousel-section');
+    var rotationToggle = document.getElementById('sigCarouselToggle');
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     var current = 0;
     var timer = null;
+    var rotationPaused = reducedMotion.matches;
+    var pointerInside = false;
+    var focusInside = false;
 
     // Build slides and dots
     SLIDES.forEach(function (s, i) {
@@ -480,8 +495,9 @@
 
       var slide = document.createElement('div');
       slide.className = 'sig-carousel-slide';
-      slide.setAttribute('role', 'tabpanel');
       slide.setAttribute('aria-label', s.category + ' template');
+      slide.setAttribute('aria-hidden', i === 0 ? 'false' : 'true');
+      slide.inert = i !== 0;
       slide.innerHTML =
         '<div class="sig-slide-meta">' +
           '<span class="sig-category-label">' + s.category +
@@ -493,52 +509,94 @@
       track.appendChild(slide);
 
       var dot = document.createElement('button');
+      dot.type = 'button';
       dot.className = 'sig-dot' + (i === 0 ? ' active' : '');
-      dot.setAttribute('role', 'tab');
-      dot.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+      dot.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
       dot.setAttribute('aria-label', 'Slide ' + (i + 1) + ': ' + s.category);
       dot.addEventListener('click', function (idx) {
-        return function () { stopAuto(); goTo(idx); startAuto(); };
+        return function () { goTo(idx, true); restartAuto(); };
       }(i));
       dotsContainer.appendChild(dot);
     });
 
     var dots = dotsContainer.querySelectorAll('.sig-dot');
+    var slides = track.querySelectorAll('.sig-carousel-slide');
 
-    function goTo(idx) {
+    function goTo(idx, announce) {
       current = (idx + SLIDES.length) % SLIDES.length;
+      carousel.setAttribute('aria-live', announce || rotationPaused ? 'polite' : 'off');
       track.style.transform = 'translateX(-' + (current * 100) + '%)';
       dots.forEach(function (d, i) {
         d.classList.toggle('active', i === current);
-        d.setAttribute('aria-selected', i === current ? 'true' : 'false');
+        d.setAttribute('aria-pressed', i === current ? 'true' : 'false');
+      });
+      slides.forEach(function (slide, i) {
+        slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+        slide.inert = i !== current;
       });
     }
 
-    function startAuto() { timer = setInterval(function () { goTo(current + 1); }, 4000); }
-    function stopAuto() { clearInterval(timer); }
+    function stopAuto() {
+      if (timer !== null) clearInterval(timer);
+      timer = null;
+    }
 
-    document.getElementById('sigPrev').addEventListener('click', function () { stopAuto(); goTo(current - 1); startAuto(); });
-    document.getElementById('sigNext').addEventListener('click', function () { stopAuto(); goTo(current + 1); startAuto(); });
+    function startAuto(ignoreInteractionPause) {
+      stopAuto();
+      if (rotationPaused || reducedMotion.matches || (!ignoreInteractionPause && (pointerInside || focusInside))) return;
+      carousel.setAttribute('aria-live', 'off');
+      timer = setInterval(function () { goTo(current + 1, false); }, 4000);
+    }
 
-    carousel.addEventListener('mouseenter', stopAuto);
-    carousel.addEventListener('mouseleave', startAuto);
-    carousel.addEventListener('focusin', stopAuto);
-    carousel.addEventListener('focusout', startAuto);
+    function restartAuto() {
+      startAuto();
+    }
+
+    function syncRotationControl() {
+      var stopped = rotationPaused || reducedMotion.matches;
+      rotationToggle.textContent = stopped ? 'Play carousel' : 'Pause carousel';
+      rotationToggle.setAttribute('aria-pressed', stopped ? 'true' : 'false');
+      rotationToggle.disabled = reducedMotion.matches;
+      carousel.setAttribute('aria-live', stopped ? 'polite' : 'off');
+    }
+
+    document.getElementById('sigPrev').addEventListener('click', function () { goTo(current - 1, true); restartAuto(); });
+    document.getElementById('sigNext').addEventListener('click', function () { goTo(current + 1, true); restartAuto(); });
+    rotationToggle.addEventListener('click', function () {
+      rotationPaused = !rotationPaused;
+      syncRotationControl();
+      if (rotationPaused) stopAuto(); else startAuto(true);
+    });
+
+    carouselSection.addEventListener('mouseenter', function () { pointerInside = true; stopAuto(); });
+    carouselSection.addEventListener('mouseleave', function () { pointerInside = false; startAuto(); });
+    carouselSection.addEventListener('focusin', function () { focusInside = true; stopAuto(); });
+    carouselSection.addEventListener('focusout', function (e) {
+      if (carouselSection.contains(e.relatedTarget)) return;
+      focusInside = false;
+      startAuto();
+    });
 
     // Touch swipe
     var touchStartX = 0;
     carousel.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
     carousel.addEventListener('touchend', function (e) {
       var diff = touchStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 40) { stopAuto(); goTo(current + (diff > 0 ? 1 : -1)); startAuto(); }
+      if (Math.abs(diff) > 40) { goTo(current + (diff > 0 ? 1 : -1), true); restartAuto(); }
     }, { passive: true });
 
-    // Respect reduced-motion preference
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      track.style.transition = 'none';
-    } else {
-      startAuto();
+    function handleReducedMotion() {
+      track.style.transition = reducedMotion.matches ? 'none' : '';
+      if (reducedMotion.matches) {
+        rotationPaused = true;
+        stopAuto();
+      }
+      syncRotationControl();
+      if (!reducedMotion.matches) startAuto();
     }
+    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', handleReducedMotion);
+    else reducedMotion.addListener(handleReducedMotion);
+    handleReducedMotion();
   })();
   </script>
   <script src="js/motion.js" defer></script>

@@ -10,9 +10,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const SITE_FACTS = require('./js/site-facts');
 
 const SITE_URL = SITE_FACTS.origin;
+const TODAY = new Date().toISOString().split('T')[0];
 
 function xmlEscape(str) {
   return String(str)
@@ -24,11 +26,30 @@ function xmlEscape(str) {
 
 function fileLastmod(filePath) {
   try {
-    const stat = fs.statSync(filePath);
-    return stat.mtime.toISOString().split('T')[0];
+    const relativePath = path.relative(__dirname, filePath);
+    execFileSync('git', ['ls-files', '--error-unmatch', '--', relativePath], {
+      cwd: __dirname,
+      stdio: 'ignore'
+    });
+    execFileSync('git', ['diff', '--quiet', '--', relativePath], {
+      cwd: __dirname,
+      stdio: 'ignore'
+    });
+    execFileSync('git', ['diff', '--cached', '--quiet', '--', relativePath], {
+      cwd: __dirname,
+      stdio: 'ignore'
+    });
+    const committedDate = execFileSync('git', ['log', '-1', '--format=%as', '--', relativePath], {
+      cwd: __dirname,
+      encoding: 'utf8'
+    }).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(committedDate)) return committedDate;
   } catch {
-    return new Date().toISOString().split('T')[0];
+    // New or locally changed content should advertise the real run date. Git-based
+    // dates keep fresh clones from making every sitemap entry look newly modified.
+    return TODAY;
   }
+  return TODAY;
 }
 
 function collectUrls() {

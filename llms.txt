@@ -1,6 +1,6 @@
 # Email Signature Generator
 
-> A browser-based email signature generator with 24 professional templates. One-time payment of $9 AUD for Pro. No subscription, no account required.
+> A browser-based email signature generator with 24 professional templates. One-time payment of US$9 for Pro. No subscription, no account required.
 
 ## What this tool does
 
@@ -8,11 +8,11 @@ Email Signature Generator (emailsignaturegenerator.ai) lets professionals create
 
 A companion **Email Signature Health Check** at /health-check audits any pasted signature HTML for contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and size. It runs entirely in the browser and is free.
 
-The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures.
+The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures. Its selection framework checks four things: identity, message context, the recipient's next route, and restraint.
 
 ## Pricing
 
-One plan, one price: **$9 AUD, one-time**. It includes all 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
+One plan, one price: **US$9, one-time**. It includes all 24 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
 
 The builder itself is free to use with no account: anyone can pick any of the 24 templates, customise it fully, and see a live preview of exactly what they will get. Payment is required to copy the signature out, host images, or save an edit link.
 
@@ -36,9 +36,9 @@ No subscription. No recurring charges. No account needed.
 
 ## Template categories
 
-1. **Professional** — Clean corporate layouts with photo, contact info, and social links (4 templates)
-2. **Creative** — Bold colours, gradient accents, modern typography (3 templates)
-3. **Minimal** — Text-focused, ultra-lightweight, no images (3 templates)
+1. **Professional** — Clean corporate layouts with photo, contact info, and social links (7 templates)
+2. **Creative** — Bold colours, gradient accents, modern typography (4 templates)
+3. **Minimal** — Text-focused, ultra-lightweight layouts (5 templates)
 4. **Social-First** — Large social icons, ideal for creators and influencers (2 templates)
 5. **Sales / CTA** — Built-in call-to-action buttons for meetings and demos (3 templates)
 6. **Industry** — Purpose-built for real estate, trades, consulting (3 templates)
@@ -46,7 +46,7 @@ No subscription. No recurring charges. No account needed.
 ## Frequently asked questions
 
 **Is this a one-time payment?**
-Yes. Pay $9 AUD once and get lifetime access to all 24 templates, including future templates. No subscription, no recurring charges.
+Yes. Pay US$9 once and get lifetime access to all 24 templates, including future templates. No subscription, no recurring charges.
 
 **Does it work in Gmail and Outlook?**
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
@@ -71,6 +71,7 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
 - [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
 - [Health Check](https://emailsignaturegenerator.ai/health-check) — Free signature auditor: paste any HTML to test dark-mode, contrast, Outlook compat, trackers, and accessibility
+- [Social Media Icons for Email Signatures](https://emailsignaturegenerator.ai/blog/email-signature-social-media-icons) — How to choose, link, size, and test social icons across Gmail, Outlook, and mobile inboxes
 
 ## Competitor comparison
 

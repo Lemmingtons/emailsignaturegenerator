@@ -56,6 +56,11 @@ function checkWorkerBehavior() {
     "  const sig = await crypto.subtle.sign('HMAC', key, text(input));",
     "  return input + '.' + b64url(sig);",
     "}",
+    "async function signWebhook(payload, secret, timestamp = Math.floor(Date.now() / 1000)) {",
+    "  const key = await crypto.subtle.importKey('raw', text(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);",
+    "  const sig = await crypto.subtle.sign('HMAC', key, text(timestamp + '.' + payload));",
+    "  return 't=' + timestamp + ',v1=' + Buffer.from(sig).toString('hex');",
+    "}",
     "const stored = new Map();",
     "const bucket = {",
     "  delete: async (key) => { stored.delete(key); },",
@@ -76,17 +81,103 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const env = { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket, ASSETS: { fetch: async (request) => {",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
+    "const limiterKeys = [];",
+    "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
     "  assetRequests.push(pathname);",
-    "  if (pathname === '/does-not-exist' || pathname === '/does-not-exist.html' || pathname === '/missing.js') return new Response('asset failure', { status: 500 });",
-    "  if (pathname === '/scripts/validate-site.js') throw new Error('private asset path reached');",
+    "  if (['/app', '/create', '/generate'].includes(pathname)) return Response.redirect('https://example.com/generator.html', 301);",
+    "  if (publicAssets.has(pathname)) return new Response('public asset', { status: 200 });",
     "  return new Response('missing', { status: 404 });",
     "} } };",
+    "const postStripeEvent = async (event, targetEnv = env) => {",
+    "  const payload = JSON.stringify(event);",
+    "  return worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(payload, targetEnv.STRIPE_WEBHOOK_SECRET) }, body: payload }), targetEnv);",
+    "};",
     "const token = await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
+    // JWT expiry is mandatory, numeric, finite, and in the future.
+    "const verifyToken = async (candidate, body) => {",
+    "  const response = await worker.default.fetch(new Request('https://example.com/api/verify-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body === undefined ? JSON.stringify({ token: candidate }) : body }), env);",
+    "  return { response, result: await response.json() };",
+    "};",
+    "const validCheck = await verifyToken(token);",
+    "if (validCheck.response.status !== 200 || !validCheck.result.valid) throw new Error('future numeric exp was rejected');",
+    "if ('payload' in validCheck.result) throw new Error('verify-token exposed its signed payload');",
+    "for (const [label, exp] of [['absent', undefined], ['string', String(Math.floor(Date.now() / 1000) + 60)], ['null', null]]) {",
+    "  const payload = { sub: 'cus_TEST123' }; if (exp !== undefined) payload.exp = exp;",
+    "  const checked = await verifyToken(await signJwt(payload, env.PRO_SIGNING_SECRET));",
+    "  if (checked.result.valid || checked.result.reason !== 'invalid_expiry') throw new Error(label + ' exp was accepted');",
+    "}",
+    "const expiredCheck = await verifyToken(await signJwt({ sub: 'cus_TEST123', exp: Math.floor(Date.now() / 1000) }, env.PRO_SIGNING_SECRET));",
+    "if (expiredCheck.result.valid || expiredCheck.result.reason !== 'expired') throw new Error('expired exp was accepted');",
+    "const verifyException = await verifyToken('', '{not json');",
+    "if (verifyException.response.status !== 500 || verifyException.result.reason !== 'server_error' || 'detail' in verifyException.result) throw new Error('verify-token exposed an exception detail');",
+    // New Stripe purchases use opaque, durable entitlements and can be revoked.
+    "const pendingPurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '2') throw new Error('checkout redirect did not wait safely for its signed webhook');",
+    "const purchaseSession = { id: 'cs_test_PURCHASE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_PURCHASE' };",
+    "const purchaseWebhook = await postStripeEvent({ id: 'evt_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: purchaseSession } });",
+    "if (purchaseWebhook.status !== 200) throw new Error('paid checkout webhook returned ' + purchaseWebhook.status);",
+    "const purchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (purchase.status !== 302) throw new Error('paid checkout did not redirect: ' + purchase.status);",
+    "const purchaseLocation = purchase.headers.get('Location') || '';",
+    "if (purchaseLocation.includes('pi_PURCHASE') || purchaseLocation.includes('cus_')) throw new Error('payment redirect exposed a Stripe identifier');",
+    "const purchaseToken = new URL(purchaseLocation).searchParams.get('token');",
+    "if (!purchaseToken) throw new Error('paid checkout did not issue a token');",
+    "const purchaseCheck = await verifyToken(purchaseToken);",
+    "if (!purchaseCheck.result.valid || 'payload' in purchaseCheck.result) throw new Error('durable entitlement was not accepted safely');",
+    "const liveEnv = { ...env, STRIPE_LIVEMODE: 'true' };",
+    "const liveSession = { ...purchaseSession, id: 'cs_live_PURCHASE', livemode: true, payment_intent: 'pi_LIVEPURCHASE' };",
+    "const liveWebhook = await postStripeEvent({ id: 'evt_LIVEPURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: true, data: { object: liveSession } }, liveEnv);",
+    "if (liveWebhook.status !== 200) throw new Error('live checkout webhook returned ' + liveWebhook.status);",
+    "const livePurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_live_PURCHASE'), liveEnv);",
+    "if (livePurchase.status !== 302) throw new Error('live checkout session id was rejected: ' + livePurchase.status);",
+    "const wrongLinkSession = { ...purchaseSession, id: 'cs_test_WRONG', payment_intent: 'pi_WRONG', payment_link: 'plink_OTHER' };",
+    "await postStripeEvent({ id: 'evt_WRONG', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: wrongLinkSession } });",
+    "const wrongLink = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_WRONG'), env);",
+    "if (wrongLink.status === 302) throw new Error('checkout from an unexpected payment link was accepted');",
+    "const unsignedWebhook = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': 't=1,v1=00' }, body: '{}' }), env);",
+    "if (unsignedWebhook.status !== 400) throw new Error('invalid Stripe webhook signature was accepted');",
+    "const stalePayload = JSON.stringify({ id: 'evt_STALE', type: 'ignored', created: 1, livemode: false, data: { object: {} } });",
+    "const staleWebhook = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(stalePayload, env.STRIPE_WEBHOOK_SECRET, 1) }, body: stalePayload }), env);",
+    "if (staleWebhook.status !== 400) throw new Error('stale Stripe webhook signature was accepted');",
+    "const refundEvent = JSON.stringify({ id: 'evt_REFUND', type: 'refund.created', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 're_TEST', status: 'succeeded', payment_intent: 'pi_PURCHASE' } } });",
+    "const refundResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(refundEvent, env.STRIPE_WEBHOOK_SECRET) }, body: refundEvent }), env);",
+    "if (refundResponse.status !== 200) throw new Error('valid refund webhook returned ' + refundResponse.status);",
+    "const revokedCheck = await verifyToken(purchaseToken);",
+    "if (revokedCheck.result.valid || revokedCheck.result.reason !== 'entitlement_revoked') throw new Error('refund did not revoke entitlement');",
+    "const replayedCheckout = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
+    "if (replayedCheckout.status !== 403) throw new Error('checkout replay reactivated a refunded entitlement');",
+    "const disputeSession = { id: 'cs_test_DISPUTE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_DISPUTE' };",
+    "await postStripeEvent({ id: 'evt_DISPUTE_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: disputeSession } });",
+    "const disputePurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_DISPUTE'), env);",
+    "if (disputePurchase.status !== 302) throw new Error('dispute fixture purchase did not redirect');",
+    "const disputeToken = new URL(disputePurchase.headers.get('Location')).searchParams.get('token');",
+    "const disputeEvent = JSON.stringify({ id: 'evt_DISPUTE', type: 'charge.dispute.created', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 'dp_TEST', payment_intent: 'pi_DISPUTE' } } });",
+    "const disputeResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(disputeEvent, env.STRIPE_WEBHOOK_SECRET) }, body: disputeEvent }), env);",
+    "if (disputeResponse.status !== 200 || (await verifyToken(disputeToken)).result.valid) throw new Error('dispute did not revoke entitlement');",
+    "const wonDisputeEvent = JSON.stringify({ id: 'evt_DISPUTE_WON', type: 'charge.dispute.closed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: { id: 'dp_TEST', status: 'won', payment_intent: 'pi_DISPUTE' } } });",
+    "const wonDisputeResponse = await worker.default.fetch(new Request('https://example.com/api/stripe-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': await signWebhook(wonDisputeEvent, env.STRIPE_WEBHOOK_SECRET) }, body: wonDisputeEvent }), env);",
+    "if (wonDisputeResponse.status !== 200 || !(await verifyToken(disputeToken)).result.valid) throw new Error('won dispute did not restore paid entitlement');",
     "const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0]);",
+    "const revokedUpload = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + purchaseToken, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), env);",
+    "if (revokedUpload.status !== 401 || (await revokedUpload.json()).detail !== 'entitlement_revoked') throw new Error('protected action accepted a refunded entitlement');",
+    // Missing, failed, malformed, and exhausted native limiter bindings all fail closed.
+    "const noLimiterEnv = { PRO_SIGNING_SECRET: env.PRO_SIGNING_SECRET, UPLOADS: bucket };",
+    "const noLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), noLimiterEnv);",
+    "if (noLimiter.status !== 503 || (await noLimiter.json()).code !== 'rate_limit_not_configured') throw new Error('production upload did not fail closed without RATE_LIMIT');",
+    "const brokenLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => { throw new Error('binding unavailable'); } } };",
+    "const brokenLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), brokenLimiterEnv);",
+    "if (brokenLimiter.status !== 503 || (await brokenLimiter.json()).code !== 'rate_limit_unavailable') throw new Error('failed RATE_LIMIT binding did not fail closed');",
+    "const malformedLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => ({}) } };",
+    "const malformedLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), malformedLimiterEnv);",
+    "if (malformedLimiter.status !== 503 || (await malformedLimiter.json()).code !== 'rate_limit_unavailable') throw new Error('malformed RATE_LIMIT response did not fail closed');",
+    "const exhaustedLimiterEnv = { ...noLimiterEnv, RATE_LIMIT: { limit: async () => ({ success: false }) } };",
+    "const exhaustedLimiter = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), exhaustedLimiterEnv);",
+    "if (exhaustedLimiter.status !== 429 || (await exhaustedLimiter.json()).code !== 'rate_limited') throw new Error('exhausted RATE_LIMIT binding was not enforced');",
     "const upload = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/jpeg', 'X-Image-Type': 'photo' }, body: jpeg }), env);",
     "if (upload.status !== 200) throw new Error('upload returned ' + upload.status + ': ' + await upload.text());",
+    "if (!limiterKeys.includes('upload:cus_TEST123')) throw new Error('native limiter did not receive the customer key');",
     "const uploaded = await upload.json();",
     "if (uploaded.url.includes('cus_TEST123')) throw new Error('public upload URL exposes Stripe customer id');",
     "const served = await worker.default.fetch(new Request(uploaded.url), env);",
@@ -199,13 +290,43 @@ function checkWorkerBehavior() {
     "if (!sitemapXml.includes('https://example.com/c/' + card.slug)) throw new Error('cards sitemap omitted a published card');",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
+    // The static binding is reachable only through the explicit public policy.
+    "for (const pathname of ['/', '/blog', '/blog/', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/robots.txt']) {",
+    "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
+    "}",
+    "for (const [legacy, clean] of [['/index.html', '/'], ['/generator.html', '/generator'], ['/blog/index.html', '/blog/'], ['/blog/email-signature-best-practices.html', '/blog/email-signature-best-practices'], ['/seo/email-signature-checker.html', '/seo/email-signature-checker']]) {",
+    "  const legacyResponse = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
+    "  if (legacyResponse.status !== 301 || legacyResponse.headers.get('Location') !== 'https://example.com' + clean) throw new Error('legacy HTML redirect failed: ' + legacy);",
+    "}",
+    "for (const [legacy, clean] of [['/seo/email-signature-generator-for-google-workspace', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-google-workspace.html', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-microsoft-365', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-generator-for-microsoft-365.html', '/seo/email-signature-generator-for-outlook']]) {",
+    "  const replacement = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
+    "  if (replacement.status !== 301 || replacement.headers.get('Location') !== 'https://example.com' + clean) throw new Error('SEO replacement redirect failed: ' + legacy);",
+    "}",
+    "for (const pathname of ['/seo/email-signature-generator-for-yahoo-mail', '/seo/email-signature-generator-for-yahoo-mail.html', '/seo/email-signature-for-accountants', '/seo/email-signature-for-accountants.html']) {",
+    "  const removed = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (removed.status !== 404) throw new Error('removed SEO route did not return 404: ' + pathname);",
+    "}",
+    "for (const pathname of ['/app', '/create', '/generate']) {",
+    "  const redirect = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator.html') throw new Error('public redirect failed: ' + pathname);",
+    "}",
+    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-checker', '/seo/email-signature-checker.html']]) {",
+    "  const before = assetRequests.length;",
+    "  const cleanAsset = await worker.default.fetch(new Request('https://example.com' + clean), env);",
+    "  if (cleanAsset.status !== 200 || assetRequests[before] !== clean || assetRequests[before + 1] !== html) throw new Error('clean route failed: ' + clean);",
+    "}",
     "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
     "if (missingRoute.status !== 404) throw new Error('missing clean route returned ' + missingRoute.status);",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
-    "const privateAsset = await worker.default.fetch(new Request('https://example.com/scripts/validate-site.js'), env);",
-    "if (privateAsset.status !== 404) throw new Error('private asset returned ' + privateAsset.status);",
-    "if (assetRequests.includes('/scripts/validate-site.js')) throw new Error('private asset reached static asset binding');",
+    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
+    "for (const pathname of blockedPaths) {",
+    "  const before = assetRequests.length;",
+    "  const blocked = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
+    "  if (blocked.status !== 404) throw new Error('private asset returned ' + blocked.status + ': ' + pathname);",
+    "  if (assetRequests.length !== before) throw new Error('private asset reached static binding: ' + pathname);",
+    "}",
     "const noAssets = await worker.default.fetch(new Request('https://example.com/does-not-exist'), { PRO_SIGNING_SECRET: 'test-secret', UPLOADS: bucket });",
     "if (noAssets.status !== 404) throw new Error('missing asset binding returned ' + noAssets.status);",
     "const googleVerify = await worker.default.fetch(new Request('https://example.com/googlee8f6af86faea90b4.html'), {});",
@@ -246,13 +367,52 @@ const facts = require('../js/site-facts');
 global.SiteFacts = facts;
 const core = require('../js/generator-core');
 const { TEMPLATES } = require('../js/templates');
+const landingHtml = fs.readFileSync(fromRoot('index.html'), 'utf8');
+const examplesHtml = fs.readFileSync(fromRoot('email-signature-examples.html'), 'utf8');
+const llmsText = fs.readFileSync(fromRoot('llms.txt'), 'utf8');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
+const llmsCategoryLabels = {
+  professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
+  social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',
+};
+const templateCategoryCounts = templates.reduce((counts, [, template]) => {
+  counts[template.category] = (counts[template.category] || 0) + 1;
+  return counts;
+}, {});
+for (const [category, label] of Object.entries(llmsCategoryLabels)) {
+  assert(llmsText.includes(`**${label}**`) && llmsText.includes(`(${templateCategoryCounts[category]} templates)`),
+    `llms.txt must report the live ${label} template count`);
+}
 // Single paid plan: every template is available in the builder, and nothing in
 // site-facts should reintroduce a free/paid template split.
 assert(facts.freeTemplateCount === undefined, 'freeTemplateCount must not come back — there is one plan');
 assert(facts.freeBrandingText === undefined, 'freeBrandingText must not come back — signatures carry no branding');
+assert(facts.proPrice.amount === 9, 'Canonical Pro price must remain 9');
+assert(facts.proPrice.currency === 'USD', 'Canonical Pro price currency must be USD');
+assert(facts.proPrice.displayWithCurrency === 'US$9', 'Canonical Pro price label must identify US dollars');
+assert(!facts.paymentLink.includes('/test_'), 'Non-browser validation must resolve the live payment link');
+assert(landingHtml.includes('<script src="js/site-facts.js"></script>'), 'Landing page must load canonical site facts');
+assert(landingHtml.includes("checkoutButton.href = window.SiteFacts.paymentLink"), 'Landing checkout must use the environment-aware canonical payment link');
+assert(!landingHtml.includes('buy.stripe.com'), 'Landing HTML must not hardcode an environment-specific payment link');
+assert(landingHtml.includes('"priceCurrency": "USD"'), 'Landing structured data must use the canonical USD currency');
+assert(!landingHtml.includes('$9 AUD'), 'Landing copy must not retain the retired AUD price');
+const landingTitle = landingHtml.match(/<title>([^<]+)<\/title>/)?.[1] || '';
+const landingDescription = landingHtml.match(/<meta name="description" content="([^"]+)">/)?.[1] || '';
+assert(landingTitle.length > 0 && landingTitle.length <= 60,
+  `Landing title must stay within 60 characters, found ${landingTitle.length}`);
+assert(landingDescription.length > 0 && landingDescription.length <= 160,
+  `Landing description must stay within 160 characters, found ${landingDescription.length}`);
+assert(examplesHtml.includes('<title>52 Email Signature Examples for Gmail &amp; Outlook</title>'),
+  'Examples page must target examples without mislabelling them as product templates');
+assert(!examplesHtml.includes('52 Professional Templates'),
+  'Examples page must not conflate 52 examples with the canonical 24 product templates');
+for (const officialSource of ['support.google.com/mail/answer/8395', 'support.microsoft.com/', 'support.apple.com/guide/mail/mail11943/mac']) {
+  assert(examplesHtml.includes(officialSource), `Examples page must retain official source: ${officialSource}`);
+}
+assert(examplesHtml.includes('"dateModified": "2026-07-29"'),
+  'Examples structured data must expose the genuine content refresh date');
 
 // Animated photo pipeline: the GIF must be structurally valid, animate, and keep
 // frame 0 as the resting image (classic Outlook renders only that frame).
@@ -625,6 +785,8 @@ for (const [id, template] of templates) {
 const app = read('js/app.js');
 assert(app.includes('/api/upload-image'), 'Client must upload through /api/upload-image');
 assert(!app.includes("fetch('/api/upload'"), 'Client still uploads through legacy /api/upload');
+assert(!app.includes('no charge if you already paid'), 'Expired migration flow still promises a no-charge checkout');
+assert(!app.includes('legacyProStorageKey'), 'Expired local-only Pro migration fallback still exists');
 assert(app.includes("uploadImageBlob(blob, 'logo')"), 'Logo uploads must be hosted, not preview-only data URIs');
 assert(app.includes('CORE.previewOnlyImageSlots'), 'Copy path must guard against preview-only data: URIs');
 assert(!/range\.selectNodeContents\(preview\)/.test(app), 'Clipboard fallback must not copy from the live preview');
@@ -669,8 +831,31 @@ assert(coreSource.includes('previewOnlyImageSlots'), 'generator-core must expose
 
 const worker = read('_worker.js');
 assert(worker.includes("url.pathname === '/api/upload-image'"), 'Worker missing /api/upload-image');
+assert(!worker.includes('STRIPE_SECRET_KEY'), 'Worker must not require a broad Stripe API key');
+assert(!worker.includes('api.stripe.com'), 'Worker must rely on signed Stripe events, not broad API access');
+assert(worker.includes("url.pathname === '/api/stripe-webhook'"), 'Worker missing Stripe entitlement webhook');
 assert(worker.includes('legacy_upload_removed'), 'Worker must explicitly reject legacy upload writes');
 assert(worker.includes('publicUploadId'), 'Worker must use opaque public upload ids');
+const wrangler = read('wrangler.toml');
+assert(/^binding\s*=\s*["']ASSETS["']$/m.test(wrangler), 'Static asset binding must be explicitly configured');
+assert(/^run_worker_first\s*=\s*true$/m.test(wrangler), 'Worker security policy must run before static assets');
+assert(/^\[\[ratelimits\]\]$/m.test(wrangler), 'Native rate limiting binding must be configured');
+assert(/^name\s*=\s*["']RATE_LIMIT["']$/m.test(wrangler), 'Native rate limiter must bind as RATE_LIMIT');
+assert(/^namespace_id\s*=\s*["']1001["']$/m.test(wrangler), 'Native rate limiter namespace must be configured');
+assert(/^\[ratelimits\.simple\]$/m.test(wrangler), 'Native rate limiter simple configuration is missing');
+assert(/^limit\s*=\s*25$/m.test(wrangler) && /^period\s*=\s*60$/m.test(wrangler),
+  'Native rate limiter must allow 25 uploads per minute');
+const sandboxWrangler = read('wrangler.sandbox.toml');
+assert(/^name\s*=\s*["']emailsignaturegenerator-sandbox["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must stay isolated from the production Worker');
+assert(/^bucket_name\s*=\s*["']email-sig-photos-sandbox["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must not write to the production R2 bucket');
+assert(/^SANDBOX_MODE\s*=\s*["']true["']$/m.test(sandboxWrangler),
+  'Sandbox Worker must emit noindex headers');
+const assetsIgnore = read('.assetsignore');
+for (const privateAsset of ['.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
+  assert(assetsIgnore.split(/\r?\n/).includes(privateAsset), `.assetsignore must exclude ${privateAsset}`);
+}
 checkWorkerBehavior();
 
 const contentFiles = [
@@ -710,6 +895,21 @@ for (const file of contentFiles) {
   for (const pattern of stalePatterns) {
     assert(!pattern.test(text), `${file} contains stale fact: ${pattern}`);
   }
+}
+
+const internalLinkFiles = [
+  ...fs.readdirSync(root).filter(f => f.endsWith('.html')),
+  'generate-pages.js',
+  ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
+  ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`),
+];
+
+for (const file of internalLinkFiles) {
+  const text = read(file);
+  assert(!/href=["'][^"']*generator\.html(?:[?#][^"']*)?["']/i.test(text),
+    `${file} links to the redirecting generator.html URL instead of /generator`);
+  assert(!/href=["'][^"']*how-to-add-email-signature-in-outlook\.html(?:[?#][^"']*)?["']/i.test(text),
+    `${file} links to the redirecting Outlook .html URL instead of its canonical path`);
 }
 
 if (!process.exitCode) {

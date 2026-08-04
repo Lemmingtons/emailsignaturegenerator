@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Student email signatures by message context</title>
+  <desc id="desc">Four cards compare useful signature details for class emails, internship applications, graduate research, and creative portfolios.</desc>
+  <rect width="1200" height="720" rx="28" fill="#f8fafc"/>
+  <g font-family="Arial, sans-serif">
+    <text x="64" y="76" fill="#0f172a" font-size="34" font-weight="700">Same student, different context</text>
+    <text x="64" y="114" fill="#475569" font-size="20">Change the supporting detail to match what the recipient needs next.</text>
+    <g transform="translate(64 164)">
+      <rect width="252" height="430" rx="20" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <circle cx="42" cy="48" r="20" fill="#0891b2"/><text x="42" y="55" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">1</text>
+      <text x="76" y="55" fill="#0f172a" font-size="22" font-weight="700">Classes</text>
+      <text x="24" y="106" fill="#475569" font-size="17">BEST CONTEXT</text><text x="24" y="138" fill="#0f172a" font-size="19" font-weight="700">Course or program</text>
+      <text x="24" y="184" fill="#475569" font-size="17">USEFUL LINES</text><text x="24" y="218" fill="#334155" font-size="18">Name</text><text x="24" y="250" fill="#334155" font-size="18">Degree or field</text><text x="24" y="282" fill="#334155" font-size="18">Institution</text><text x="24" y="314" fill="#334155" font-size="18">Student email</text>
+      <text x="24" y="376" fill="#b45309" font-size="16" font-weight="700">REMOVE</text><text x="24" y="402" fill="#475569" font-size="17">Unrelated social links</text>
+    </g>
+    <g transform="translate(338 164)">
+      <rect width="252" height="430" rx="20" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <circle cx="42" cy="48" r="20" fill="#2563eb"/><text x="42" y="55" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">2</text>
+      <text x="76" y="55" fill="#0f172a" font-size="22" font-weight="700">Internships</text>
+      <text x="24" y="106" fill="#475569" font-size="17">BEST CONTEXT</text><text x="24" y="138" fill="#0f172a" font-size="19" font-weight="700">Readiness and timing</text>
+      <text x="24" y="184" fill="#475569" font-size="17">USEFUL LINES</text><text x="24" y="218" fill="#334155" font-size="18">Degree or field</text><text x="24" y="250" fill="#334155" font-size="18">Graduation year</text><text x="24" y="282" fill="#334155" font-size="18">Phone or email</text><text x="24" y="314" fill="#334155" font-size="18">LinkedIn or portfolio</text>
+      <text x="24" y="376" fill="#b45309" font-size="16" font-weight="700">REMOVE</text><text x="24" y="402" fill="#475569" font-size="17">A full skills list</text>
+    </g>
+    <g transform="translate(612 164)">
+      <rect width="252" height="430" rx="20" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <circle cx="42" cy="48" r="20" fill="#7c3aed"/><text x="42" y="55" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">3</text>
+      <text x="76" y="55" fill="#0f172a" font-size="22" font-weight="700">Research</text>
+      <text x="24" y="106" fill="#475569" font-size="17">BEST CONTEXT</text><text x="24" y="138" fill="#0f172a" font-size="19" font-weight="700">Affiliation and focus</text>
+      <text x="24" y="184" fill="#475569" font-size="17">USEFUL LINES</text><text x="24" y="218" fill="#334155" font-size="18">Program status</text><text x="24" y="250" fill="#334155" font-size="18">Lab or department</text><text x="24" y="282" fill="#334155" font-size="18">Institution</text><text x="24" y="314" fill="#334155" font-size="18">ORCID or publications</text>
+      <text x="24" y="376" fill="#b45309" font-size="16" font-weight="700">REMOVE</text><text x="24" y="402" fill="#475569" font-size="17">Unofficial titles</text>
+    </g>
+    <g transform="translate(886 164)">
+      <rect width="252" height="430" rx="20" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <circle cx="42" cy="48" r="20" fill="#ea580c"/><text x="42" y="55" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">4</text>
+      <text x="76" y="55" fill="#0f172a" font-size="22" font-weight="700">Portfolio</text>
+      <text x="24" y="106" fill="#475569" font-size="17">BEST CONTEXT</text><text x="24" y="138" fill="#0f172a" font-size="19" font-weight="700">One strong proof route</text>
+      <text x="24" y="184" fill="#475569" font-size="17">USEFUL LINES</text><text x="24" y="218" fill="#334155" font-size="18">Field or discipline</text><text x="24" y="250" fill="#334155" font-size="18">Graduation year</text><text x="24" y="282" fill="#334155" font-size="18">Direct email</text><text x="24" y="314" fill="#334155" font-size="18">Portfolio or GitHub</text>
+      <text x="24" y="376" fill="#b45309" font-size="16" font-weight="700">REMOVE</text><text x="24" y="402" fill="#475569" font-size="17">Unfinished profiles</text>
+    </g>
+    <rect x="64" y="626" width="1074" height="54" rx="14" fill="#ecfeff"/><text x="601" y="660" text-anchor="middle" fill="#155e75" font-size="19" font-weight="700">Keep: identity + context + one useful next route</text>
+  </g>
+</svg>

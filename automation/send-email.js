@@ -5,36 +5,40 @@
  *
  * Usage:
  *   node automation/send-email.js <report-file-path> <subject>
- *
- * Requires RESEND_API_KEY in the environment. For Ryan's machines, run via Doppler.
  */
 
 const https = require('https');
 const fs = require('fs');
 const SITE_FACTS = require('../js/site-facts');
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const TO_EMAIL = process.env.SEO_REPORT_TO || SITE_FACTS.reportEmail;
+const DEFAULT_SUBJECT = 'SEO Report — emailsignaturegenerator.ai';
+const MAX_SUBJECT_LENGTH = 200;
 const FROM_EMAIL = 'seo-reports@emailsignaturegenerator.ai';
 
-if (!RESEND_API_KEY) {
-  console.error('RESEND_API_KEY not set. Run with Doppler or provide RESEND_API_KEY in the environment.');
-  process.exit(1);
+function sanitizeSubject(value, maxLength = MAX_SUBJECT_LENGTH) {
+  const sanitized = String(value || DEFAULT_SUBJECT)
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return (sanitized || DEFAULT_SUBJECT).slice(0, maxLength);
 }
 
-const reportPath = process.argv[2];
-const subject = process.argv[3] || 'SEO Report — emailsignaturegenerator.ai';
-
-if (!reportPath || !fs.existsSync(reportPath)) {
-  console.error(`❌ Report file not found: ${reportPath}`);
-  process.exit(1);
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-const reportContent = fs.readFileSync(reportPath, 'utf8');
-const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+function buildEmailPayload({ reportContent, subject, today, toEmail }) {
+  const safeSubject = sanitizeSubject(subject);
+  const headerSubject = sanitizeSubject(`${safeSubject} — ${today}`);
+  const htmlSubject = escapeHtml(safeSubject);
 
-// Convert markdown to simple HTML
-const htmlBody = `
+  const htmlBody = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -56,10 +60,10 @@ const htmlBody = `
 </style>
 </head>
 <body>
-  <h1>${subject}</h1>
-  <p style="color:#64748b;font-size:13px;">Generated ${today} · emailsignaturegenerator.ai</p>
+  <h1>${htmlSubject}</h1>
+  <p style="color:#64748b;font-size:13px;">Generated ${escapeHtml(today)} · emailsignaturegenerator.ai</p>
   <hr>
-  <pre>${reportContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+  <pre>${escapeHtml(reportContent)}</pre>
   <div class="footer">
     This is an automated report from your SEO+GEO monitoring system.<br>
     Site: <a href="https://emailsignaturegenerator.ai">emailsignaturegenerator.ai</a>
@@ -68,42 +72,69 @@ const htmlBody = `
 </html>
 `;
 
-const payload = JSON.stringify({
-  from: FROM_EMAIL,
-  to: [TO_EMAIL],
-  subject: `${subject} — ${today}`,
-  html: htmlBody,
-  text: reportContent,
-});
+  return {
+    from: FROM_EMAIL,
+    to: [toEmail],
+    subject: headerSubject,
+    html: htmlBody,
+    text: reportContent,
+  };
+}
 
-const options = {
-  hostname: 'api.resend.com',
-  path: '/emails',
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${RESEND_API_KEY}`,
-    'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(payload),
-  },
-};
+function main() {
+  const apiKey = process.env.RESEND_API_KEY;
+  const toEmail = process.env.SEO_REPORT_TO || SITE_FACTS.reportEmail;
+  const reportPath = process.argv[2];
+  const subject = process.argv[3] || DEFAULT_SUBJECT;
 
-const req = https.request(options, (res) => {
-  let data = '';
-  res.on('data', chunk => data += chunk);
-  res.on('end', () => {
-    if (res.statusCode === 200 || res.statusCode === 201) {
-      console.log(`Report emailed to ${TO_EMAIL}`);
-    } else {
-      console.error(`Resend API error ${res.statusCode}: ${data}`);
-      process.exit(1);
-    }
+  if (!apiKey) {
+    console.error('RESEND_API_KEY not set. Run with Doppler or provide RESEND_API_KEY in the environment.');
+    process.exit(1);
+  }
+
+  if (!reportPath || !fs.existsSync(reportPath)) {
+    console.error(`Report file not found: ${reportPath}`);
+    process.exit(1);
+  }
+
+  const reportContent = fs.readFileSync(reportPath, 'utf8');
+  const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const payload = JSON.stringify(buildEmailPayload({ reportContent, subject, today, toEmail }));
+  const options = {
+    hostname: 'api.resend.com',
+    path: '/emails',
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    },
+  };
+
+  const req = https.request(options, (res) => {
+    let data = '';
+    res.on('data', chunk => data += chunk);
+    res.on('end', () => {
+      if (res.statusCode === 200 || res.statusCode === 201) {
+        console.log(`Report emailed to ${toEmail}`);
+      } else {
+        console.error(`Resend API error ${res.statusCode}: ${data}`);
+        process.exitCode = 1;
+      }
+    });
   });
-});
 
-req.on('error', (err) => {
-  console.error(`Network error: ${err.message}`);
-  process.exit(1);
-});
+  req.on('error', (err) => {
+    console.error(`Network error: ${err.message}`);
+    process.exitCode = 1;
+  });
 
-req.write(payload);
-req.end();
+  req.write(payload);
+  req.end();
+}
+
+module.exports = { MAX_SUBJECT_LENGTH, buildEmailPayload, escapeHtml, sanitizeSubject };
+
+if (require.main === module) {
+  main();
+}

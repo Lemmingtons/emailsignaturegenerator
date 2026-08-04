@@ -6,6 +6,8 @@
     "generate": "node generate-pages.js",
     "sitemap": "node update-sitemap.js",
     "validate": "node scripts/validate-site.js",
-    "check": "npm run validate"
+    "check": "npm run validate",
+    "test:automation": "bash automation/test-automation.sh",
+    "test:frontend": "node tests/frontend-accessibility.test.js"
   }
 }

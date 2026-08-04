@@ -48,6 +48,15 @@ function textToUint8Array(text) {
   return new TextEncoder().encode(text);
 }
 
+function hexDecode(value) {
+  if (!/^[0-9a-f]+$/i.test(value) || value.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(value.length / 2);
+  for (let i = 0; i < value.length; i += 2) {
+    bytes[i / 2] = parseInt(value.slice(i, i + 2), 16);
+  }
+  return bytes;
+}
+
 async function importKey(secret) {
   // Import raw key for HMAC-SHA256
   return crypto.subtle.importKey(
@@ -102,7 +111,10 @@ async function verifyJwt(token, secret) {
   try {
     const payloadJson = new TextDecoder().decode(payloadBytes);
     const payload = JSON.parse(payloadJson);
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+    if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+      return { valid: false, reason: 'invalid_expiry' };
+    }
+    if (payload.exp <= Math.floor(Date.now() / 1000)) {
       return { valid: false, reason: 'expired' };
     }
     return { valid: true, payload };
@@ -158,20 +170,251 @@ async function publicUploadId(sub, secret) {
 
 // ── Stripe API Helper ────────────────────────────────────────────────────────
 
-async function verifyStripeSession(sessionId, stripeSecretKey) {
-  const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
-    headers: {
-      'Authorization': `Bearer ${stripeSecretKey}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  });
+function stripeId(value, prefix) {
+  const id = typeof value === 'string' ? value : value && value.id;
+  return typeof id === 'string' && id.startsWith(`${prefix}_`) ? id : '';
+}
 
-  if (!response.ok) {
-    return { paid: false, error: `Stripe API error: ${response.status}` };
+async function entitlementId(paymentIntentId, secret) {
+  const key = await importKey(secret);
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    textToUint8Array(`stripe-entitlement:${paymentIntentId}`)
+  );
+  return `ent_${base64url(signature)}`;
+}
+
+async function checkoutSessionStorageId(sessionId, secret) {
+  const key = await importKey(secret);
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    textToUint8Array(`stripe-checkout-session:${sessionId}`)
+  );
+  return base64url(signature);
+}
+
+function entitlementKey(id) {
+  return `entitlements/active/${id}.json`;
+}
+
+function checkoutSessionKey(id) {
+  return `entitlements/checkout-sessions/${id}.json`;
+}
+
+function revocationKey(id, reason) {
+  return `entitlements/revoked/${id}/${reason}.json`;
+}
+
+async function readJsonObject(bucket, key) {
+  const object = await bucket.get(key);
+  if (!object) return null;
+  try {
+    return JSON.parse(await object.text());
+  } catch {
+    return null;
+  }
+}
+
+async function isEntitlementRevoked(bucket, id) {
+  const [refund, dispute] = await Promise.all([
+    bucket.get(revocationKey(id, 'refund')),
+    bucket.get(revocationKey(id, 'dispute')),
+  ]);
+  return Boolean(refund || dispute);
+}
+
+async function storeActiveEntitlement(env, stripeResult, source) {
+  const bucket = uploadBucket(env);
+  if (!bucket) return { active: false, reason: 'storage_not_configured' };
+
+  const id = await entitlementId(stripeResult.paymentIntent, env.PRO_SIGNING_SECRET);
+  const sessionStorageId = await checkoutSessionStorageId(stripeResult.sessionId, env.PRO_SIGNING_SECRET);
+  const revoked = await isEntitlementRevoked(bucket, id);
+  await bucket.put(checkoutSessionKey(sessionStorageId), JSON.stringify({
+    version: 1,
+    entitlementId: id,
+    checkoutSession: stripeResult.sessionId,
+    paymentIntent: stripeResult.paymentIntent,
+    paymentLink: stripeResult.paymentLink,
+    status: revoked ? 'revoked' : 'active',
+    recordedAt: Date.now(),
+  }), {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+  });
+  if (revoked) {
+    return { active: false, reason: 'entitlement_revoked', id };
   }
 
-  const session = await response.json();
-  return { paid: session.payment_status === 'paid', customer: session.customer };
+  const previous = await readJsonObject(bucket, entitlementKey(id));
+  const now = Date.now();
+  const record = {
+    version: 1,
+    entitlementId: id,
+    status: 'active',
+    paymentIntent: stripeResult.paymentIntent,
+    paymentLink: stripeResult.paymentLink,
+    checkoutSession: stripeResult.sessionId,
+    createdAt: previous && previous.createdAt ? previous.createdAt : now,
+    verifiedAt: now,
+    source,
+  };
+  await bucket.put(entitlementKey(id), JSON.stringify(record), {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+  });
+  return { active: true, id };
+}
+
+async function revokeEntitlement(env, paymentIntentId, reason, event) {
+  const bucket = uploadBucket(env);
+  if (!bucket || !env.PRO_SIGNING_SECRET) return false;
+  const id = await entitlementId(paymentIntentId, env.PRO_SIGNING_SECRET);
+  const tombstone = {
+    version: 1,
+    entitlementId: id,
+    status: 'revoked',
+    reason,
+    eventId: event.id,
+    eventCreated: event.created,
+    revokedAt: Date.now(),
+  };
+  // The separate tombstone means a late checkout retry cannot overwrite a
+  // refund or dispute by re-saving the active purchase record.
+  await bucket.put(revocationKey(id, reason), JSON.stringify(tombstone), {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+  });
+  return true;
+}
+
+async function restoreDisputedEntitlement(env, paymentIntentId) {
+  const bucket = uploadBucket(env);
+  if (!bucket || !env.PRO_SIGNING_SECRET) return false;
+  const id = await entitlementId(paymentIntentId, env.PRO_SIGNING_SECRET);
+  await bucket.delete(revocationKey(id, 'dispute'));
+  return true;
+}
+
+function stripeResultFromSession(session, env) {
+  const sessionId = stripeId(session, 'cs');
+  if (!/^cs_(?:(?:test|live)_)?[A-Za-z0-9]+$/.test(sessionId)) {
+    return { paid: false, reason: 'invalid_session' };
+  }
+  if (
+    !/^plink_[A-Za-z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_ID || '') ||
+    !['true', 'false'].includes(env.STRIPE_LIVEMODE)
+  ) {
+    return { paid: false, reason: 'server_misconfiguration' };
+  }
+  const paymentLink = stripeId(session.payment_link, 'plink');
+  const paymentIntent = stripeId(session.payment_intent, 'pi');
+  if (
+    session.mode !== 'payment' ||
+    session.status !== 'complete' ||
+    session.payment_status !== 'paid' ||
+    session.livemode !== (env.STRIPE_LIVEMODE === 'true') ||
+    paymentLink !== env.STRIPE_PAYMENT_LINK_ID ||
+    !paymentIntent
+  ) {
+    return { paid: false, reason: 'payment_not_eligible' };
+  }
+  return { paid: true, sessionId, paymentIntent, paymentLink };
+}
+
+async function redeemCheckoutSession(sessionId, env) {
+  if (!/^cs_(?:(?:test|live)_)?[A-Za-z0-9]+$/.test(sessionId || '')) {
+    return { active: false, reason: 'invalid_session' };
+  }
+  const bucket = uploadBucket(env);
+  if (!bucket || !env.PRO_SIGNING_SECRET) {
+    return { active: false, reason: 'server_misconfiguration' };
+  }
+  const storageId = await checkoutSessionStorageId(sessionId, env.PRO_SIGNING_SECRET);
+  const redemption = await readJsonObject(bucket, checkoutSessionKey(storageId));
+  if (!redemption) return { active: false, reason: 'confirmation_pending' };
+  if (
+    redemption.checkoutSession !== sessionId ||
+    redemption.paymentLink !== env.STRIPE_PAYMENT_LINK_ID ||
+    !/^ent_[A-Za-z0-9_-]{40,64}$/.test(redemption.entitlementId || '')
+  ) {
+    return { active: false, reason: 'payment_not_eligible' };
+  }
+  if (await isEntitlementRevoked(bucket, redemption.entitlementId)) {
+    return { active: false, reason: 'entitlement_revoked' };
+  }
+  const entitlement = await readJsonObject(bucket, entitlementKey(redemption.entitlementId));
+  if (!entitlement || entitlement.status !== 'active') {
+    return { active: false, reason: 'confirmation_pending' };
+  }
+  return { active: true, id: redemption.entitlementId };
+}
+
+function paymentConfirmationPendingResponse(url) {
+  const retryUrl = `${url.pathname}${url.search}`.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="2;url=${retryUrl}"><title>Confirming payment</title></head><body><main><h1>Confirming your payment…</h1><p>Stripe is still confirming your purchase. This page will retry automatically.</p></main></body></html>`;
+  return new Response(html, {
+    status: 202,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Retry-After': '2',
+    },
+  });
+}
+
+async function verifyStripeWebhookSignature(payload, signatureHeader, secret) {
+  if (!signatureHeader || !secret) return false;
+  const fields = signatureHeader.split(',').map((field) => field.trim());
+  const timestampField = fields.find((field) => field.startsWith('t='));
+  const signatures = fields
+    .filter((field) => field.startsWith('v1='))
+    .map((field) => hexDecode(field.slice(3)))
+    .filter(Boolean);
+  if (!timestampField || signatures.length === 0) return false;
+
+  const timestamp = Number(timestampField.slice(2));
+  if (!Number.isInteger(timestamp)) return false;
+  if (Math.abs(Math.floor(Date.now() / 1000) - timestamp) > 300) return false;
+
+  const key = await importKey(secret);
+  const signedPayload = textToUint8Array(`${timestamp}.${payload}`);
+  for (const signature of signatures) {
+    if (await crypto.subtle.verify('HMAC', key, signature, signedPayload)) return true;
+  }
+  return false;
+}
+
+function validProSubject(subject) {
+  return /^ent_[A-Za-z0-9_-]{40,64}$/.test(subject) || /^cus_[A-Za-z0-9]+$/.test(subject);
+}
+
+async function verifyProAccess(token, env) {
+  if (!env.PRO_SIGNING_SECRET) return { valid: false, reason: 'server_misconfiguration', status: 500 };
+  const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
+  if (!verified.valid) return verified;
+
+  const payload = verified.payload || {};
+  if (!validProSubject(payload.sub || '')) return { valid: false, reason: 'bad_subject' };
+
+  // Preserve already-issued customer tokens until they expire. Every new
+  // purchase uses the opaque, revocable entitlement path below.
+  if (payload.ent !== 1) return { valid: true, payload, legacy: true };
+  if (!payload.sub.startsWith('ent_')) return { valid: false, reason: 'bad_subject' };
+
+  const bucket = uploadBucket(env);
+  if (!bucket) return { valid: false, reason: 'storage_not_configured', status: 500 };
+  if (await isEntitlementRevoked(bucket, payload.sub)) {
+    return { valid: false, reason: 'entitlement_revoked' };
+  }
+  const record = await readJsonObject(bucket, entitlementKey(payload.sub));
+  if (!record || record.status !== 'active' || record.entitlementId !== payload.sub) {
+    return { valid: false, reason: 'entitlement_missing' };
+  }
+  return { valid: true, payload };
+}
+
+function proAuthError(result) {
+  return apiError(result.status || 401, 'invalid_token', result.reason);
 }
 
 // ── Security Headers ─────────────────────────────────────────────────────────
@@ -184,7 +427,7 @@ function addSecurityHeaders(response) {
   newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   newHeaders.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://js.stripe.com; img-src 'self' data: blob: https:; connect-src 'self' https://api.stripe.com"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; img-src 'self' data: blob: https:; connect-src 'self'"
   );
   return newHeaders;
 }
@@ -199,23 +442,48 @@ function permanentRedirect(url, pathname) {
   return new Response(null, { status: 301, headers: { Location: redirectUrl.toString() } });
 }
 
-function isPrivateAssetPath(pathname) {
-  return (
-    pathname === '/package.json' ||
-    pathname === '/NEXT_STEPS.md' ||
-    pathname === '/generate-pages.js' ||
-    pathname === '/update-sitemap.js' ||
-    pathname === '/wrangler.toml' ||
-    pathname === '/test.html' ||
-    pathname === '/_worker.js' ||
-    pathname.startsWith('/automation/') ||
-    pathname.startsWith('/graphify-out/') ||
-    pathname.startsWith('/scripts/') ||
-    pathname.startsWith('/templates/') ||
-    pathname.startsWith('/.git/') ||
-    pathname.startsWith('/.wrangler/') ||
-    pathname.startsWith('/.claude/')
-  );
+const PUBLIC_ROOT_ASSETS = new Set([
+  '/',
+  '/app',
+  '/blog',
+  '/blog/',
+  '/create',
+  '/generate',
+  '/index.html',
+  '/generator.html',
+  '/health-check.html',
+  '/email-signature-examples.html',
+  '/privacy.html',
+  '/favicon.svg',
+  '/robots.txt',
+  '/llms.txt',
+  '/sitemap.xml',
+]);
+
+const PUBLIC_CLIENT_SCRIPTS = new Set([
+  '/js/app.js',
+  '/js/generator-core.js',
+  '/js/gif-encoder.js',
+  '/js/health-check.js',
+  '/js/motion.js',
+  '/js/photo-animator.js',
+  '/js/site-facts.js',
+  '/js/sweep-animator.js',
+  '/js/templates.js',
+]);
+
+function isPublicStaticAssetPath(pathname) {
+  if (PUBLIC_ROOT_ASSETS.has(pathname) || PUBLIC_CLIENT_SCRIPTS.has(pathname)) return true;
+  if (/^\/css\/[A-Za-z0-9_-]+\.css$/.test(pathname)) return true;
+  if (/^\/assets\/(?:blog\/)?[A-Za-z0-9_-]+\.(?:gif|jpe?g|png|svg|webp)$/.test(pathname)) return true;
+  if (pathname === '/datasets/compliance.json') return true;
+  if (/^\/(?:blog|seo)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
+
+  // Clean URLs are public only when their corresponding HTML path is public.
+  if (!pathname.endsWith('/') && !/\.[A-Za-z0-9]+$/.test(pathname)) {
+    return isPublicStaticAssetPath(`${pathname}.html`);
+  }
+  return false;
 }
 
 async function fetchStaticAsset(env, request) {
@@ -251,42 +519,106 @@ export default {
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {
+      if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
       const sessionId = url.searchParams.get('session_id');
 
       if (!sessionId) {
         return new Response('Missing session_id', { status: 400 });
       }
 
-      if (!env.STRIPE_SECRET_KEY) {
-        return new Response('Server misconfiguration: Stripe secret not set', { status: 500 });
+      if (!env.STRIPE_PAYMENT_LINK_ID || !env.PRO_SIGNING_SECRET || !uploadBucket(env)) {
+        return new Response('Server misconfiguration: payment verification is unavailable', { status: 500 });
       }
 
-      // Verify the payment with Stripe
-      const stripeResult = await verifyStripeSession(sessionId, env.STRIPE_SECRET_KEY);
-
-      if (!stripeResult.paid) {
-        return new Response(`Payment verification failed: ${stripeResult.error || 'not paid'}`, { status: 402 });
+      // Stripe records the paid session through the signed webhook before this
+      // landing page can redeem it. No Stripe API key is stored in the Worker.
+      const entitlement = await redeemCheckoutSession(sessionId, env);
+      if (!entitlement.active) {
+        if (entitlement.reason === 'confirmation_pending') {
+          return paymentConfirmationPendingResponse(url);
+        }
+        const status = entitlement.reason === 'entitlement_revoked'
+          ? 403
+          : entitlement.reason === 'server_misconfiguration' ? 500 : 402;
+        return new Response('Pro access is unavailable for this payment', { status });
       }
 
-      if (!env.PRO_SIGNING_SECRET) {
-        return new Response('Server misconfiguration: signing secret not set', { status: 500 });
-      }
-
-      // Create a signed JWT (expires in 1 year)
+      // Create a signed JWT (expires in 1 year). The subject is an opaque
+      // entitlement id, never a Stripe customer or payment identifier.
       const now = Math.floor(Date.now() / 1000);
       const oneYear = 365 * 24 * 60 * 60;
       const token = await signJwt(
-        { sub: stripeResult.customer, iat: now, exp: now + oneYear },
+        { sub: entitlement.id, ent: 1, iat: now, exp: now + oneYear },
         env.PRO_SIGNING_SECRET
       );
 
       // Redirect to generator with the token
-      const redirectUrl = new URL('/generator.html', url.origin);
+      const redirectUrl = new URL('/generator', url.origin);
       redirectUrl.searchParams.set('token', token);
       return Response.redirect(redirectUrl.toString(), 302);
     }
 
-    // ── API: Verify Token (client-side Pro check) ────────────────────────────
+    // Stripe webhook: durable purchase and revocation state.
+    if (url.pathname === '/api/stripe-webhook') {
+      if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+      if (
+        !env.STRIPE_WEBHOOK_SECRET ||
+        !env.PRO_SIGNING_SECRET ||
+        !uploadBucket(env) ||
+        !['true', 'false'].includes(env.STRIPE_LIVEMODE)
+      ) {
+        return apiError(500, 'server_misconfiguration');
+      }
+
+      const payload = await request.text();
+      const signature = request.headers.get('Stripe-Signature') || '';
+      if (!await verifyStripeWebhookSignature(payload, signature, env.STRIPE_WEBHOOK_SECRET)) {
+        return apiError(400, 'invalid_webhook_signature');
+      }
+
+      let event;
+      try {
+        event = JSON.parse(payload);
+      } catch {
+        return apiError(400, 'invalid_json');
+      }
+      if (!event || typeof event !== 'object' || !event.data || !event.data.object) {
+        return apiError(400, 'invalid_event');
+      }
+      if (env.STRIPE_LIVEMODE === 'true' && event.livemode !== true) {
+        return apiError(400, 'wrong_stripe_mode');
+      }
+      if (env.STRIPE_LIVEMODE === 'false' && event.livemode !== false) {
+        return apiError(400, 'wrong_stripe_mode');
+      }
+
+      const object = event.data.object;
+      if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+        const stripeResult = stripeResultFromSession(object, env);
+        if (stripeResult.paid) await storeActiveEntitlement(env, stripeResult, 'stripe_webhook');
+      } else if (
+        event.type === 'charge.refunded' ||
+        ((event.type === 'refund.created' || event.type === 'refund.updated') && object.status === 'succeeded')
+      ) {
+        const paymentIntent = stripeId(object.payment_intent, 'pi');
+        if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'refund', event);
+      } else if (event.type === 'charge.dispute.created') {
+        const paymentIntent = stripeId(object.payment_intent, 'pi');
+        if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'dispute', event);
+      } else if (
+        event.type === 'charge.dispute.closed' &&
+        (object.status === 'won' || object.status === 'warning_closed')
+      ) {
+        const paymentIntent = stripeId(object.payment_intent, 'pi');
+        if (paymentIntent) await restoreDisputedEntitlement(env, paymentIntent);
+      }
+
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    // Verify the signed token and its current server-side entitlement.
     if (url.pathname === '/api/verify-token' && request.method === 'POST') {
       try {
         if (!env.PRO_SIGNING_SECRET) {
@@ -305,12 +637,16 @@ export default {
           });
         }
 
-        const result = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-        return new Response(JSON.stringify(result), {
+        const result = await verifyProAccess(token, env);
+        const publicResult = result.valid
+          ? { valid: true }
+          : { valid: false, reason: result.reason };
+        return new Response(JSON.stringify(publicResult), {
+          status: result.status || 200,
           headers: { 'Content-Type': 'application/json' },
         });
-      } catch (err) {
-        return new Response(JSON.stringify({ valid: false, reason: 'server_error', detail: String(err) }), {
+      } catch {
+        return new Response(JSON.stringify({ valid: false, reason: 'server_error' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -328,10 +664,10 @@ export default {
       const authHeader = request.headers.get('Authorization') || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!token) return apiError(401, 'invalid_token', 'missing');
-      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const verified = await verifyProAccess(token, env);
+      if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
-      if (!sub || !/^cus_[A-Za-z0-9]+$/.test(sub)) return apiError(401, 'invalid_token', 'bad_subject');
+      if (!validProSubject(sub || '')) return apiError(401, 'invalid_token', 'bad_subject');
 
       // Slot type — each slot stores at most one file per user
       const imageType = request.headers.get('X-Image-Type') || '';
@@ -342,14 +678,19 @@ export default {
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
       if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
 
-      // Rate limit: 25 uploads / hour / customer (KV read-modify-write; non-atomic, acceptable).
-      // Raised from 10 — photo, logo and animated-GIF retries now share one budget.
-      if (env.RATE_LIMIT) {
-        const hourBucket = Math.floor(Date.now() / 3_600_000);
-        const rlKey = `rl:upload:${sub}:${hourBucket}`;
-        const current = parseInt((await env.RATE_LIMIT.get(rlKey)) || '0', 10);
-        if (current >= 25) return apiError(429, 'rate_limited');
-        await env.RATE_LIMIT.put(rlKey, String(current + 1), { expirationTtl: 7200 });
+      // Cloudflare's native binding enforces 25 uploads / minute / customer.
+      // Photo, logo and animated-GIF retries all share the same customer budget.
+      if (!env.RATE_LIMIT || typeof env.RATE_LIMIT.limit !== 'function') {
+        return apiError(503, 'rate_limit_not_configured');
+      }
+      try {
+        const limited = await env.RATE_LIMIT.limit({ key: `upload:${sub}` });
+        if (!limited || typeof limited.success !== 'boolean') {
+          return apiError(503, 'rate_limit_unavailable');
+        }
+        if (!limited.success) return apiError(429, 'rate_limited');
+      } catch {
+        return apiError(503, 'rate_limit_unavailable');
       }
 
       // Read body and re-check actual size
@@ -457,8 +798,8 @@ export default {
       const authHeader = request.headers.get('Authorization') || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!token) return apiError(401, 'invalid_token', 'missing');
-      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const verified = await verifyProAccess(token, env);
+      if (!verified.valid) return proAuthError(verified);
 
       const MAX_SIGNATURE_BYTES = 32_000;
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
@@ -531,10 +872,10 @@ export default {
       const authHeader = request.headers.get('Authorization') || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!token) return apiError(401, 'invalid_token', 'missing');
-      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const verified = await verifyProAccess(token, env);
+      if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
-      if (!sub || !/^cus_[A-Za-z0-9]+$/.test(sub)) return apiError(401, 'invalid_token', 'bad_subject');
+      if (!validProSubject(sub || '')) return apiError(401, 'invalid_token', 'bad_subject');
 
       const MAX_CARD_BYTES = 16_000;
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
@@ -599,8 +940,8 @@ export default {
       const authHeader = request.headers.get('Authorization') || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
       if (!token) return apiError(401, 'invalid_token', 'missing');
-      const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-      if (!verified.valid) return apiError(401, 'invalid_token', verified.reason);
+      const verified = await verifyProAccess(token, env);
+      if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
 
       const existing = await bucket.get(`cards/${match[1]}.json`);
@@ -701,7 +1042,9 @@ export default {
     }
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
-    if (isPrivateAssetPath(url.pathname)) return notFoundResponse();
+    if ((request.method !== 'GET' && request.method !== 'HEAD') || !isPublicStaticAssetPath(url.pathname)) {
+      return notFoundResponse();
+    }
 
     if (url.pathname.endsWith('.html')) {
       const cleanPath = url.pathname === '/index.html'
@@ -725,6 +1068,9 @@ export default {
 
     // Add security headers to all responses
     const newHeaders = addSecurityHeaders(response);
+    if (env.SANDBOX_MODE === 'true') {
+      newHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

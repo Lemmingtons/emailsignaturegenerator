@@ -4,13 +4,7 @@ Current architecture notes after the May 2026 cleanup.
 
 ## Canonical product facts
 
-Shared product facts live in `js/site-facts.js`.
-
-- Pro price: `$9 AUD`
-- Templates: `19`
-- Free templates: `8`
-- Contact/report email: `info@emailsignaturegenerator.ai`
-- Stripe Payment Link: `https://buy.stripe.com/eVq9AS3R53Ie1Y53iKf7i01`
+Shared pricing, template counts, contact details, and payment links live in `js/site-facts.js`.
 
 Run `npm run validate` after changing pricing, counts, contact details, generated SEO copy, or payment links.
 
@@ -23,7 +17,7 @@ The active upload path is:
 
 The client sends the Pro JWT from `localStorage.sig_pro_token` as a bearer token. The Worker validates the token, verifies image magic bytes, stores the image in R2 under a deterministic opaque upload ID, and serves the public URL needed by email clients.
 
-Each slot holds at most one file: uploading a new extension into a slot evicts the old one, but `photo` and `logo` are independent. Size cap is 3 MB; rate limit is 25 uploads per hour per customer.
+Each slot holds at most one file: uploading a new extension into a slot evicts the old one, but `photo` and `logo` are independent. Size cap is 3 MB; Cloudflare's native rate-limiting binding allows 25 uploads per minute per customer.
 
 `/api/upload` is legacy and returns `410`. Existing `/u/cus_...` image URLs remain readable for old signatures, but new uploads must not expose Stripe customer IDs.
 
