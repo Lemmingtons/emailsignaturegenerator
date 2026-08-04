@@ -7,6 +7,13 @@ import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
+const SEO_REPLACEMENT_REDIRECTS = Object.freeze({
+  '/seo/email-signature-generator-for-google-workspace': '/seo/email-signature-generator-for-gmail',
+  '/seo/email-signature-generator-for-google-workspace.html': '/seo/email-signature-generator-for-gmail',
+  '/seo/email-signature-generator-for-microsoft-365': '/seo/email-signature-generator-for-outlook',
+  '/seo/email-signature-generator-for-microsoft-365.html': '/seo/email-signature-generator-for-outlook',
+});
+const REMOVED_SEO_PATH = /^\/seo\/(?:email-signature-for-[a-z0-9-]+|email-signature-generator-for-yahoo-mail)(?:\.html)?$/;
 
 // ── JWT Helpers (Web Crypto API) ─────────────────────────────────────────────
 
@@ -186,6 +193,12 @@ function notFoundResponse() {
   return new Response('Not found', { status: 404 });
 }
 
+function permanentRedirect(url, pathname) {
+  const redirectUrl = new URL(url);
+  redirectUrl.pathname = pathname;
+  return new Response(null, { status: 301, headers: { Location: redirectUrl.toString() } });
+}
+
 function isPrivateAssetPath(pathname) {
   return (
     pathname === '/package.json' ||
@@ -230,6 +243,11 @@ export default {
         headers: { 'Content-Type': 'text/html; charset=UTF-8' },
       });
     }
+
+    const replacementPath = SEO_REPLACEMENT_REDIRECTS[url.pathname];
+    if (replacementPath) return permanentRedirect(url, replacementPath);
+
+    if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {
@@ -684,6 +702,13 @@ export default {
 
     // ── Static Asset Serving ─────────────────────────────────────────────────
     if (isPrivateAssetPath(url.pathname)) return notFoundResponse();
+
+    if (url.pathname.endsWith('.html')) {
+      const cleanPath = url.pathname === '/index.html'
+        ? '/'
+        : url.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '');
+      return permanentRedirect(url, cleanPath);
+    }
 
     let response = await fetchStaticAsset(env, request);
 

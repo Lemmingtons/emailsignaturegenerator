@@ -3,14 +3,12 @@
  * Programmatic SEO Page Generator
  * emailsignaturegenerator.ai
  *
- * Generates static HTML landing pages from datasets.
+ * Generates the retained static platform setup guides from the platform dataset.
  * Run: node generate-pages.js
  * Outputs pages to: seo/
  *
- * Page types:
- *   - /seo/email-signature-for-[role].html        (30+ role pages)
- *   - /seo/email-signature-for-[industry].html    (18+ industry pages)
- *   - /seo/email-signature-generator-for-[platform].html  (6 platform pages)
+ * Page type:
+ *   - /seo/email-signature-generator-for-[platform].html  (3 platform guides)
  */
 
 const fs = require('fs');
@@ -46,10 +44,6 @@ function readDataset(name) {
   return data;
 }
 
-function dedupeBySlug(entries) {
-  return entries.filter((entry, index, all) => all.findIndex(x => x.slug === entry.slug) === index);
-}
-
 function ensureOutputDir() {
   if (!fs.existsSync(SEO_DIR)) {
     fs.mkdirSync(SEO_DIR, { recursive: true });
@@ -57,40 +51,6 @@ function ensureOutputDir() {
 }
 
 // ─── Templates ─────────────────────────────────────────────────────────────
-
-function rolePageHTML({ slug, label, singular, description, keywords }) {
-  const url = `${SITE_URL}/seo/email-signature-for-${slug}`;
-  const title = `Email Signature for ${label} — Free Builder | Email Signature Generator`;
-  const metaDesc = `Build a professional email signature for ${label.toLowerCase()} in under 2 minutes. Free to build, all ${TEMPLATE_COUNT} templates, $9 once to use it. Works with Gmail and Outlook.`;
-  const h1 = `Professional Email Signature for ${label}`;
-
-  return pageHTML({
-    url, title, metaDesc, h1, slug,
-    intro: description,
-    keywords,
-    ctaText: `Create Your ${singular} Email Signature`,
-    seoType: 'role',
-    seoLabel: label,
-    faqs: [
-      {
-        q: `What should a ${singular.toLowerCase()} include in their email signature?`,
-        a: `A ${singular.toLowerCase()} email signature should include your full name, job title or position, company or firm name, phone number, email address, and a link to your website or professional profile. ${singular}s should also consider adding their professional licence or registration number, relevant credentials, and a call-to-action such as a booking link.`
-      },
-      {
-        q: `What is the best email signature format for ${label.toLowerCase()}?`,
-        a: `The best email signature format for ${label.toLowerCase()} uses HTML table-based layouts that render consistently across all email clients including Gmail and Outlook. A clean, professional layout with your photo, name, title, contact details, and social links is ideal. Avoid using images for text, as these can appear broken in some email clients.`
-      },
-      {
-        q: `How do I add my email signature to Gmail as a ${singular.toLowerCase()}?`,
-        a: `To add your email signature to Gmail: (1) Create your signature using our free generator above. (2) Click "Copy for Gmail". (3) Open Gmail Settings → See all settings → Signature. (4) Create a new signature and paste with Ctrl+V. (5) Save changes and set as default for new emails.`
-      },
-      {
-        q: `Is this email signature generator free for ${label.toLowerCase()}?`,
-        a: `The builder is free to use with no account — all ${TEMPLATE_COUNT} templates, full customisation of colours, fonts, photos and social links, and a live preview of exactly what you will get. You pay ${PRICE} once, when you are ready to copy the signature into your email client. No subscription.`
-      }
-    ]
-  });
-}
 
 function platformPageHTML({
   slug,
@@ -104,6 +64,7 @@ function platformPageHTML({
   seoTitle,
   metaDescription,
   heading,
+  relatedLinks,
 }) {
   const url = `${SITE_URL}/seo/email-signature-generator-for-${slug}`;
   const title = seoTitle || `Email Signature Generator for ${label} — Free Builder`;
@@ -115,11 +76,11 @@ function platformPageHTML({
     intro: description,
     keywords,
     ctaText: `Create Your ${label} Signature`,
-    seoType: 'platform',
     seoLabel: label,
     guideSections,
     troubleshooting,
     installInstructions,
+    relatedLinks,
     faqs: [
       {
         q: `How do I add a professional email signature to ${label}?`,
@@ -137,37 +98,7 @@ function platformPageHTML({
   });
 }
 
-function industryPageHTML({ slug, label, description, keywords }) {
-  const url = `${SITE_URL}/seo/email-signature-for-${slug}`;
-  const title = `Email Signature for ${label} — Professional Templates | Email Signature Generator`;
-  const metaDesc = `Create a professional email signature for ${label.toLowerCase()} businesses and professionals. Free templates, full customisation, works with Gmail and Outlook.`;
-  const h1 = `Professional Email Signatures for ${label}`;
-
-  return pageHTML({
-    url, title, metaDesc, h1, slug,
-    intro: description,
-    keywords,
-    ctaText: `Create Your ${label} Email Signature`,
-    seoType: 'industry',
-    seoLabel: label,
-    faqs: [
-      {
-        q: `What makes a good email signature for ${label.toLowerCase()} businesses?`,
-        a: `A good email signature for ${label.toLowerCase()} should include your name, job title, company name, phone number, and email. Depending on your industry, you may also want to include professional licence numbers, credentials, website links, and a call-to-action button such as a booking or enquiry link.`
-      },
-      {
-        q: `How do I create a professional email signature for a ${label.toLowerCase()} company?`,
-        a: `Use our free email signature generator above. Pick a professional template, enter your contact details, customise the colours to match your brand, and copy the finished signature into Gmail, Outlook, or any other email client. It takes under 2 minutes with no design skills required.`
-      },
-      {
-        q: `Is this email signature generator free for ${label.toLowerCase()} professionals?`,
-        a: `The builder is free with no account — all ${TEMPLATE_COUNT} templates and full customisation. You pay ${PRICE} once when you are ready to use the signature. No subscription, no recurring charges.`
-      }
-    ]
-  });
-}
-
-function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, seoType, seoLabel, faqs, installInstructions, guideSections, troubleshooting }) {
+function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -214,6 +145,14 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
           <p>${escapeHtml(item.fix)}</p>
         </div>`).join('\n        ')}
       </div>
+    </section>` : '';
+
+  const relatedHTML = relatedLinks ? `
+    <section class="guide-section" aria-label="Related guides">
+      <h2>Related signature guides</h2>
+      <ul class="guide-list">
+        ${relatedLinks.map(link => `<li><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>${link.description ? ` — ${escapeHtml(link.description)}` : ''}</li>`).join('\n        ')}
+      </ul>
     </section>` : '';
 
   const faqHTML = faqs.map(f => `
@@ -293,23 +232,23 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
   <!-- Header -->
   <header class="site-header" role="banner">
-    <a href="../index.html" class="site-logo" aria-label="Email Signature Generator home">
+    <a href="/" class="site-logo" aria-label="Email Signature Generator home">
       <span class="logo-icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
       </span>
       Email Signature Generator
     </a>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="../index.html#templates">Templates</a>
-      <a href="../index.html#pricing">Pricing</a>
-      <a href="../generator.html" class="nav-cta">Create Signature</a>
+      <a href="/#templates">Templates</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/generator" class="nav-cta">Create Signature</a>
     </nav>
   </header>
 
   <main id="main-content" class="seo-page">
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../index.html">Home</a> › ${escapeHtml(h1)}
+      <a href="/">Home</a> › ${escapeHtml(h1)}
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
@@ -318,7 +257,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
       <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Free to build and preview. ${PRICE_SHORT} once when you are ready to use it.</p>
-      <a href="../generator.html" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
+      <a href="/generator" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
     </div>
 
     <section aria-label="Features">
@@ -357,6 +296,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
 
     ${troubleshootingHTML}
 
+    ${relatedHTML}
+
     <section class="faq-section" aria-label="Frequently asked questions">
       <h2>Frequently Asked Questions</h2>
       ${faqHTML}
@@ -365,7 +306,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     <div class="seo-cta-box" style="margin-top: 48px;">
       <h2>Ready to create your professional email signature?</h2>
       <p>Join thousands of professionals who've ditched the $108/year subscription for a ${PRICE_SHORT} one-time tool.</p>
-      <a href="../generator.html" class="btn btn-primary">Create Free Signature</a>
+      <a href="/generator" class="btn btn-primary">Create Free Signature</a>
     </div>
 
   </main>
@@ -374,9 +315,9 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
   <footer class="site-footer" role="contentinfo">
     <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
     <p style="margin-top: 8px;">
-      <a href="../generator.html">Generator</a>
+      <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
-      <a href="../index.html#pricing">Pricing</a>
+      <a href="/#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
       <a href="mailto:${SITE_FACTS.contactEmail}">Contact</a>
     </p>
@@ -392,48 +333,49 @@ function writePage(filename, html) {
   fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
 }
 
+function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
+  const retainedFiles = new Set(
+    retainedPlatformSlugs.map((slug) => `email-signature-generator-for-${slug}.html`)
+  );
+  let removed = 0;
+
+  for (const filename of fs.readdirSync(SEO_DIR)) {
+    const isRoleOrIndustryPage = /^email-signature-for-[a-z0-9-]+\.html$/.test(filename);
+    const isRemovedPlatformPage = /^email-signature-generator-for-[a-z0-9-]+\.html$/.test(filename)
+      && !retainedFiles.has(filename);
+
+    if (isRoleOrIndustryPage || isRemovedPlatformPage) {
+      fs.unlinkSync(path.join(SEO_DIR, filename));
+      removed++;
+    }
+  }
+
+  return removed;
+}
+
 function generatePages() {
   ensureOutputDir();
-
-  let generated = 0;
-
-  const roles = dedupeBySlug(readDataset('roles.json'));
-  for (const role of roles) {
-    writePage(`email-signature-for-${role.slug}.html`, rolePageHTML(role));
-    generated++;
-  }
-  console.log(`Generated ${roles.length} role pages`);
-
   const platforms = readDataset('platforms.json');
+  const removed = removeObsoleteGeneratedPages(platforms.map((platform) => platform.slug));
+
   for (const platform of platforms) {
     writePage(`email-signature-generator-for-${platform.slug}.html`, platformPageHTML(platform));
-    generated++;
   }
-  console.log(`Generated ${platforms.length} platform pages`);
 
-  const industries = readDataset('industries.json');
-  for (const industry of industries) {
-    writePage(`email-signature-for-${industry.slug}.html`, industryPageHTML(industry));
-    generated++;
-  }
-  console.log(`Total pages generated: ${generated}`);
+  console.log(`Removed ${removed} obsolete generated SEO pages`);
+  console.log(`Generated ${platforms.length} retained platform guides`);
   console.log('Output directory: ./seo/');
-  return { generated, roles: roles.length, platforms: platforms.length, industries: industries.length };
+  return { generated: platforms.length, removed, platforms: platforms.length };
 }
 
 if (require.main === module) {
   generatePages();
-  console.log('\nNext steps:');
-  console.log('  1. Run: node update-sitemap.js');
-  console.log('  2. Deploy to Cloudflare: npx wrangler pages deploy .');
 }
 
 module.exports = {
   generatePages,
   pageHTML,
-  rolePageHTML,
   platformPageHTML,
-  industryPageHTML,
   readDataset,
-  dedupeBySlug,
+  removeObsoleteGeneratedPages,
 };
