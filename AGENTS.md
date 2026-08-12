@@ -1,5 +1,7 @@
 # AGENTS.md — Email Signature Generator
 
+Inherit the universal instructions from `~/agent-workbench/AGENTS.md`.
+
 ## Scope and sources of truth
 
 This repository is a static site plus Cloudflare Worker for generating email signatures, serving generated SEO pages, and handling approved hosted-image and paid-feature flows.
@@ -49,4 +51,4 @@ Deleting hosted images, changing active payment links/entitlements, bulk-regener
 
 ## Verification
 
-Run `npm run check`. For rendering changes, test representative free/pro templates, empty and hostile input, copy/paste into supported email clients when applicable, and desktop/mobile UI screenshots. Keep local validation, deployed Worker proof, Stripe proof, email delivery, and live hosted-image proof separate.
+Run the smallest check covering the change; use `npm run check` when generator, template, shared facts, or generated pages changed. For rendering changes, exercise the affected template and relevant empty/hostile inputs. Test copy/paste in email clients only when portable markup changed, and capture desktop/mobile screenshots only when visual judgment matters. Keep local validation, deployed Worker proof, Stripe proof, email delivery, and live hosted-image proof separate.
