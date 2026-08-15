@@ -24,14 +24,16 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     "headline": "How to Add Social Media Icons to an Email Signature",
     "description": "A practical guide to choosing, linking, sizing, and testing social media icons in professional email signatures.",
     "datePublished": "2026-07-30",
-    "dateModified": "2026-07-30",
+    "dateModified": "2026-08-15",
+    "image": "https://emailsignaturegenerator.ai/assets/og-image.png",
     "author": {
       "@type": "Organization",
-      "name": "Email Signature Generator"
+      "name": "Email Signature Generator",
+      "url": "https://emailsignaturegenerator.ai/"
     },
     "publisher": {
       "@type": "Organization",
@@ -115,6 +117,11 @@
     .decision-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 0.92rem; }
     .decision-table th { background: var(--surface); padding: 11px 13px; text-align: left; border-bottom: 2px solid var(--border); }
     .decision-table td { padding: 11px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .article-visual { margin: 30px 0 34px; }
+    .visual-hint { display: none; }
+    .visual-scroll { border-radius: 14px; }
+    .article-visual img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); background: var(--surface); }
+    .article-visual figcaption { margin-top: 10px; color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; }
     .code-sample { overflow-x: auto; background: #111827; color: #e5e7eb; border-radius: 8px; padding: 18px; margin: 20px 0; font-size: 0.82rem; line-height: 1.6; }
     .checklist { list-style: none; padding-left: 0 !important; }
     .checklist li { padding: 8px 0 8px 30px; position: relative; border-bottom: 1px solid var(--border); }
@@ -128,6 +135,10 @@
     @media (max-width: 560px) {
       .decision-table { display: block; overflow-x: auto; white-space: normal; }
       .blog-post { padding-left: 18px; padding-right: 18px; }
+      .visual-hint { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; }
+      .visual-scroll { overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 6px; }
+      .visual-scroll img { width: auto; max-width: none; min-width: 760px; }
+      .visual-scroll--wide img { min-width: 920px; }
     }
   </style>
 </head>
@@ -155,7 +166,7 @@
     </nav>
 
     <h1>How to Add Social Media Icons to an Email Signature</h1>
-    <p class="post-meta">By Email Signature Generator · Published July 2026 · 8 min read</p>
+    <p class="post-meta">By Email Signature Generator · Updated 15 August 2026 · 8 min read</p>
 
     <div class="answer-box">
       <p><strong>The short answer:</strong> include one to three social media icons that lead to current, professionally relevant profiles. Make each icon a normal HTTPS link, use a publicly hosted PNG with explicit dimensions and useful alt text, then send test messages to Gmail, Outlook, and a mobile inbox before using the signature.</p>
@@ -164,6 +175,14 @@
     <p>The hard part is not inserting a LinkedIn or Instagram logo. It is deciding whether that destination deserves space in every email you send—and making sure the link still works when an email client rewrites or blocks parts of the signature.</p>
 
     <p>Our approach is <strong>proof before pixels</strong>: prove that the profile is useful, prove that the destination is correct, and prove that the icon survives real inboxes. Only then worry about colour or icon style.</p>
+
+    <figure class="article-visual" id="signature-anatomy">
+      <span class="visual-hint">Swipe or use arrow keys to inspect the full visual.</span>
+      <div class="visual-scroll" tabindex="0" aria-label="Scrollable email signature anatomy visual">
+        <img src="../assets/blog/social-icons-signature-example.svg" width="1200" height="720" decoding="async" alt="Sample email signature with callouts for an exact HTTPS profile link, a hosted PNG, 22-pixel dimensions, and a measured eight-pixel gap between adjacent icons">
+      </div>
+      <figcaption>A reliable icon row is more than decoration: each icon needs a useful destination, a stable public image, explicit dimensions, consistent spacing, and descriptive alt text.</figcaption>
+    </figure>
 
     <h2>Which social media icons belong in your signature?</h2>
 
@@ -214,6 +233,14 @@
 
     <p>There is no universal pixel size required by Gmail or Outlook. The correct size depends on the surrounding signature and the role of the icons. In our 24 templates, 22 pixels is the standard display size and 30 pixels is reserved for layouts where social profiles are a primary part of the sender’s identity.</p>
 
+    <figure class="article-visual">
+      <span class="visual-hint">Swipe or use arrow keys to inspect the full visual.</span>
+      <div class="visual-scroll" tabindex="0" aria-label="Scrollable social icon size comparison">
+        <img src="../assets/blog/social-icon-size-comparison.svg" width="1200" height="620" decoding="async" alt="Side-by-side comparison of standard 22-pixel social icons with eight-pixel spacing and social-first 30-pixel icons with ten-pixel spacing">
+      </div>
+      <figcaption>Standard templates use 22px icons with 8px spacing. The two social-first templates use 30px icons with 10px spacing because those profiles are part of the signature’s primary hierarchy.</figcaption>
+    </figure>
+
     <ul>
       <li><strong>Use one size within a row.</strong> Mixed icon sizes make the line look misaligned even when each individual logo is correct.</li>
       <li><strong>Keep the style consistent.</strong> Choose either a restrained monochrome set or a coordinated colour treatment.</li>
@@ -228,7 +255,7 @@
 
     <p>Google’s current Gmail help says signatures can include an image and that images count toward Gmail’s 10,000-character signature limit. The practical installation route is Settings → See all settings → Signature, followed by Save Changes. See Google’s official instructions for <a href="https://support.google.com/mail/answer/8395?hl=en" rel="noopener">creating a Gmail signature</a>.</p>
 
-    <p>Google also recommends alt text for images in its branded-email layouts because alt text provides context when an image is not rendered and helps screen-reader users. That guidance is directly useful for linked social icons even though branded layouts and ordinary signatures are separate Gmail features.</p>
+    <p>Google also recommends alt text for images in its <a href="https://support.google.com/mail/answer/13397089?hl=en" rel="noopener">branded-email layouts</a> because alt text provides context when an image is not rendered and helps screen-reader users. That guidance is directly useful for linked social icons even though branded layouts and ordinary signatures are separate Gmail features.</p>
 
     <h3>Outlook</h3>
 
@@ -247,6 +274,14 @@
       <li><strong>A reply:</strong> make sure the signature remains readable when quoted below a conversation.</li>
       <li><strong>Images blocked:</strong> confirm the platform-name alt text and surrounding contact details still make sense.</li>
     </ol>
+
+    <figure class="article-visual">
+      <span class="visual-hint">Swipe or use arrow keys to inspect the full visual.</span>
+      <div class="visual-scroll visual-scroll--wide" tabindex="0" aria-label="Scrollable five-message testing visual">
+        <img src="../assets/blog/social-icons-five-message-test.svg" width="1200" height="700" decoding="async" alt="Five-message email signature test covering Gmail desktop, Outlook, a mobile inbox, a reply, and a message with images blocked">
+      </div>
+      <figcaption>Do not approve a signature from the editor preview alone. Test five received messages, then click every icon once to verify its exact destination.</figcaption>
+    </figure>
 
     <p>Click every icon in the received messages. A correct-looking LinkedIn logo that opens the wrong employee profile is still a failed signature.</p>
 

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Five-message test for email signature social icons</title>
+  <desc id="desc">A five-step test covering Gmail desktop, Outlook desktop or web, a mobile inbox, a reply, and a message with images blocked.</desc>
+  <rect width="1200" height="700" rx="32" fill="#ecfeff"/>
+  <text x="70" y="72" fill="#164e63" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">The five-message test</text>
+  <text x="70" y="108" fill="#475569" font-family="Arial, Helvetica, sans-serif" font-size="18">A preview is not proof. Check the received email in five different conditions.</text>
+
+  <path d="M166 330H1034" stroke="#a5f3fc" stroke-width="8" stroke-linecap="round"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <g transform="translate(70 174)">
+      <rect width="196" height="310" rx="20" fill="#fff" stroke="#cbd5e1"/>
+      <circle cx="98" cy="76" r="42" fill="#0891b2"/>
+      <path d="M72 61h52v36H72zM72 61l26 20 26-20" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+      <circle cx="98" cy="156" r="22" fill="#164e63"/>
+      <text x="98" y="164" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">1</text>
+      <text x="98" y="206" text-anchor="middle" fill="#164e63" font-size="18" font-weight="700">Gmail desktop</text>
+      <text x="98" y="238" text-anchor="middle" fill="#475569" font-size="14">Icons load, align,</text>
+      <text x="98" y="260" text-anchor="middle" fill="#475569" font-size="14">and open the right</text>
+      <text x="98" y="282" text-anchor="middle" fill="#475569" font-size="14">public profiles.</text>
+    </g>
+
+    <g transform="translate(286 174)">
+      <rect width="196" height="310" rx="20" fill="#fff" stroke="#cbd5e1"/>
+      <circle cx="98" cy="76" r="42" fill="#0891b2"/>
+      <rect x="72" y="56" width="52" height="40" rx="4" fill="none" stroke="#fff" stroke-width="4"/>
+      <path d="M72 62l26 18 26-18M84 50h28" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="98" cy="156" r="22" fill="#164e63"/>
+      <text x="98" y="164" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">2</text>
+      <text x="98" y="206" text-anchor="middle" fill="#164e63" font-size="18" font-weight="700">Outlook</text>
+      <text x="98" y="238" text-anchor="middle" fill="#475569" font-size="14">Spacing and links</text>
+      <text x="98" y="260" text-anchor="middle" fill="#475569" font-size="14">survive paste, save,</text>
+      <text x="98" y="282" text-anchor="middle" fill="#475569" font-size="14">and send.</text>
+    </g>
+
+    <g transform="translate(502 174)">
+      <rect width="196" height="310" rx="20" fill="#fff" stroke="#cbd5e1"/>
+      <circle cx="98" cy="76" r="42" fill="#0891b2"/>
+      <rect x="82" y="48" width="32" height="56" rx="6" fill="none" stroke="#fff" stroke-width="4"/>
+      <path d="M92 96h12" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="98" cy="156" r="22" fill="#164e63"/>
+      <text x="98" y="164" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">3</text>
+      <text x="98" y="206" text-anchor="middle" fill="#164e63" font-size="18" font-weight="700">Mobile inbox</text>
+      <text x="98" y="238" text-anchor="middle" fill="#475569" font-size="14">The icon row fits</text>
+      <text x="98" y="260" text-anchor="middle" fill="#475569" font-size="14">without pushing contact</text>
+      <text x="98" y="282" text-anchor="middle" fill="#475569" font-size="14">details off screen.</text>
+    </g>
+
+    <g transform="translate(718 174)">
+      <rect width="196" height="310" rx="20" fill="#fff" stroke="#cbd5e1"/>
+      <circle cx="98" cy="76" r="42" fill="#0891b2"/>
+      <path d="M119 75H86M86 75l14-14M86 75l14 14M87 95c-15-5-21-16-21-29" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="98" cy="156" r="22" fill="#164e63"/>
+      <text x="98" y="164" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">4</text>
+      <text x="98" y="206" text-anchor="middle" fill="#164e63" font-size="18" font-weight="700">Reply</text>
+      <text x="98" y="238" text-anchor="middle" fill="#475569" font-size="14">The signature remains</text>
+      <text x="98" y="260" text-anchor="middle" fill="#475569" font-size="14">readable beneath a</text>
+      <text x="98" y="282" text-anchor="middle" fill="#475569" font-size="14">quoted conversation.</text>
+    </g>
+
+    <g transform="translate(934 174)">
+      <rect width="196" height="310" rx="20" fill="#fff" stroke="#cbd5e1"/>
+      <circle cx="98" cy="76" r="42" fill="#0891b2"/>
+      <rect x="72" y="55" width="52" height="42" rx="5" fill="none" stroke="#fff" stroke-width="4"/>
+      <path d="M78 88l13-14 10 10 8-8 9 12M72 48l52 56" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="98" cy="156" r="22" fill="#164e63"/>
+      <text x="98" y="164" text-anchor="middle" fill="#fff" font-size="22" font-weight="700">5</text>
+      <text x="98" y="206" text-anchor="middle" fill="#164e63" font-size="18" font-weight="700">Images blocked</text>
+      <text x="98" y="238" text-anchor="middle" fill="#475569" font-size="14">Alt text and contact</text>
+      <text x="98" y="260" text-anchor="middle" fill="#475569" font-size="14">details still explain</text>
+      <text x="98" y="282" text-anchor="middle" fill="#475569" font-size="14">every destination.</text>
+    </g>
+  </g>
+
+  <g transform="translate(255 540)" font-family="Arial, Helvetica, sans-serif">
+    <rect width="690" height="94" rx="18" fill="#ffffff" stroke="#86efac"/>
+    <circle cx="54" cy="47" r="24" fill="#22c55e"/>
+    <path d="M43 47l8 8 15-18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="94" y="40" fill="#164e63" font-size="19" font-weight="700">Pass only when every received message works.</text>
+    <text x="94" y="67" fill="#475569" font-size="15">Then click each icon once and verify the exact destination URL.</text>
+  </g>
+</svg>

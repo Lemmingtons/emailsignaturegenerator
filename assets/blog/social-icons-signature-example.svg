@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Anatomy of a reliable social icon row in an email signature</title>
+  <desc id="desc">A sample email signature with callouts showing a useful profile link, a hosted PNG icon, explicit 22 pixel dimensions, and a measured eight pixel gap between adjacent icons.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#164e63" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0891b2"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" rx="32" fill="#ecfeff"/>
+  <circle cx="1100" cy="82" r="150" fill="#cffafe"/>
+  <circle cx="80" cy="670" r="120" fill="#d1fae5"/>
+
+  <text x="70" y="74" fill="#164e63" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">A reliable social-icon row</text>
+  <text x="70" y="108" fill="#475569" font-family="Arial, Helvetica, sans-serif" font-size="18">What the recipient sees — and what makes each icon resilient</text>
+
+  <g filter="url(#shadow)">
+    <rect x="220" y="170" width="760" height="360" rx="22" fill="#ffffff" stroke="#cbd5e1"/>
+    <rect x="220" y="170" width="760" height="54" rx="22" fill="#f8fafc"/>
+    <path d="M220 224h760" stroke="#e2e8f0"/>
+    <circle cx="252" cy="197" r="7" fill="#f87171"/>
+    <circle cx="276" cy="197" r="7" fill="#fbbf24"/>
+    <circle cx="300" cy="197" r="7" fill="#4ade80"/>
+    <text x="600" y="203" text-anchor="middle" fill="#64748b" font-family="Arial, Helvetica, sans-serif" font-size="14">Received email</text>
+
+    <text x="282" y="276" fill="#64748b" font-family="Arial, Helvetica, sans-serif" font-size="15">Regards,</text>
+    <rect x="282" y="304" width="4" height="158" rx="2" fill="url(#accent)"/>
+    <text x="308" y="340" fill="#164e63" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700">Jane Smith</text>
+    <text x="308" y="369" fill="#0891b2" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700">Marketing Manager · Acme Corp</text>
+    <text x="308" y="402" fill="#475569" font-family="Arial, Helvetica, sans-serif" font-size="15">jane@acme.com  ·  acme.com</text>
+
+    <g transform="translate(308 427)">
+      <circle cx="11" cy="11" r="11" fill="#0891b2"/>
+      <path d="M6 11h10M11 6a8 8 0 0 1 0 10M11 6a8 8 0 0 0 0 10" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="41" cy="11" r="11" fill="#0891b2"/>
+      <rect x="35" y="5" width="12" height="12" rx="3" fill="none" stroke="#fff" stroke-width="1.6"/>
+      <circle cx="41" cy="11" r="3" fill="none" stroke="#fff" stroke-width="1.4"/>
+      <circle cx="45" cy="7" r="1" fill="#fff"/>
+      <circle cx="71" cy="11" r="11" fill="#0891b2"/>
+      <text x="71" y="16" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700">in</text>
+    </g>
+    <g stroke="#0891b2" stroke-width="1.5" fill="none" stroke-linecap="round">
+      <path d="M360 458v10M368 458v10M360 463h8"/>
+    </g>
+    <text x="364" y="482" text-anchor="middle" fill="#0891b2" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700">8px</text>
+  </g>
+
+  <g fill="none" stroke="#0891b2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M319 438C260 438 208 416 160 372"/>
+    <path d="M160 372l8 1-2 8"/>
+    <path d="M349 438C349 522 376 577 426 613"/>
+    <path d="M426 613l-3-8 8-2"/>
+    <path d="M379 438C454 438 515 476 553 550"/>
+    <path d="M553 550l-8-3 1-8"/>
+    <path d="M364 463C602 463 812 431 1006 352"/>
+    <path d="M364 463l8-4v8z" fill="#0891b2" stroke="none"/>
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="54" y="292" width="214" height="92" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+    <text x="74" y="322" fill="#164e63" font-size="17" font-weight="700">Useful HTTPS link</text>
+    <text x="74" y="349" fill="#475569" font-size="14">Opens the exact public</text>
+    <text x="74" y="370" fill="#475569" font-size="14">profile—not a homepage.</text>
+
+    <rect x="322" y="594" width="220" height="84" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+    <text x="342" y="624" fill="#164e63" font-size="17" font-weight="700">Hosted PNG</text>
+    <text x="342" y="651" fill="#475569" font-size="14">Public, stable, and available</text>
+    <text x="342" y="672" fill="#475569" font-size="14">without a login.</text>
+
+    <rect x="536" y="548" width="226" height="104" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+    <text x="556" y="578" fill="#164e63" font-size="17" font-weight="700">Explicit dimensions</text>
+    <text x="556" y="605" fill="#475569" font-size="14">Standard icons render at</text>
+    <text x="556" y="628" fill="#0891b2" font-size="19" font-weight="700">22 × 22px</text>
+
+    <rect x="934" y="274" width="214" height="102" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+    <text x="954" y="304" fill="#164e63" font-size="17" font-weight="700">Icon spacing</text>
+    <text x="954" y="331" fill="#475569" font-size="14">A visible, measured gap:</text>
+    <text x="954" y="354" fill="#0891b2" font-size="16" font-weight="700">8px edge to edge</text>
+  </g>
+</svg>

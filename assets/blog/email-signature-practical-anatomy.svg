@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">The four jobs of a practical email signature</title>
+  <desc id="desc">A fictional professional signature annotated with sender identity, role context, direct contact, one useful next step, and a text-first fallback.</desc>
+  <rect width="1200" height="700" rx="30" fill="#f8fafc"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="62" y="72" fill="#0f172a" font-size="34" font-weight="700">A signature is a routing tool</text>
+    <text x="62" y="108" fill="#475569" font-size="19">Keep a field only when it helps the recipient identify, understand, contact, or continue.</text>
+    <rect x="62" y="158" width="650" height="450" rx="22" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+    <rect x="102" y="205" width="6" height="310" rx="3" fill="#0891b2"/>
+    <text x="140" y="258" fill="#0f172a" font-size="34" font-weight="700">Jane Smith</text>
+    <text x="140" y="302" fill="#0e7490" font-size="22" font-weight="700">Creative Director · North &amp; Co</text>
+    <text x="140" y="362" fill="#334155" font-size="20">jane@northandco.com · +61 400 000 000</text>
+    <text x="140" y="404" fill="#0369a1" font-size="20">northandco.com/work</text>
+    <text x="140" y="478" fill="#64748b" font-size="17">Name, role, and contact remain readable</text>
+    <text x="140" y="506" fill="#64748b" font-size="17">when remote images are unavailable.</text>
+
+    <path d="M712 245H770" stroke="#0891b2" stroke-width="3"/><circle cx="712" cy="245" r="6" fill="#0891b2"/>
+    <rect x="770" y="192" width="360" height="92" rx="16" fill="#ecfeff" stroke="#67e8f9"/>
+    <text x="796" y="228" fill="#155e75" font-size="17" font-weight="700">1 · IDENTITY</text><text x="796" y="258" fill="#334155" font-size="18">Who sent this message?</text>
+    <path d="M712 300H770" stroke="#2563eb" stroke-width="3"/><circle cx="712" cy="300" r="6" fill="#2563eb"/>
+    <rect x="770" y="302" width="360" height="92" rx="16" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="796" y="338" fill="#1d4ed8" font-size="17" font-weight="700">2 · CONTEXT</text><text x="796" y="368" fill="#334155" font-size="18">Why is the sender relevant?</text>
+    <path d="M712 360H752V447H770" stroke="#7c3aed" stroke-width="3" fill="none"/><circle cx="712" cy="360" r="6" fill="#7c3aed"/>
+    <rect x="770" y="412" width="360" height="92" rx="16" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="796" y="448" fill="#6d28d9" font-size="17" font-weight="700">3 · DIRECT CONTACT</text><text x="796" y="478" fill="#334155" font-size="18">How can I reach them?</text>
+    <path d="M712 404H736V557H770" stroke="#ea580c" stroke-width="3" fill="none"/><circle cx="712" cy="404" r="6" fill="#ea580c"/>
+    <rect x="770" y="522" width="360" height="92" rx="16" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="796" y="558" fill="#c2410c" font-size="17" font-weight="700">4 · ONE NEXT STEP</text><text x="796" y="588" fill="#334155" font-size="18">Where should I go next?</text>
+    <text x="62" y="660" fill="#64748b" font-size="18">Example details are fictional. Add policy or compliance fields only when they apply.</text>
+  </g>
+</svg>

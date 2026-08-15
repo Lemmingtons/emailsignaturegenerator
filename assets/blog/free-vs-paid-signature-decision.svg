@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Decision guide for free and paid email signature tools</title>
+  <desc id="desc">A decision tree routing one simple signature to free or one-time tools, recurring campaigns to subscriptions, and central organisation control to managed platforms.</desc>
+  <rect width="1200" height="700" rx="30" fill="#f8fafc"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="64" y="72" fill="#0f172a" font-size="34" font-weight="700">Pay for the operating requirement</text>
+    <text x="64" y="108" fill="#475569" font-size="19">Start with the job. The plan type follows from what must keep happening after design.</text>
+    <rect x="390" y="150" width="420" height="84" rx="18" fill="#ecfeff" stroke="#67e8f9" stroke-width="2"/>
+    <text x="600" y="184" text-anchor="middle" fill="#155e75" font-size="18" font-weight="700">DO YOU NEED CENTRAL CONTROL?</text>
+    <text x="600" y="214" text-anchor="middle" fill="#334155" font-size="18">Directory rollout, enforced updates, or policy?</text>
+    <path d="M600 234V284M600 284H930V328M600 284H270V328" fill="none" stroke="#94a3b8" stroke-width="3"/>
+    <text x="755" y="273" fill="#166534" font-size="16" font-weight="700">YES</text><text x="420" y="273" fill="#0e7490" font-size="16" font-weight="700">NO</text>
+    <rect x="755" y="328" width="350" height="126" rx="18" fill="#dcfce7" stroke="#86efac"/>
+    <text x="930" y="366" text-anchor="middle" fill="#166534" font-size="21" font-weight="700">CENTRALLY MANAGED</text>
+    <text x="930" y="399" text-anchor="middle" fill="#334155" font-size="16">Verify directory integration, permissions,</text>
+    <text x="930" y="424" text-anchor="middle" fill="#334155" font-size="16">audit trail, deployment, and support.</text>
+    <rect x="95" y="328" width="350" height="126" rx="18" fill="#fff" stroke="#93c5fd"/>
+    <text x="270" y="366" text-anchor="middle" fill="#1d4ed8" font-size="18" font-weight="700">ONGOING CAMPAIGNS OR ANALYTICS?</text>
+    <text x="270" y="399" text-anchor="middle" fill="#334155" font-size="16">Will someone manage reporting, banners,</text>
+    <text x="270" y="424" text-anchor="middle" fill="#334155" font-size="16">support, or frequent shared updates?</text>
+    <path d="M270 454V500M270 500H430V542M270 500H110V542" fill="none" stroke="#94a3b8" stroke-width="3"/>
+    <text x="344" y="490" fill="#7c3aed" font-size="16" font-weight="700">YES</text><text x="174" y="490" fill="#0e7490" font-size="16" font-weight="700">NO</text>
+    <rect x="34" y="542" width="350" height="110" rx="18" fill="#ecfeff" stroke="#67e8f9"/>
+    <text x="209" y="580" text-anchor="middle" fill="#155e75" font-size="20" font-weight="700">FREE OR ONE-TIME</text>
+    <text x="209" y="612" text-anchor="middle" fill="#334155" font-size="16">Best fit for one portable signature</text>
+    <text x="209" y="635" text-anchor="middle" fill="#334155" font-size="16">with occasional individual edits.</text>
+    <rect x="408" y="542" width="350" height="110" rx="18" fill="#f5f3ff" stroke="#c4b5fd"/>
+    <text x="583" y="580" text-anchor="middle" fill="#6d28d9" font-size="20" font-weight="700">SUBSCRIPTION</text>
+    <text x="583" y="612" text-anchor="middle" fill="#334155" font-size="16">Recurring cost needs recurring value</text>
+    <text x="583" y="635" text-anchor="middle" fill="#334155" font-size="16">and an owner for ongoing work.</text>
+  </g>
+</svg>
