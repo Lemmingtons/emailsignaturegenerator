@@ -150,7 +150,14 @@ const ICON_SIZE = ICON_MASK_SIZE;
 const IMAGE_SLOTS = ['photo', 'logo', 'cta', 'divider'];
 const IMAGE_EXTS = ['jpg', 'png', 'webp', 'gif'];
 
+// Server-side failures are logged by code only, so Workers Logs can alert on
+// them without ever recording tokens, customer ids, or request bodies.
+function logServerError(event, fields) {
+  console.error(JSON.stringify({ event, ...fields }));
+}
+
 function apiError(status, code, detail) {
+  if (status >= 500) logServerError('api_error', { status, code });
   const body = detail ? { error: code, code, detail } : { error: code, code };
   return new Response(JSON.stringify(body), {
     status,
@@ -504,7 +511,57 @@ async function fetchStaticAsset(env, request) {
 
 export default {
   async fetch(request, env) {
+    try {
+      return await handleRequest(request, env);
+    } catch (err) {
+      const pathname = new URL(request.url).pathname;
+      logServerError('unhandled_error', { path: pathname, message: String((err && err.message) || err).slice(0, 200) });
+      if (pathname.startsWith('/api/')) {
+        return new Response(JSON.stringify({ error: 'server_error', code: 'server_error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
+      }
+      return new Response('Something went wrong. Please try again.', { status: 500 });
+    }
+  },
+};
+
+// Uptime monitors poll this. It reports only whether each dependency is wired
+// up, never a value, and touches R2 with a single cheap HEAD.
+async function healthResponse(env) {
+  const checks = {
+    assets: Boolean(env.ASSETS && typeof env.ASSETS.fetch === 'function'),
+    signing: Boolean(env.PRO_SIGNING_SECRET),
+    webhook: Boolean(env.STRIPE_WEBHOOK_SECRET),
+    paymentLink: /^plink_[A-Za-z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_ID || ''),
+    rateLimit: Boolean(env.RATE_LIMIT && typeof env.RATE_LIMIT.limit === 'function'),
+    storage: false,
+  };
+  const bucket = uploadBucket(env);
+  if (bucket) {
+    try {
+      await bucket.head('health/probe');
+      checks.storage = true;
+    } catch {
+      checks.storage = false;
+    }
+  }
+  const ok = Object.values(checks).every(Boolean);
+  if (!ok) logServerError('health_failed', { failing: Object.keys(checks).filter((k) => !checks[k]) });
+  return new Response(JSON.stringify({ ok, checks }), {
+    status: ok ? 200 : 503,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+}
+
+async function handleRequest(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/health') {
+      if (request.method !== 'GET' && request.method !== 'HEAD') return apiError(405, 'method_not_allowed');
+      return healthResponse(env);
+    }
 
     if (url.pathname === GOOGLE_SITE_VERIFICATION_FILE) {
       return new Response(`${GOOGLE_SITE_VERIFICATION_BODY}\n`, {
@@ -527,6 +584,7 @@ export default {
       }
 
       if (!env.STRIPE_PAYMENT_LINK_ID || !env.PRO_SIGNING_SECRET || !uploadBucket(env)) {
+        logServerError('api_error', { status: 500, code: 'verify_payment_misconfigured' });
         return new Response('Server misconfiguration: payment verification is unavailable', { status: 500 });
       }
 
@@ -540,6 +598,7 @@ export default {
         const status = entitlement.reason === 'entitlement_revoked'
           ? 403
           : entitlement.reason === 'server_misconfiguration' ? 500 : 402;
+        if (status === 500) logServerError('api_error', { status, code: 'verify_payment_misconfigured' });
         return new Response('Pro access is unavailable for this payment', { status });
       }
 
@@ -573,6 +632,9 @@ export default {
       const payload = await request.text();
       const signature = request.headers.get('Stripe-Signature') || '';
       if (!await verifyStripeWebhookSignature(payload, signature, env.STRIPE_WEBHOOK_SECRET)) {
+        // A rotated or mistyped STRIPE_WEBHOOK_SECRET fails every purchase here,
+        // so it is logged even though the response is a 4xx.
+        logServerError('webhook_signature_rejected', { hasSignature: Boolean(signature) });
         return apiError(400, 'invalid_webhook_signature');
       }
 
@@ -1076,8 +1138,7 @@ export default {
       statusText: response.statusText,
       headers: newHeaders,
     });
-  },
-};
+}
 
 // ── Card pages ───────────────────────────────────────────────────────────────
 
