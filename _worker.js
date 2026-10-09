@@ -4,6 +4,9 @@
 
 import PngEncoder from './js/png-encoder.js';
 import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
+import './js/site-facts.js';
+
+const FACTS = globalThis.SiteFacts;
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
@@ -445,7 +448,7 @@ async function enforceRateLimit(env, key) {
 // One purchase may publish this many live card pages. Replacing an existing
 // card does not count against it, and unpublishing frees a slot. The cap stops a
 // single $9 purchase minting thousands of indexable pages on our domain.
-const MAX_CARDS_PER_BUYER = 10;
+const MAX_CARDS_PER_BUYER = FACTS.maxCardsPerBuyer;
 
 // Index of the cards each buyer owns, keyed by the same HMAC-derived id used in
 // public image URLs so no entitlement id appears in the key.

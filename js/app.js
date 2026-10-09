@@ -501,7 +501,7 @@
         // A stored slug that the server no longer recognises would otherwise wedge
         // the button forever, so drop it and let the next press mint a fresh page.
         if (code === 'card_limit_reached') {
-          setCardStatus(`You have reached the limit of live card pages for one purchase. Unpublish one on the device that made it, or email ${FACTS.supportEmail}.`, 'error');
+          setCardStatus(`You have reached the limit of ${FACTS.maxCardsPerBuyer} live card pages for one purchase. Unpublish one on the device that made it, or email ${FACTS.supportEmail}.`, 'error');
           return;
         }
         if (code === 'rate_limited') {
