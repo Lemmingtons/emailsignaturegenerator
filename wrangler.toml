@@ -22,3 +22,8 @@ namespace_id = "1001"
 [ratelimits.simple]
 limit = 25
 period = 60
+
+# Workers Logs: keeps console output and uncaught exceptions so error alerts
+# have something to read. Logs carry error codes only, never secrets or ids.
+[observability]
+enabled = true
