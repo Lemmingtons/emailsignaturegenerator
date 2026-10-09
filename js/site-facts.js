@@ -35,5 +35,6 @@
     templateCount: 24,
     emailClientCount: '50+',
     proTokenStorageKey: 'sig_pro_token',
+    maxCardsPerBuyer: 10,
   };
 });
