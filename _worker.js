@@ -515,7 +515,9 @@ export default {
       return await handleRequest(request, env);
     } catch (err) {
       const pathname = new URL(request.url).pathname;
-      logServerError('unhandled_error', { path: pathname, message: String((err && err.message) || err).slice(0, 200) });
+      // Route and error name only: paths and R2 messages can carry saved-signature
+      // ids, legacy customer ids, and storage keys.
+      logServerError('unhandled_error', { route: routeLabel(pathname), error: (err && err.name) || 'Error' });
       if (pathname.startsWith('/api/')) {
         return new Response(JSON.stringify({ error: 'server_error', code: 'server_error' }), {
           status: 500,
@@ -527,6 +529,13 @@ export default {
   },
 };
 
+// The fixed part of a path, never an id: '/api/signature/abc' -> '/api/signature',
+// '/u/abc/photo.jpg' -> '/u'.
+function routeLabel(pathname) {
+  const parts = pathname.split('/');
+  return parts.slice(0, parts[1] === 'api' ? 3 : 2).join('/') || '/';
+}
+
 // Uptime monitors poll this. It reports only whether each dependency is wired
 // up, never a value, and touches R2 with a single cheap HEAD.
 async function healthResponse(env) {
@@ -534,6 +543,7 @@ async function healthResponse(env) {
     assets: Boolean(env.ASSETS && typeof env.ASSETS.fetch === 'function'),
     signing: Boolean(env.PRO_SIGNING_SECRET),
     webhook: Boolean(env.STRIPE_WEBHOOK_SECRET),
+    stripeMode: ['true', 'false'].includes(env.STRIPE_LIVEMODE),
     paymentLink: /^plink_[A-Za-z0-9]+$/.test(env.STRIPE_PAYMENT_LINK_ID || ''),
     rateLimit: Boolean(env.RATE_LIMIT && typeof env.RATE_LIMIT.limit === 'function'),
     storage: false,
@@ -684,6 +694,7 @@ async function handleRequest(request, env) {
     if (url.pathname === '/api/verify-token' && request.method === 'POST') {
       try {
         if (!env.PRO_SIGNING_SECRET) {
+          logServerError('api_error', { status: 500, code: 'verify_token_misconfigured' });
           return new Response(JSON.stringify({ valid: false, reason: 'server_misconfiguration' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
@@ -700,6 +711,7 @@ async function handleRequest(request, env) {
         }
 
         const result = await verifyProAccess(token, env);
+        if (result.status >= 500) logServerError('api_error', { status: result.status, code: result.reason });
         const publicResult = result.valid
           ? { valid: true }
           : { valid: false, reason: result.reason };
@@ -707,7 +719,8 @@ async function handleRequest(request, env) {
           status: result.status || 200,
           headers: { 'Content-Type': 'application/json' },
         });
-      } catch {
+      } catch (err) {
+        logServerError('api_error', { status: 500, code: 'verify_token_failed', error: (err && err.name) || 'Error' });
         return new Response(JSON.stringify({ valid: false, reason: 'server_error' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
