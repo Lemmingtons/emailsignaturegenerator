@@ -469,6 +469,15 @@ assert(templates.length === facts.templateCount, `Expected ${facts.templateCount
   for (const link of llmsLinks) assert(sitemapLocs.includes(link), `llms.txt links ${link}, which is not in sitemap.xml`);
 }
 
+// Setup guides must name the export button the generator actually shows.
+{
+  const generatorHtml = fs.readFileSync(fromRoot('generator.html'), 'utf8');
+  assert(generatorHtml.includes('<span class="btn-label">Copy HTML</span>'), 'generator export button label changed; update the setup guides');
+  for (const file of fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html'))) {
+    assert(!/Copy for Gmail/i.test(fs.readFileSync(fromRoot(`seo/${file}`), 'utf8')), `seo/${file} names a "Copy for Gmail" button the generator does not have`);
+  }
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',

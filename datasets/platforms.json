@@ -11,7 +11,7 @@
     "dateModified": "2026-10-09",
     "installInstructions": [
       "Create and preview your signature in the <a href=\"/generator\">email signature generator</a>.",
-      "Use <strong>Copy for Gmail</strong> to copy the rich HTML version.",
+      "Use <strong>Copy HTML</strong> to copy the rich HTML version.",
       "In Gmail on the web, select the gear icon, then <strong>See all settings</strong>.",
       "In the <strong>Signature</strong> section, create a signature or select the one you want to replace.",
       "Click in the editor and paste with <code>Cmd+V</code> or <code>Ctrl+V</code>.",
@@ -127,7 +127,7 @@
     "dateModified": "2026-10-09",
     "installInstructions": [
       "Create and preview the signature in the <a href=\"/generator\">email signature generator</a>.",
-      "Copy the rich HTML version with <strong>Copy for Gmail</strong>; the same table-based HTML can be pasted into Outlook.",
+      "Copy the rich HTML version with <strong>Copy HTML</strong>; the same table-based HTML can be pasted into Outlook.",
       "In new Outlook for Windows or Outlook on the web, open Settings, then <strong>Accounts</strong> and <strong>Signatures</strong>.",
       "In classic Outlook for Windows, use <strong>File</strong>, <strong>Options</strong>, <strong>Mail</strong>, then <strong>Signatures</strong>. In Outlook for Mac, use <strong>Outlook</strong>, <strong>Settings</strong>, then <strong>Signatures</strong>.",
       "Create or select a signature, paste into the editor, save it, and select defaults for new messages and replies or forwards.",
@@ -242,7 +242,7 @@
     "dateModified": "2026-10-09",
     "installInstructions": [
       "Create and preview the signature in the <a href=\"/generator\">email signature generator</a>.",
-      "Copy the rich HTML version with <strong>Copy for Gmail</strong>.",
+      "Copy the rich HTML version with <strong>Copy HTML</strong>.",
       "Open <strong>Mail</strong> on your Mac, then choose <strong>Mail</strong>, <strong>Settings</strong>, and <strong>Signatures</strong>.",
       "Select the account, add or choose a signature, and turn off <strong>Always match my default message font</strong> before you paste.",
       "Click inside the editor and paste with <code>Cmd+V</code>, then choose the signature for new messages and replies if you use different defaults.",

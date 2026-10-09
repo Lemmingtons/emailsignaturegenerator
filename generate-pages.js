@@ -97,7 +97,7 @@ function platformPageHTML({
     faqs: [
       {
         q: `How do I add a professional email signature to ${label}?`,
-        a: `To add an email signature to ${label}: (1) Use our free generator above to create your signature. (2) Click "Copy for Gmail" (our HTML format works across all major email clients). (3) Open ${label} settings and find the Signature section. (4) Paste your signature and save. It usually takes under 2 minutes.`
+        a: `To add an email signature to ${label}: (1) Use our free generator above to create your signature. (2) Click "Copy HTML" (the same table-based HTML works across the major email clients). (3) Open ${label} settings and find the Signature section. (4) Paste your signature and save. It usually takes under 2 minutes.`
       },
       {
         q: `Do your email signatures work in ${label}?`,
