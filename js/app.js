@@ -500,6 +500,14 @@
         } catch {}
         // A stored slug that the server no longer recognises would otherwise wedge
         // the button forever, so drop it and let the next press mint a fresh page.
+        if (code === 'card_limit_reached') {
+          setCardStatus(`You have reached the limit of live card pages for one purchase. Unpublish one on the device that made it, or email ${FACTS.supportEmail}.`, 'error');
+          return;
+        }
+        if (code === 'rate_limited') {
+          setCardStatus('Too many publishes in a row. Wait a minute and try again.', 'error');
+          return;
+        }
         if (code === 'not_found' || code === 'not_your_card') {
           cardState.slug = '';
           cardState.url = '';
@@ -2187,18 +2195,31 @@
   }
 
   // ── Pro Unlock ──
+  // Reasons that mean the token itself can never become valid again. Anything
+  // else (an outage, a revoked or not-yet-visible entitlement that a won dispute
+  // could restore) keeps the token, because the only way to get a new one is the
+  // original Stripe success link.
+  const BROKEN_TOKEN_REASONS = ['malformed', 'invalid_signature', 'malformed_payload', 'invalid_expiry', 'bad_subject', 'expired'];
+
   async function checkProStatus() {
     const token = localStorage.getItem(FACTS.proTokenStorageKey);
-    if (token) {
-      const result = await verifyToken(token);
-      if (result.valid) {
-        unlockPro();
-        return;
-      }
-      // Token invalid or expired — clear it
+    if (!token) return;
+
+    const result = await verifyToken(token);
+    if (result.valid) {
+      unlockPro();
+      return;
+    }
+    if (result.unreachable) {
+      // The server could not answer. Paid features that touch the server still
+      // re-check the token there, so trusting the stored token here only keeps
+      // copy and templates working until the server is back.
+      unlockPro();
+      return;
+    }
+    if (BROKEN_TOKEN_REASONS.includes(result.reason)) {
       localStorage.removeItem(FACTS.proTokenStorageKey);
     }
-
   }
 
   async function verifyToken(token) {
@@ -2208,9 +2229,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: token })
       });
-      return await res.json();
+      // Only a 200 is the server's verdict on the token; 5xx, gateway pages
+      // and rate limits say nothing about it.
+      if (res.status !== 200) return { valid: false, unreachable: true };
+      const body = await res.json();
+      if (!body || typeof body.valid !== 'boolean') return { valid: false, unreachable: true };
+      return body;
     } catch (e) {
-      return { valid: false };
+      return { valid: false, unreachable: true };
     }
   }
 
