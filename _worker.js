@@ -969,13 +969,15 @@ export default {
         slug = `${slugifyName(card.fullName)}-${randomSuffix()}`;
       }
 
-      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
-        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-      });
+      // The index entry goes first, so a failed card write can only over-count
+      // (and a DELETE of that slug clears it), never leave a live uncounted page.
       // Written on every publish, so cards published before the index existed
       // join it the next time their owner republishes them.
       await bucket.put(`${ownerPrefix}${slug}`, '', {
         httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
+      });
+      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
       });
 
       return new Response(
@@ -1000,8 +1002,15 @@ export default {
       if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
 
+      // The index entry lives under the caller's own prefix, so clearing it is
+      // safe even when the card is already gone. That way a retry after a
+      // half-finished delete still frees the slot instead of hitting a 404 first.
+      const ownerIndexKey = `${await cardOwnerPrefix(sub, env.PRO_SIGNING_SECRET)}${match[1]}`;
       const existing = await bucket.get(`cards/${match[1]}.json`);
-      if (!existing) return apiError(404, 'not_found');
+      if (!existing) {
+        await bucket.delete(ownerIndexKey);
+        return apiError(404, 'not_found');
+      }
       let owner = null;
       try {
         owner = JSON.parse(await existing.text()).owner;
@@ -1011,7 +1020,7 @@ export default {
       if (owner !== sub) return apiError(403, 'not_your_card');
 
       await bucket.delete(`cards/${match[1]}.json`);
-      await bucket.delete(`${await cardOwnerPrefix(sub, env.PRO_SIGNING_SECRET)}${match[1]}`);
+      await bucket.delete(ownerIndexKey);
       return new Response(JSON.stringify({ deleted: true }), {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });

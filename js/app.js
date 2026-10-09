@@ -2201,22 +2201,26 @@
   // original Stripe success link.
   const BROKEN_TOKEN_REASONS = ['malformed', 'invalid_signature', 'malformed_payload', 'invalid_expiry', 'bad_subject', 'expired'];
 
+  const PRO_VERIFIED_STORAGE_KEY = FACTS.proTokenStorageKey + ':verified';
+
   async function checkProStatus() {
     const token = localStorage.getItem(FACTS.proTokenStorageKey);
     if (!token) return;
 
     const result = await verifyToken(token);
     if (result.valid) {
+      localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, token);
       unlockPro();
       return;
     }
     if (result.unreachable) {
-      // The server could not answer. Paid features that touch the server still
-      // re-check the token there, so trusting the stored token here only keeps
-      // copy and templates working until the server is back.
-      unlockPro();
+      // The server could not answer. Only a token this browser has already seen
+      // verified keeps Pro unlocked, so an outage never unlocks a made-up token.
+      // Paid features that touch the server still re-check it there.
+      if (localStorage.getItem(PRO_VERIFIED_STORAGE_KEY) === token) unlockPro();
       return;
     }
+    localStorage.removeItem(PRO_VERIFIED_STORAGE_KEY);
     if (BROKEN_TOKEN_REASONS.includes(result.reason)) {
       localStorage.removeItem(FACTS.proTokenStorageKey);
     }
