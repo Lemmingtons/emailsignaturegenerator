@@ -21,8 +21,8 @@ function serve(overrides) {
   };
   const server = http.createServer((req, res) => {
     const route = routes[req.url];
-    const [status, body] = route ? route() : [404, 'missing'];
-    res.writeHead(status);
+    const [status, body, headers] = route ? route() : [404, 'missing'];
+    res.writeHead(status, headers);
     res.end(body);
   });
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
@@ -55,6 +55,15 @@ async function run(overrides) {
 
   const noSchema = await run({ '/': () => [200, read('index.html').replace(/"@type":\s*"FAQPage"/, '"@type": "Thing"')] });
   assert.ok(noSchema.some((f) => f.includes('FAQPage')), 'monitor missed missing structured data');
+
+  const generatorFallback = await run({ '/generator': () => [200, read('index.html')] });
+  assert.ok(generatorFallback.some((f) => f.includes('signature editor')), 'monitor accepted the homepage as the generator');
+
+  const generatorRedirect = await run({ '/generator': () => [302, '', { Location: '/' }] });
+  assert.ok(generatorRedirect.some((f) => f.includes('/generator redirected to /')), 'monitor followed a generator redirect to the homepage');
+
+  const llmsFallback = await run({ '/llms.txt': () => [200, read('index.html')] });
+  assert.ok(llmsFallback.some((f) => f.includes('llms.txt')), 'monitor accepted an HTML fallback for llms.txt');
 
   console.log('Site monitor checks passed');
 })().catch((err) => {

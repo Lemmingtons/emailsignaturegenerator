@@ -15,6 +15,9 @@ const SITE_FACTS = require('../js/site-facts');
 
 const TIMEOUT_MS = 15000;
 const HOME_SCHEMA_TYPES = ['SoftwareApplication', 'FAQPage', 'Organization', 'WebSite'];
+// Present only in the generator's editor, so a redirect or fallback page that
+// happens to return 200 does not pass for the generator.
+const GENERATOR_MARKER = 'id="photoUrl"';
 
 async function get(url) {
   const controller = new AbortController();
@@ -25,7 +28,7 @@ async function get(url) {
       signal: controller.signal,
       headers: { 'User-Agent': 'emailsignaturegenerator-monitor' },
     });
-    return { status: response.status, body: await response.text() };
+    return { status: response.status, url: response.url, body: await response.text() };
   } catch (err) {
     return { status: 0, body: '', error: (err && err.name) || 'Error' };
   } finally {
@@ -35,6 +38,18 @@ async function get(url) {
 
 function describe(result) {
   return result.status ? `HTTP ${result.status}` : `request failed (${result.error})`;
+}
+
+function finalPath(result) {
+  try {
+    return new URL(result.url).pathname;
+  } catch {
+    return '';
+  }
+}
+
+function committedLlmsHeading() {
+  return fs.readFileSync(path.join(__dirname, '..', 'llms.txt'), 'utf8').split('\n')[0].trim();
 }
 
 function committedSitemapPaths(canonicalOrigin) {
@@ -60,7 +75,13 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   }
 
   const generator = await get(`${base}/generator`);
-  if (generator.status !== 200) fail(`/generator returned ${describe(generator)}`);
+  if (generator.status !== 200) {
+    fail(`/generator returned ${describe(generator)}`);
+  } else if (finalPath(generator) !== '/generator') {
+    fail(`/generator redirected to ${finalPath(generator) || 'an unknown URL'}`);
+  } else if (!generator.body.includes(GENERATOR_MARKER)) {
+    fail('/generator loaded a page without the signature editor');
+  }
 
   const health = await get(`${base}/api/health`);
   let healthBody = null;
@@ -94,7 +115,11 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   }
 
   const llms = await get(`${base}/llms.txt`);
-  if (llms.status !== 200 || !llms.body.trim()) fail(`/llms.txt returned ${describe(llms)} or was empty`);
+  if (llms.status !== 200) {
+    fail(`/llms.txt returned ${describe(llms)}`);
+  } else if (!llms.body.startsWith(committedLlmsHeading())) {
+    fail('/llms.txt did not serve the committed document');
+  }
 
   return failures;
 }
