@@ -356,6 +356,21 @@ function checkWorkerBehavior() {
     "const googleVerify = await worker.default.fetch(new Request('https://example.com/googlee8f6af86faea90b4.html'), {});",
     "if (googleVerify.status !== 200) throw new Error('google verification returned ' + googleVerify.status);",
     "if ((await googleVerify.text()).trim() !== 'google-site-verification: googlee8f6af86faea90b4.html') throw new Error('google verification body mismatch');",
+    // The legacy /photos/ route shares the bucket with entitlements, checkout
+    // sessions and cards. Reading any of those leaks Stripe ids and lets anyone
+    // mint a Pro token, so only legacy `<uuid>.<ext>` photo keys may be served.
+    "const legacyPhotoKey = '0f8fad5b-d9cb-469f-a165-70867728950e.jpg';",
+    "stored.set(legacyPhotoKey, { body: 'jpeg-bytes', httpMetadata: { contentType: 'text/html' } });",
+    "stored.set('cards/jane.json', { body: JSON.stringify({ owner: 'ent_SECRET' }), httpMetadata: { contentType: 'application/json' } });",
+    "stored.set('signatures/abc.json', { body: '{}', httpMetadata: { contentType: 'application/json' } });",
+    "const legacyPhoto = await worker.default.fetch(new Request('https://example.com/photos/' + legacyPhotoKey), env);",
+    "if (legacyPhoto.status !== 200 || legacyPhoto.headers.get('Content-Type') !== 'image/jpeg' || legacyPhoto.headers.get('X-Content-Type-Options') !== 'nosniff') throw new Error('legacy photo was not served as an image: ' + legacyPhoto.status);",
+    "const privateKeys = [...stored.keys()].filter((key) => key !== legacyPhotoKey);",
+    "if (!privateKeys.some((key) => key.startsWith('entitlements/active/')) || !privateKeys.some((key) => key.startsWith('entitlements/checkout-sessions/'))) throw new Error('legacy photo test needs stored entitlement and checkout records: ' + privateKeys.join(','));",
+    "for (const key of [...privateKeys, '../cards/jane.json', 'cards%2Fjane.json', legacyPhotoKey.toUpperCase(), legacyPhotoKey + '.json', legacyPhotoKey.replace('.jpg', '.html')]) {",
+    "  const leaked = await worker.default.fetch(new Request('https://example.com/photos/' + key), env);",
+    "  if (leaked.status !== 404) throw new Error('legacy photo route served a private object: ' + key);",
+    "}",
   ].join('\n');
 
   try {
@@ -804,6 +819,47 @@ for (const [id, template] of templates) {
   // No branding footer on any signature, paid or not. Checks the footer's own
   // wording rather than the domain, which now legitimately appears in icon URLs.
   assert(!/Made with/i.test(html), `${id} output must not carry a branding footer`);
+}
+
+// Saved "get a link" signatures are shareable, so their style JSON is attacker
+// controlled. Templates put style values raw into style="…" attributes, so every
+// value must be one the builder could have produced, on restore and on render.
+{
+  const payload = '"><img src=x onerror=alert(1)>';
+  const hostileStyle = {
+    primaryColor: 'red;"' + payload, secondaryColor: '#fff' + payload, textColor: 'expression(alert(1))',
+    fontFamily: "Arial;'" + payload, dividerStyle: payload, photoShape: payload, iconStyle: payload,
+    ctaText: payload, ctaUrl: 'java\tscript:alert(1)', extra: payload,
+  };
+  const clean = core.sanitizeStyle(hostileStyle);
+  assert(JSON.stringify(clean) === JSON.stringify({ ...core.defaultStyle, ctaText: payload, ctaUrl: 'java\tscript:alert(1)' }),
+    'sanitizeStyle must reset every invalid style value to its default: ' + JSON.stringify(clean));
+  assert(core.sanitizeStyle({ iconStyle: 'rounded' }).iconStyle === 'mono', 'removed icon styles must map to mono');
+  const longCtaUrl = 'https://example.com/book?' + 'q'.repeat(600);
+  assert(core.sanitizeStyle({ ctaUrl: longCtaUrl }).ctaUrl === longCtaUrl, 'sanitizeStyle must not truncate CTA URLs');
+  assert(core.sanitizeStyle(null).fontFamily === core.defaultStyle.fontFamily, 'sanitizeStyle must accept a missing style');
+  assert(core.sanitizeStyle({ primaryColor: '#ea580c' }).primaryColor === '#ea580c', 'valid hex colours must survive sanitizeStyle');
+
+  const fontOptions = [...read('generator.html').matchAll(/<option value="([^"]*)">/g)]
+    .map((m) => m[1].replace(/&#39;/g, "'"))
+    .filter((v) => core.fontFamilies.includes(v) || /serif|monospace/.test(v));
+  assert(JSON.stringify(fontOptions) === JSON.stringify([...core.fontFamilies]),
+    'generator.html font options must match SignatureGeneratorCore.fontFamilies');
+  for (const font of core.fontFamilies) {
+    assert(core.sanitizeStyle({ fontFamily: font }).fontFamily === font, `font option ${font} must survive sanitizeStyle`);
+  }
+
+  const hostileData = { ...sampleData, website: 'java\tscript:alert(1)', linkedin: ' \njavascript:alert(1)' };
+  for (const [id, template] of templates) {
+    const html = core.buildSignatureHtml({
+      template, data: hostileData, style: hostileStyle,
+      compliance: { fields: [{ label: 'Licence', value: '123' }], disclaimer: 'Confidential.' },
+    });
+    // ctaText is user copy and is escaped as text, so only live markup counts.
+    assert(!html.includes('<img src=x') && !/"\s*onerror|\sonerror=/.test(html.replace(/&lt;img src=x onerror=/g, '')), `${id} rendered a hostile style value as markup`);
+    assert(!/expression\(|red;/.test(html), `${id} rendered a hostile colour`);
+    assert(!/java\s*script:/i.test(html), `${id} rendered a javascript: URL`);
+  }
 }
 
 const app = read('js/app.js');

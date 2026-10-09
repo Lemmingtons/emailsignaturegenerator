@@ -1353,20 +1353,28 @@ ${card.photoUrl ? `<meta property="og:image" content="${escapeHtml(card.photoUrl
 </body></html>`;
 }
 
+// The removed /api/upload stored photos at the bucket root as `<uuid>.<ext>`.
+// Entitlements, checkout sessions, cards and saved signatures share the bucket,
+// so only that exact legacy key shape may be read through this route.
+const LEGACY_PHOTO_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|webp)$/;
+const LEGACY_PHOTO_TYPES = { jpg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+
 async function handleLegacyPhoto(env, url) {
   const bucket = uploadBucket(env);
   if (!bucket) return new Response('Storage not configured', { status: 500 });
 
   const key = url.pathname.slice('/photos/'.length);
-  if (!key) return new Response('Not Found', { status: 404 });
+  const match = key.match(LEGACY_PHOTO_KEY);
+  if (!match) return new Response('Not Found', { status: 404 });
 
   const object = await bucket.get(key);
   if (!object) return new Response('Not Found', { status: 404 });
 
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
+  headers.set('Content-Type', LEGACY_PHOTO_TYPES[match[1]]);
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
   headers.set('ETag', object.httpEtag);
+  headers.set('X-Content-Type-Options', 'nosniff');
 
   return new Response(object.body, { headers });
 }
