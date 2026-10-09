@@ -6,6 +6,7 @@
     "metaDescription": "Create a Gmail email signature, install it in Gmail settings, and fix image, spacing, mobile, and dark-mode problems with this practical guide.",
     "heading": "Gmail Email Signature Generator",
     "description": "Build a professional Gmail signature, paste it into Gmail Settings, and test it before relying on it for client or customer email. This guide focuses on Gmail's signature defaults, hosted images, mobile overrides, and dark-mode behaviour.",
+    "shortAnswer": "Open Gmail on the web, select the gear icon, then See all settings. Scroll to Signature on the General tab, create a signature and paste it into the editor, choose it as the default for new emails and for replies, then select Save Changes. The Gmail apps on Android, iPhone, and iPad use a separate mobile signature setting.",
     "installInstructions": [
       "Create and preview your signature in the <a href=\"/generator\">email signature generator</a>.",
       "Use <strong>Copy for Gmail</strong> to copy the rich HTML version.",
@@ -119,10 +120,11 @@
     "metaDescription": "Create an Outlook email signature and install it in Outlook for Windows, Mac, and the web with practical rendering, image, and spacing advice.",
     "heading": "Email Signature Generator for Outlook",
     "description": "Create an Outlook signature with conservative, email-safe HTML, then set it up in the Outlook version you use. This guide covers web, Windows, and Mac settings, image handling, default signatures, and the layout limits of classic Outlook for Windows.",
+    "shortAnswer": "Check which Outlook you use first. In new Outlook for Windows and Outlook on the web, go to Settings, then Accounts, then Signatures. In classic Outlook for Windows, use File, Options, Mail, then Signatures. In Outlook for Mac, use Outlook, Settings, then Signatures. Paste the signature, set it as the default for new messages and replies, save, and send yourself a test.",
     "installInstructions": [
       "Create and preview the signature in the <a href=\"/generator\">email signature generator</a>.",
       "Copy the rich HTML version with <strong>Copy for Gmail</strong>; the same table-based HTML can be pasted into Outlook.",
-      "In Outlook on the web or new Outlook for Windows, open Settings, then <strong>Mail</strong> and <strong>Compose and reply</strong>.",
+      "In new Outlook for Windows or Outlook on the web, open Settings, then <strong>Accounts</strong> and <strong>Signatures</strong>.",
       "In classic Outlook for Windows, use <strong>File</strong>, <strong>Options</strong>, <strong>Mail</strong>, then <strong>Signatures</strong>. In Outlook for Mac, use <strong>Outlook</strong>, <strong>Settings</strong>, then <strong>Signatures</strong>.",
       "Create or select a signature, paste into the editor, save it, and select defaults for new messages and replies or forwards.",
       "Send a test email to Gmail and Apple Mail, then use the <a href=\"/health-check\">signature health check</a> to review the HTML."
@@ -131,7 +133,7 @@
       {
         "heading": "Find the right Outlook signature settings",
         "paragraphs": [
-          "Outlook has several interfaces, so the setting location depends on which one you use. Outlook on the web and new Outlook for Windows place it in Settings, Mail, Compose and reply. Classic Outlook for Windows uses File, Options, Mail, Signatures, while Outlook for Mac has its own Signatures settings.",
+          "Outlook has several interfaces, so the setting location depends on which one you use. Outlook on the web and new Outlook for Windows place it in Settings, Accounts, Signatures. Classic Outlook for Windows uses File, Options, Mail, Signatures, while Outlook for Mac has its own Signatures settings.",
           "After creating the HTML block, choose it as the default for new messages and replies or forwards. Outlook can store several signatures, which means a valid signature can still fail to appear if the default dropdowns are left unset."
         ],
         "items": [
@@ -231,6 +233,7 @@
     "metaDescription": "Create an Apple Mail email signature, set it up on Mac, and test image, font, iPhone, and dark-mode compatibility with this practical guide.",
     "heading": "Email Signature Generator for Apple Mail",
     "description": "Build an Apple Mail signature, paste it into the Mac signature editor, and test it in sent email before you rely on it. This guide covers the macOS editor, message-font settings, iPhone and iPad expectations, hosted images, and dark-mode compatibility.",
+    "shortAnswer": "On a Mac, open Mail, choose Mail, Settings, then Signatures. Select the account, add a signature, turn off Always match my default message font, and paste the signature into the editor. iPhone and iPad use a separate signature setting, so set the mobile version there.",
     "installInstructions": [
       "Create and preview the signature in the <a href=\"/generator\">email signature generator</a>.",
       "Copy the rich HTML version with <strong>Copy for Gmail</strong>.",

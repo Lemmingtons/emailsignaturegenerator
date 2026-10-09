@@ -15,6 +15,8 @@ const SEO_REPLACEMENT_REDIRECTS = Object.freeze({
   '/seo/email-signature-generator-for-google-workspace.html': '/seo/email-signature-generator-for-gmail',
   '/seo/email-signature-generator-for-microsoft-365': '/seo/email-signature-generator-for-outlook',
   '/seo/email-signature-generator-for-microsoft-365.html': '/seo/email-signature-generator-for-outlook',
+  '/seo/email-signature-checker': '/health-check',
+  '/seo/email-signature-checker.html': '/health-check',
 });
 const REMOVED_SEO_PATH = /^\/seo\/(?:email-signature-for-[a-z0-9-]+|email-signature-generator-for-yahoo-mail)(?:\.html)?$/;
 
