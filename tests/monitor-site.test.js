@@ -65,6 +65,25 @@ async function run(overrides) {
   const llmsFallback = await run({ '/llms.txt': () => [200, read('index.html')] });
   assert.ok(llmsFallback.some((f) => f.includes('llms.txt')), 'monitor accepted an HTML fallback for llms.txt');
 
+  for (const tag of ['og:description', 'og:url', 'og:image']) {
+    const noTag = await run({ '/': () => [200, read('index.html').replace(new RegExp(`<meta property="${tag}"[^>]*>`), '')] });
+    assert.ok(noTag.some((f) => f.includes(tag)), `monitor missed a missing ${tag}`);
+  }
+
+  const gptAllowed = await run({ '/robots.txt': () => [200, read('robots.txt').replace(/User-agent: GPTBot\s+Disallow: \//, 'User-agent: GPTBot\nAllow: /')] });
+  assert.ok(gptAllowed.some((f) => f.includes('GPTBot')), 'monitor missed GPTBot being unblocked');
+
+  // A page committed to blog/ must be expected live even when the committed
+  // sitemap forgot it; the sitemap in the repo is not the inventory.
+  const orphan = path.join(ROOT, 'blog', 'zz-monitor-orphan-test.html');
+  fs.writeFileSync(orphan, '<!doctype html>');
+  try {
+    const unlisted = await run({});
+    assert.ok(unlisted.some((f) => f.includes('/blog/zz-monitor-orphan-test')), 'monitor trusted a sitemap that omits a committed page');
+  } finally {
+    fs.unlinkSync(orphan);
+  }
+
   console.log('Site monitor checks passed');
 })().catch((err) => {
   console.error(err);

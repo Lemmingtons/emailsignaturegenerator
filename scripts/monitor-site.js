@@ -18,6 +18,7 @@ const HOME_SCHEMA_TYPES = ['SoftwareApplication', 'FAQPage', 'Organization', 'We
 // Present only in the generator's editor, so a redirect or fallback page that
 // happens to return 200 does not pass for the generator.
 const GENERATOR_MARKER = 'id="photoUrl"';
+const HOME_OG_TAGS = ['og:title', 'og:description', 'og:url', 'og:image'];
 
 async function get(url) {
   const controller = new AbortController();
@@ -52,9 +53,19 @@ function committedLlmsHeading() {
   return fs.readFileSync(path.join(__dirname, '..', 'llms.txt'), 'utf8').split('\n')[0].trim();
 }
 
-function committedSitemapPaths(canonicalOrigin) {
-  const xml = fs.readFileSync(path.join(__dirname, '..', 'sitemap.xml'), 'utf8');
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(canonicalOrigin, ''));
+// Every committed sitemap URL plus every page in blog/ and seo/, so a page
+// committed without a sitemap entry is caught rather than trusted.
+function expectedSitemapPaths(canonicalOrigin) {
+  const root = path.join(__dirname, '..');
+  const xml = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
+  const paths = new Set([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(canonicalOrigin, '')));
+  for (const dir of ['blog', 'seo']) {
+    for (const file of fs.readdirSync(path.join(root, dir))) {
+      if (!file.endsWith('.html')) continue;
+      paths.add(file === 'index.html' ? `/${dir}/` : `/${dir}/${file.replace(/\.html$/, '')}`);
+    }
+  }
+  return [...paths];
 }
 
 async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
@@ -68,7 +79,9 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   } else {
     if (!/<meta name="description" content="[^"]+"/.test(home.body)) fail('/ is missing its meta description');
     if (!home.body.includes(`<link rel="canonical" href="${canonicalOrigin}/"`)) fail('/ canonical is missing or wrong');
-    if (!/<meta property="og:title" content="[^"]+"/.test(home.body)) fail('/ is missing og:title');
+    for (const tag of HOME_OG_TAGS) {
+      if (!new RegExp(`<meta property="${tag}" content="[^"]+"`).test(home.body)) fail(`/ is missing ${tag}`);
+    }
     for (const type of HOME_SCHEMA_TYPES) {
       if (!new RegExp(`"@type":\\s*"${type}"`).test(home.body)) fail(`/ is missing ${type} structured data`);
     }
@@ -101,7 +114,7 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   if (sitemap.status !== 200) {
     fail(`/sitemap.xml returned ${describe(sitemap)}`);
   } else {
-    const missing = committedSitemapPaths(canonicalOrigin)
+    const missing = expectedSitemapPaths(canonicalOrigin)
       .filter((p) => !sitemap.body.includes(`<loc>${canonicalOrigin}${p}</loc>`));
     if (missing.length) fail(`live sitemap is missing committed URLs: ${missing.join(', ')}`);
   }
@@ -112,6 +125,7 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   } else {
     if (!robots.body.includes(`Sitemap: ${canonicalOrigin}/sitemap.xml`)) fail('robots.txt is missing its Sitemap directive');
     if (!/User-agent: PerplexityBot\s+Allow: \//.test(robots.body)) fail('robots.txt no longer allows PerplexityBot');
+    if (!/User-agent: GPTBot\s+Disallow: \//.test(robots.body)) fail('robots.txt no longer blocks GPTBot');
   }
 
   const llms = await get(`${base}/llms.txt`);

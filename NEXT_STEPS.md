@@ -119,6 +119,14 @@ The Hello@brighterdaysoftware.com account also holds a Worker named `emailsignat
 
 The laptop cron in `automation/setup-cron.sh` is superseded. The daily health check is the GitHub Actions monitor above; the weekly content and monthly audit run as Claude Code routines in the cloud and deliver their work as pull requests, so nothing depends on a local machine staying awake. `automation/prompts/` stays the source of each routine's instructions. Routines open PRs and never merge or deploy them; merging is the publish step.
 
+On any machine where `automation/setup-cron.sh` was run, remove the old jobs once so they don't run alongside the routines:
+
+```bash
+crontab -l | awk '/# BEGIN emailsignaturegenerator.ai SEO automation/{skip=1} !skip{print} /# END emailsignaturegenerator.ai SEO automation/{skip=0}' | crontab -
+```
+
+Do not rerun `setup-cron.sh`.
+
 ## Smoke test
 
 - Buy or refresh Pro through Stripe.
