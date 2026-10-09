@@ -81,7 +81,7 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-generator-for-gmail.html', '/robots.txt']);",
     "const limiterKeys = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
@@ -295,11 +295,11 @@ function checkWorkerBehavior() {
     "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
     "}",
-    "for (const [legacy, clean] of [['/index.html', '/'], ['/generator.html', '/generator'], ['/blog/index.html', '/blog/'], ['/blog/email-signature-best-practices.html', '/blog/email-signature-best-practices'], ['/seo/email-signature-checker.html', '/seo/email-signature-checker']]) {",
+    "for (const [legacy, clean] of [['/index.html', '/'], ['/generator.html', '/generator'], ['/blog/index.html', '/blog/'], ['/blog/email-signature-best-practices.html', '/blog/email-signature-best-practices'], ['/seo/email-signature-generator-for-gmail.html', '/seo/email-signature-generator-for-gmail']]) {",
     "  const legacyResponse = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
     "  if (legacyResponse.status !== 301 || legacyResponse.headers.get('Location') !== 'https://example.com' + clean) throw new Error('legacy HTML redirect failed: ' + legacy);",
     "}",
-    "for (const [legacy, clean] of [['/seo/email-signature-generator-for-google-workspace', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-google-workspace.html', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-microsoft-365', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-generator-for-microsoft-365.html', '/seo/email-signature-generator-for-outlook']]) {",
+    "for (const [legacy, clean] of [['/seo/email-signature-generator-for-google-workspace', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-google-workspace.html', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-microsoft-365', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-generator-for-microsoft-365.html', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-checker', '/health-check'], ['/seo/email-signature-checker.html', '/health-check']]) {",
     "  const replacement = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
     "  if (replacement.status !== 301 || replacement.headers.get('Location') !== 'https://example.com' + clean) throw new Error('SEO replacement redirect failed: ' + legacy);",
     "}",
@@ -311,7 +311,7 @@ function checkWorkerBehavior() {
     "  const redirect = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator.html') throw new Error('public redirect failed: ' + pathname);",
     "}",
-    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-checker', '/seo/email-signature-checker.html']]) {",
+    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-generator-for-gmail', '/seo/email-signature-generator-for-gmail.html']]) {",
     "  const before = assetRequests.length;",
     "  const cleanAsset = await worker.default.fetch(new Request('https://example.com' + clean), env);",
     "  if (cleanAsset.status !== 200 || assetRequests[before] !== clean || assetRequests[before + 1] !== html) throw new Error('clean route failed: ' + clean);",
@@ -373,6 +373,16 @@ const llmsText = fs.readFileSync(fromRoot('llms.txt'), 'utf8');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
+
+// llms.txt is what AI answer engines read first, so every page in the sitemap
+// must be listed there, and nothing removed from the sitemap may linger.
+{
+  const sitemapLocs = [...fs.readFileSync(fromRoot('sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  const llmsLinks = new Set([...llmsText.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(m => m[1]));
+  for (const loc of sitemapLocs) assert(llmsLinks.has(loc), `llms.txt must link sitemap page ${loc}`);
+  for (const link of llmsLinks) assert(sitemapLocs.includes(link), `llms.txt links ${link}, which is not in sitemap.xml`);
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',

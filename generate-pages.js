@@ -37,7 +37,7 @@ function readDataset(name) {
     throw new Error(`${name} must contain an array`);
   }
   data.forEach((entry, index) => {
-    for (const field of ['slug', 'label', 'description', 'keywords']) {
+    for (const field of ['slug', 'label', 'description', 'shortAnswer', 'keywords']) {
       if (!entry[field]) throw new Error(`${name}[${index}] missing ${field}`);
     }
   });
@@ -56,6 +56,7 @@ function platformPageHTML({
   slug,
   label,
   description,
+  shortAnswer,
   installInstructions,
   guideSections,
   troubleshooting,
@@ -74,6 +75,7 @@ function platformPageHTML({
   return pageHTML({
     url, title, metaDesc, h1, slug,
     intro: description,
+    shortAnswer,
     keywords,
     ctaText: `Create Your ${label} Signature`,
     seoLabel: label,
@@ -98,7 +100,7 @@ function platformPageHTML({
   });
 }
 
-function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
+function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -200,6 +202,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
   <style>
     .seo-page { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
     .seo-page h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin-bottom: 16px; }
+    .seo-page .short-answer { font-size: 1.05rem; line-height: 1.7; margin-bottom: 16px; padding: 16px 20px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 8px; }
     .seo-page .intro { font-size: 1.1rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 40px; }
     .seo-cta-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; margin: 40px 0; }
     .seo-cta-box h2 { font-size: 1.4rem; margin-bottom: 8px; }
@@ -252,7 +255,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, keywords, ctaText, se
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
-    <p class="intro">${escapeHtml(intro)}</p>
+${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
+` : ''}    <p class="intro">${escapeHtml(intro)}</p>
 
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
