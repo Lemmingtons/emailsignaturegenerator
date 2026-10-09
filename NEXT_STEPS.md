@@ -113,6 +113,11 @@ The Hello@brighterdaysoftware.com account also holds a Worker named `emailsignat
 - `[observability]` in `wrangler.toml` turns on Workers Logs. Server-side failures log one JSON line with an `event` (`api_error`, `unhandled_error`, `webhook_signature_rejected`, `health_failed`) and a code, never a token, customer id or body.
 - Uncaught exceptions return a clean 500 instead of a Cloudflare error page.
 - Email alerts: a Cloudflare notification on Worker error rate, an external uptime monitor on `/api/health`, and Stripe's webhook-failure emails to an inbox that is read.
+- `.github/workflows/monitor.yml` runs `scripts/monitor-site.js` hourly against the live site: homepage meta, canonical and structured data, `/generator`, `/api/health`, every committed sitemap URL present live, robots.txt, and `llms.txt`. It is read-only. A failed run emails the repository owner through GitHub's Actions notifications (Settings → Notifications → Actions on github.com). `tests/monitor-site.test.js` runs the same checks against the committed files in CI.
+
+## Scheduled agent work
+
+The laptop cron in `automation/setup-cron.sh` is superseded. The daily health check is the GitHub Actions monitor above; the weekly content and monthly audit run as Claude Code routines in the cloud and deliver their work as pull requests, so nothing depends on a local machine staying awake. `automation/prompts/` stays the source of each routine's instructions. Routines open PRs and never merge or deploy them; merging is the publish step.
 
 ## Smoke test
 

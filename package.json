@@ -8,6 +8,8 @@
     "validate": "node scripts/validate-site.js",
     "check": "npm run validate",
     "test:automation": "bash automation/test-automation.sh",
-    "test:frontend": "node tests/frontend-accessibility.test.js"
+    "test:frontend": "node tests/frontend-accessibility.test.js",
+    "test:monitor": "node tests/monitor-site.test.js",
+    "monitor": "node scripts/monitor-site.js"
   }
 }
