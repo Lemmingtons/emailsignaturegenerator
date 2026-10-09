@@ -82,7 +82,7 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-checker.html', '/robots.txt']);",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-generator-for-gmail.html', '/robots.txt']);",
     "const limiterKeys = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
@@ -150,6 +150,14 @@ function checkWorkerBehavior() {
     "if (!purchaseToken) throw new Error('paid checkout did not issue a token');",
     "const purchaseCheck = await verifyToken(purchaseToken);",
     "if (!purchaseCheck.result.valid || 'payload' in purchaseCheck.result) throw new Error('durable entitlement was not accepted safely');",
+    // Pro is lifetime: entitlement tokens outlive their exp while R2 says active.
+    "const purchasePayload = JSON.parse(Buffer.from(purchaseToken.split('.')[1], 'base64url').toString());",
+    "if (purchasePayload.exp < Math.floor(Date.now() / 1000) + 50 * 365 * 24 * 60 * 60) throw new Error('new entitlement token still expires within a lifetime');",
+    "const expiredEntitlementToken = await signJwt({ ...purchasePayload, iat: 1, exp: 2 }, env.PRO_SIGNING_SECRET);",
+    "const expiredEntitlementCheck = await verifyToken(expiredEntitlementToken);",
+    "if (!expiredEntitlementCheck.result.valid) throw new Error('a one-year entitlement token was downgraded after expiry: ' + expiredEntitlementCheck.result.reason);",
+    "const forgedExpired = await verifyToken(await signJwt({ ...purchasePayload, iat: 1, exp: 2 }, 'wrong-secret'));",
+    "if (forgedExpired.result.valid) throw new Error('an expired token with a forged signature was accepted');",
     "const liveEnv = { ...env, STRIPE_LIVEMODE: 'true' };",
     "const liveSession = { ...purchaseSession, id: 'cs_live_PURCHASE', livemode: true, payment_intent: 'pi_LIVEPURCHASE' };",
     "const liveWebhook = await postStripeEvent({ id: 'evt_LIVEPURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: true, data: { object: liveSession } }, liveEnv);",
@@ -170,6 +178,8 @@ function checkWorkerBehavior() {
     "if (refundResponse.status !== 200) throw new Error('valid refund webhook returned ' + refundResponse.status);",
     "const revokedCheck = await verifyToken(purchaseToken);",
     "if (revokedCheck.result.valid || revokedCheck.result.reason !== 'entitlement_revoked') throw new Error('refund did not revoke entitlement');",
+    "const revokedExpiredCheck = await verifyToken(expiredEntitlementToken);",
+    "if (revokedExpiredCheck.result.valid || revokedExpiredCheck.result.reason !== 'entitlement_revoked') throw new Error('refund did not revoke an expired lifetime token');",
     "const replayedCheckout = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
     "if (replayedCheckout.status !== 403) throw new Error('checkout replay reactivated a refunded entitlement');",
     "const disputeSession = { id: 'cs_test_DISPUTE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_DISPUTE' };",
@@ -312,6 +322,40 @@ function checkWorkerBehavior() {
     "if (cardSitemap.status !== 200) throw new Error('cards sitemap returned ' + cardSitemap.status);",
     "const sitemapXml = await cardSitemap.text();",
     "if (!sitemapXml.includes('https://example.com/c/' + card.slug)) throw new Error('cards sitemap omitted a published card');",
+    // Card and saved-signature writes are rate limited per buyer.
+    "if (!limiterKeys.includes('card:cus_TEST123')) throw new Error('card publish skipped the per-buyer rate limit');",
+    "if (!limiterKeys.includes('signature:cus_TEST123')) throw new Error('signature save skipped the per-buyer rate limit');",
+    "const exhaustedCard = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: cardBody }), exhaustedLimiterEnv);",
+    "if (exhaustedCard.status !== 429) throw new Error('exhausted limiter did not stop card publishing: ' + exhaustedCard.status);",
+    "const exhaustedSig = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: sigBody }), exhaustedLimiterEnv);",
+    "if (exhaustedSig.status !== 429) throw new Error('exhausted limiter did not stop signature saves: ' + exhaustedSig.status);",
+    // One purchase may hold only a bounded number of live card pages.
+    "const capToken = await signJwt({ sub: 'cus_CAPTEST', exp: Math.floor(Date.now() / 1000) + 60 }, env.PRO_SIGNING_SECRET);",
+    "const publishAs = (bearer, body) => worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + bearer, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), env);",
+    "const capSlugs = [];",
+    "const cardCap = globalThis.SiteFacts.maxCardsPerBuyer;",
+    "if (!Number.isInteger(cardCap) || cardCap < 1) throw new Error('site facts must define a positive card cap');",
+    "for (let i = 0; i < cardCap; i++) {",
+    "  const published = await publishAs(capToken, { fullName: 'Cap Test' });",
+    "  if (published.status !== 200) throw new Error('card ' + (i + 1) + ' under the cap returned ' + published.status);",
+    "  capSlugs.push((await published.json()).slug);",
+    "}",
+    "const overCap = await publishAs(capToken, { fullName: 'Cap Test' });",
+    "if (overCap.status !== 409 || (await overCap.json()).code !== 'card_limit_reached') throw new Error('per-buyer card cap was not enforced');",
+    "const replaceAtCap = await publishAs(capToken, { fullName: 'Cap Test Updated', slug: capSlugs[0] });",
+    "if (replaceAtCap.status !== 200) throw new Error('replacing an owned card at the cap returned ' + replaceAtCap.status);",
+    "const otherBuyerAtCap = await publishAs(otherToken, { fullName: 'Someone Else' });",
+    "if (otherBuyerAtCap.status !== 200) throw new Error('one buyer reaching the cap blocked another: ' + otherBuyerAtCap.status);",
+    "const freeSlot = await worker.default.fetch(new Request('https://example.com/api/card/' + capSlugs[1], { method: 'DELETE', headers: { Authorization: 'Bearer ' + capToken } }), env);",
+    "if (freeSlot.status !== 200) throw new Error('unpublishing a capped card returned ' + freeSlot.status);",
+    "const afterFree = await publishAs(capToken, { fullName: 'Cap Test' });",
+    "const capOwnerKeys = () => [...stored.keys()].filter((key) => key.startsWith('card-owners/') && stored.has('cards/' + key.split('/').pop() + '.json') === false);",
+    "const strandedSlug = capSlugs[2];",
+    "stored.delete('cards/' + strandedSlug + '.json');",
+    "const strandedDelete = await worker.default.fetch(new Request('https://example.com/api/card/' + strandedSlug, { method: 'DELETE', headers: { Authorization: 'Bearer ' + capToken } }), env);",
+    "if (strandedDelete.status !== 404 || capOwnerKeys().some((key) => key.endsWith('/' + strandedSlug))) throw new Error('retrying a half-finished unpublish did not free the card slot');",
+    "if (afterFree.status !== 200) throw new Error('unpublishing did not free a card slot: ' + afterFree.status);",
+    "if ([...stored.keys()].some((key) => key.startsWith('card-owners/') && /cus_|ent_/.test(key))) throw new Error('card owner index key exposes a customer or entitlement id');",
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
     // The static binding is reachable only through the explicit public policy.
@@ -319,11 +363,11 @@ function checkWorkerBehavior() {
     "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
     "}",
-    "for (const [legacy, clean] of [['/index.html', '/'], ['/generator.html', '/generator'], ['/blog/index.html', '/blog/'], ['/blog/email-signature-best-practices.html', '/blog/email-signature-best-practices'], ['/seo/email-signature-checker.html', '/seo/email-signature-checker']]) {",
+    "for (const [legacy, clean] of [['/index.html', '/'], ['/generator.html', '/generator'], ['/blog/index.html', '/blog/'], ['/blog/email-signature-best-practices.html', '/blog/email-signature-best-practices'], ['/seo/email-signature-generator-for-gmail.html', '/seo/email-signature-generator-for-gmail']]) {",
     "  const legacyResponse = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
     "  if (legacyResponse.status !== 301 || legacyResponse.headers.get('Location') !== 'https://example.com' + clean) throw new Error('legacy HTML redirect failed: ' + legacy);",
     "}",
-    "for (const [legacy, clean] of [['/seo/email-signature-generator-for-google-workspace', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-google-workspace.html', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-microsoft-365', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-generator-for-microsoft-365.html', '/seo/email-signature-generator-for-outlook']]) {",
+    "for (const [legacy, clean] of [['/seo/email-signature-generator-for-google-workspace', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-google-workspace.html', '/seo/email-signature-generator-for-gmail'], ['/seo/email-signature-generator-for-microsoft-365', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-generator-for-microsoft-365.html', '/seo/email-signature-generator-for-outlook'], ['/seo/email-signature-checker', '/health-check'], ['/seo/email-signature-checker.html', '/health-check']]) {",
     "  const replacement = await worker.default.fetch(new Request('https://example.com' + legacy), env);",
     "  if (replacement.status !== 301 || replacement.headers.get('Location') !== 'https://example.com' + clean) throw new Error('SEO replacement redirect failed: ' + legacy);",
     "}",
@@ -335,7 +379,7 @@ function checkWorkerBehavior() {
     "  const redirect = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator.html') throw new Error('public redirect failed: ' + pathname);",
     "}",
-    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-checker', '/seo/email-signature-checker.html']]) {",
+    "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-generator-for-gmail', '/seo/email-signature-generator-for-gmail.html']]) {",
     "  const before = assetRequests.length;",
     "  const cleanAsset = await worker.default.fetch(new Request('https://example.com' + clean), env);",
     "  if (cleanAsset.status !== 200 || assetRequests[before] !== clean || assetRequests[before + 1] !== html) throw new Error('clean route failed: ' + clean);",
@@ -356,6 +400,21 @@ function checkWorkerBehavior() {
     "const googleVerify = await worker.default.fetch(new Request('https://example.com/googlee8f6af86faea90b4.html'), {});",
     "if (googleVerify.status !== 200) throw new Error('google verification returned ' + googleVerify.status);",
     "if ((await googleVerify.text()).trim() !== 'google-site-verification: googlee8f6af86faea90b4.html') throw new Error('google verification body mismatch');",
+    // The legacy /photos/ route shares the bucket with entitlements, checkout
+    // sessions and cards. Reading any of those leaks Stripe ids and lets anyone
+    // mint a Pro token, so only legacy `<uuid>.<ext>` photo keys may be served.
+    "const legacyPhotoKey = '0f8fad5b-d9cb-469f-a165-70867728950e.jpg';",
+    "stored.set(legacyPhotoKey, { body: 'jpeg-bytes', httpMetadata: { contentType: 'text/html' } });",
+    "stored.set('cards/jane.json', { body: JSON.stringify({ owner: 'ent_SECRET' }), httpMetadata: { contentType: 'application/json' } });",
+    "stored.set('signatures/abc.json', { body: '{}', httpMetadata: { contentType: 'application/json' } });",
+    "const legacyPhoto = await worker.default.fetch(new Request('https://example.com/photos/' + legacyPhotoKey), env);",
+    "if (legacyPhoto.status !== 200 || legacyPhoto.headers.get('Content-Type') !== 'image/jpeg' || legacyPhoto.headers.get('X-Content-Type-Options') !== 'nosniff') throw new Error('legacy photo was not served as an image: ' + legacyPhoto.status);",
+    "const privateKeys = [...stored.keys()].filter((key) => key !== legacyPhotoKey);",
+    "if (!privateKeys.some((key) => key.startsWith('entitlements/active/')) || !privateKeys.some((key) => key.startsWith('entitlements/checkout-sessions/'))) throw new Error('legacy photo test needs stored entitlement and checkout records: ' + privateKeys.join(','));",
+    "for (const key of [...privateKeys, '../cards/jane.json', 'cards%2Fjane.json', legacyPhotoKey.toUpperCase(), legacyPhotoKey + '.json', legacyPhotoKey.replace('.jpg', '.html')]) {",
+    "  const leaked = await worker.default.fetch(new Request('https://example.com/photos/' + key), env);",
+    "  if (leaked.status !== 404) throw new Error('legacy photo route served a private object: ' + key);",
+    "}",
   ].join('\n');
 
   try {
@@ -397,6 +456,16 @@ const llmsText = fs.readFileSync(fromRoot('llms.txt'), 'utf8');
 
 const templates = Object.entries(TEMPLATES);
 assert(templates.length === facts.templateCount, `Expected ${facts.templateCount} templates, found ${templates.length}`);
+
+// llms.txt is what AI answer engines read first, so every page in the sitemap
+// must be listed there, and nothing removed from the sitemap may linger.
+{
+  const sitemapLocs = [...fs.readFileSync(fromRoot('sitemap.xml'), 'utf8').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  const llmsLinks = new Set([...llmsText.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(m => m[1]));
+  for (const loc of sitemapLocs) assert(llmsLinks.has(loc), `llms.txt must link sitemap page ${loc}`);
+  for (const link of llmsLinks) assert(sitemapLocs.includes(link), `llms.txt links ${link}, which is not in sitemap.xml`);
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',
@@ -804,6 +873,47 @@ for (const [id, template] of templates) {
   // No branding footer on any signature, paid or not. Checks the footer's own
   // wording rather than the domain, which now legitimately appears in icon URLs.
   assert(!/Made with/i.test(html), `${id} output must not carry a branding footer`);
+}
+
+// Saved "get a link" signatures are shareable, so their style JSON is attacker
+// controlled. Templates put style values raw into style="…" attributes, so every
+// value must be one the builder could have produced, on restore and on render.
+{
+  const payload = '"><img src=x onerror=alert(1)>';
+  const hostileStyle = {
+    primaryColor: 'red;"' + payload, secondaryColor: '#fff' + payload, textColor: 'expression(alert(1))',
+    fontFamily: "Arial;'" + payload, dividerStyle: payload, photoShape: payload, iconStyle: payload,
+    ctaText: payload, ctaUrl: 'java\tscript:alert(1)', extra: payload,
+  };
+  const clean = core.sanitizeStyle(hostileStyle);
+  assert(JSON.stringify(clean) === JSON.stringify({ ...core.defaultStyle, ctaText: payload, ctaUrl: 'java\tscript:alert(1)' }),
+    'sanitizeStyle must reset every invalid style value to its default: ' + JSON.stringify(clean));
+  assert(core.sanitizeStyle({ iconStyle: 'rounded' }).iconStyle === 'mono', 'removed icon styles must map to mono');
+  const longCtaUrl = 'https://example.com/book?' + 'q'.repeat(600);
+  assert(core.sanitizeStyle({ ctaUrl: longCtaUrl }).ctaUrl === longCtaUrl, 'sanitizeStyle must not truncate CTA URLs');
+  assert(core.sanitizeStyle(null).fontFamily === core.defaultStyle.fontFamily, 'sanitizeStyle must accept a missing style');
+  assert(core.sanitizeStyle({ primaryColor: '#ea580c' }).primaryColor === '#ea580c', 'valid hex colours must survive sanitizeStyle');
+
+  const fontOptions = [...read('generator.html').matchAll(/<option value="([^"]*)">/g)]
+    .map((m) => m[1].replace(/&#39;/g, "'"))
+    .filter((v) => core.fontFamilies.includes(v) || /serif|monospace/.test(v));
+  assert(JSON.stringify(fontOptions) === JSON.stringify([...core.fontFamilies]),
+    'generator.html font options must match SignatureGeneratorCore.fontFamilies');
+  for (const font of core.fontFamilies) {
+    assert(core.sanitizeStyle({ fontFamily: font }).fontFamily === font, `font option ${font} must survive sanitizeStyle`);
+  }
+
+  const hostileData = { ...sampleData, website: 'java\tscript:alert(1)', linkedin: ' \njavascript:alert(1)' };
+  for (const [id, template] of templates) {
+    const html = core.buildSignatureHtml({
+      template, data: hostileData, style: hostileStyle,
+      compliance: { fields: [{ label: 'Licence', value: '123' }], disclaimer: 'Confidential.' },
+    });
+    // ctaText is user copy and is escaped as text, so only live markup counts.
+    assert(!html.includes('<img src=x') && !/"\s*onerror|\sonerror=/.test(html.replace(/&lt;img src=x onerror=/g, '')), `${id} rendered a hostile style value as markup`);
+    assert(!/expression\(|red;/.test(html), `${id} rendered a hostile colour`);
+    assert(!/java\s*script:/i.test(html), `${id} rendered a javascript: URL`);
+  }
 }
 
 const app = read('js/app.js');

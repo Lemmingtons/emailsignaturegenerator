@@ -4,6 +4,9 @@
 
 import PngEncoder from './js/png-encoder.js';
 import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
+import './js/site-facts.js';
+
+const FACTS = globalThis.SiteFacts;
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
@@ -12,6 +15,8 @@ const SEO_REPLACEMENT_REDIRECTS = Object.freeze({
   '/seo/email-signature-generator-for-google-workspace.html': '/seo/email-signature-generator-for-gmail',
   '/seo/email-signature-generator-for-microsoft-365': '/seo/email-signature-generator-for-outlook',
   '/seo/email-signature-generator-for-microsoft-365.html': '/seo/email-signature-generator-for-outlook',
+  '/seo/email-signature-checker': '/health-check',
+  '/seo/email-signature-checker.html': '/health-check',
 });
 const REMOVED_SEO_PATH = /^\/seo\/(?:email-signature-for-[a-z0-9-]+|email-signature-generator-for-yahoo-mail)(?:\.html)?$/;
 
@@ -115,7 +120,9 @@ async function verifyJwt(token, secret) {
       return { valid: false, reason: 'invalid_expiry' };
     }
     if (payload.exp <= Math.floor(Date.now() / 1000)) {
-      return { valid: false, reason: 'expired' };
+      // The signature is genuine, so callers that re-check a server-side
+      // entitlement may still honour it. verify-token never returns this payload.
+      return { valid: false, reason: 'expired', payload };
     }
     return { valid: true, payload };
   } catch {
@@ -398,9 +405,17 @@ function validProSubject(subject) {
 async function verifyProAccess(token, env) {
   if (!env.PRO_SIGNING_SECRET) return { valid: false, reason: 'server_misconfiguration', status: 500 };
   const verified = await verifyJwt(token, env.PRO_SIGNING_SECRET);
-  if (!verified.valid) return verified;
-
   const payload = verified.payload || {};
+  // Pro is sold as lifetime access. Entitlement tokens are re-checked against
+  // R2 below on every call, so refunds and disputes still revoke them, and their
+  // `exp` is not what ends access. Early tokens were minted with a one-year
+  // expiry; honouring them past it stops every buyer being downgraded a year
+  // after paying. Legacy customer-id tokens have no server record, so they keep
+  // their expiry.
+  const lifetimeEntitlement = verified.reason === 'expired' &&
+    payload.ent === 1 && typeof payload.sub === 'string' && payload.sub.startsWith('ent_');
+  if (!verified.valid && !lifetimeEntitlement) return { valid: false, reason: verified.reason };
+
   if (!validProSubject(payload.sub || '')) return { valid: false, reason: 'bad_subject' };
 
   // Preserve already-issued customer tokens until they expire. Every new
@@ -418,6 +433,47 @@ async function verifyProAccess(token, env) {
     return { valid: false, reason: 'entitlement_missing' };
   }
   return { valid: true, payload };
+}
+
+// Cloudflare's native binding allows 25 calls / minute per key. Each Pro action
+// gets its own key per customer, so a burst of card publishes cannot eat the
+// upload budget. Missing, failed or malformed bindings fail closed.
+async function enforceRateLimit(env, key) {
+  if (!env.RATE_LIMIT || typeof env.RATE_LIMIT.limit !== 'function') {
+    return apiError(503, 'rate_limit_not_configured');
+  }
+  try {
+    const limited = await env.RATE_LIMIT.limit({ key });
+    if (!limited || typeof limited.success !== 'boolean') {
+      return apiError(503, 'rate_limit_unavailable');
+    }
+    if (!limited.success) return apiError(429, 'rate_limited');
+  } catch {
+    return apiError(503, 'rate_limit_unavailable');
+  }
+  return null;
+}
+
+// One purchase may publish this many live card pages. Replacing an existing
+// card does not count against it, and unpublishing frees a slot. The cap stops a
+// single $9 purchase minting thousands of indexable pages on our domain.
+const MAX_CARDS_PER_BUYER = FACTS.maxCardsPerBuyer;
+
+// Index of the cards each buyer owns, keyed by the same HMAC-derived id used in
+// public image URLs so no entitlement id appears in the key.
+async function cardOwnerPrefix(sub, secret) {
+  return `card-owners/${await publicUploadId(sub, secret)}/`;
+}
+
+async function countOwnedCards(bucket, prefix, limit) {
+  let count = 0;
+  let cursor;
+  do {
+    const listed = await bucket.list({ prefix, limit: 1000, cursor });
+    count += listed.objects.length;
+    cursor = listed.truncated && count < limit ? listed.cursor : undefined;
+  } while (cursor);
+  return count;
 }
 
 function proAuthError(result) {
@@ -612,12 +668,14 @@ async function handleRequest(request, env) {
         return new Response('Pro access is unavailable for this payment', { status });
       }
 
-      // Create a signed JWT (expires in 1 year). The subject is an opaque
-      // entitlement id, never a Stripe customer or payment identifier.
+      // Create a signed JWT. The subject is an opaque entitlement id, never a
+      // Stripe customer or payment identifier. Access is lifetime: the R2
+      // entitlement decides validity, and `exp` is set far out only because the
+      // token format requires one (see verifyProAccess).
       const now = Math.floor(Date.now() / 1000);
-      const oneYear = 365 * 24 * 60 * 60;
+      const hundredYears = 100 * 365 * 24 * 60 * 60;
       const token = await signJwt(
-        { sub: entitlement.id, ent: 1, iat: now, exp: now + oneYear },
+        { sub: entitlement.id, ent: 1, iat: now, exp: now + hundredYears },
         env.PRO_SIGNING_SECRET
       );
 
@@ -753,20 +811,9 @@ async function handleRequest(request, env) {
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
       if (declaredLen > MAX_BYTES) return apiError(413, 'too_large');
 
-      // Cloudflare's native binding enforces 25 uploads / minute / customer.
       // Photo, logo and animated-GIF retries all share the same customer budget.
-      if (!env.RATE_LIMIT || typeof env.RATE_LIMIT.limit !== 'function') {
-        return apiError(503, 'rate_limit_not_configured');
-      }
-      try {
-        const limited = await env.RATE_LIMIT.limit({ key: `upload:${sub}` });
-        if (!limited || typeof limited.success !== 'boolean') {
-          return apiError(503, 'rate_limit_unavailable');
-        }
-        if (!limited.success) return apiError(429, 'rate_limited');
-      } catch {
-        return apiError(503, 'rate_limit_unavailable');
-      }
+      const uploadLimited = await enforceRateLimit(env, `upload:${sub}`);
+      if (uploadLimited) return uploadLimited;
 
       // Read body and re-check actual size
       const buf = await request.arrayBuffer();
@@ -875,6 +922,8 @@ async function handleRequest(request, env) {
       if (!token) return apiError(401, 'invalid_token', 'missing');
       const verified = await verifyProAccess(token, env);
       if (!verified.valid) return proAuthError(verified);
+      const signatureLimited = await enforceRateLimit(env, `signature:${verified.payload.sub}`);
+      if (signatureLimited) return signatureLimited;
 
       const MAX_SIGNATURE_BYTES = 32_000;
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
@@ -951,6 +1000,8 @@ async function handleRequest(request, env) {
       if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
       if (!validProSubject(sub || '')) return apiError(401, 'invalid_token', 'bad_subject');
+      const cardLimited = await enforceRateLimit(env, `card:${sub}`);
+      if (cardLimited) return cardLimited;
 
       const MAX_CARD_BYTES = 16_000;
       const declaredLen = parseInt(request.headers.get('Content-Length') || '', 10);
@@ -974,6 +1025,7 @@ async function handleRequest(request, env) {
       }
 
       const card = normaliseCard(parsed);
+      const ownerPrefix = await cardOwnerPrefix(sub, env.PRO_SIGNING_SECRET);
 
       // Reusing a slug replaces that page, so the link already pasted into a
       // signature keeps working. Only the original owner may do it.
@@ -990,9 +1042,20 @@ async function handleRequest(request, env) {
         }
         if (owner !== sub) return apiError(403, 'not_your_card');
       } else {
+        const owned = await countOwnedCards(bucket, ownerPrefix, MAX_CARDS_PER_BUYER);
+        if (owned >= MAX_CARDS_PER_BUYER) {
+          return apiError(409, 'card_limit_reached', String(MAX_CARDS_PER_BUYER));
+        }
         slug = `${slugifyName(card.fullName)}-${randomSuffix()}`;
       }
 
+      // The index entry goes first, so a failed card write can only over-count
+      // (and a DELETE of that slug clears it), never leave a live uncounted page.
+      // Written on every publish, so cards published before the index existed
+      // join it the next time their owner republishes them.
+      await bucket.put(`${ownerPrefix}${slug}`, '', {
+        httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
+      });
       await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
         httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
       });
@@ -1019,8 +1082,15 @@ async function handleRequest(request, env) {
       if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
 
+      // The index entry lives under the caller's own prefix, so clearing it is
+      // safe even when the card is already gone. That way a retry after a
+      // half-finished delete still frees the slot instead of hitting a 404 first.
+      const ownerIndexKey = `${await cardOwnerPrefix(sub, env.PRO_SIGNING_SECRET)}${match[1]}`;
       const existing = await bucket.get(`cards/${match[1]}.json`);
-      if (!existing) return apiError(404, 'not_found');
+      if (!existing) {
+        await bucket.delete(ownerIndexKey);
+        return apiError(404, 'not_found');
+      }
       let owner = null;
       try {
         owner = JSON.parse(await existing.text()).owner;
@@ -1030,6 +1100,7 @@ async function handleRequest(request, env) {
       if (owner !== sub) return apiError(403, 'not_your_card');
 
       await bucket.delete(`cards/${match[1]}.json`);
+      await bucket.delete(ownerIndexKey);
       return new Response(JSON.stringify({ deleted: true }), {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       });
@@ -1353,20 +1424,28 @@ ${card.photoUrl ? `<meta property="og:image" content="${escapeHtml(card.photoUrl
 </body></html>`;
 }
 
+// The removed /api/upload stored photos at the bucket root as `<uuid>.<ext>`.
+// Entitlements, checkout sessions, cards and saved signatures share the bucket,
+// so only that exact legacy key shape may be read through this route.
+const LEGACY_PHOTO_KEY = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|webp)$/;
+const LEGACY_PHOTO_TYPES = { jpg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' };
+
 async function handleLegacyPhoto(env, url) {
   const bucket = uploadBucket(env);
   if (!bucket) return new Response('Storage not configured', { status: 500 });
 
   const key = url.pathname.slice('/photos/'.length);
-  if (!key) return new Response('Not Found', { status: 404 });
+  const match = key.match(LEGACY_PHOTO_KEY);
+  if (!match) return new Response('Not Found', { status: 404 });
 
   const object = await bucket.get(key);
   if (!object) return new Response('Not Found', { status: 404 });
 
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
+  headers.set('Content-Type', LEGACY_PHOTO_TYPES[match[1]]);
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
   headers.set('ETag', object.httpEtag);
+  headers.set('X-Content-Type-Options', 'nosniff');
 
   return new Response(object.body, { headers });
 }

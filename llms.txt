@@ -32,7 +32,7 @@ No subscription. No recurring charges. No account needed.
 - One-click copy: rich HTML for Gmail / plain text for any client
 - Works in 50+ email clients: Gmail, Outlook, Apple Mail, Yahoo Mail, and more
 - 30-day money-back guarantee
-- No tracking, no data stored server-side
+- No account and no third-party analytics or ad trackers. Signature details stay in the browser unless the user hosts a photo/logo or uses "Save & get link", which stores them on Cloudflare R2
 
 ## Template categories
 
@@ -52,10 +52,13 @@ Yes. Pay US$9 once and get lifetime access to all 24 templates, including future
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
 
 **Do I need an account?**
-No. The generator runs entirely in your browser. No login, no account, no tracking. Pro access is stored in your browser.
+No. The generator runs in your browser with no login and no account. Pro access is stored in your browser as a signed token.
+
+**Is my data stored?**
+Only if you choose to. Signature details stay in your browser by default. Hosting a photo or logo, or using "Save & get link", stores that content on Cloudflare R2 so email clients can load the image and you can reopen the signature. Payment is handled by Stripe; card details never reach this site.
 
 **Can I update my signature later?**
-Yes. Come back anytime and create a new signature. Pro access persists in your browser with no limits.
+Yes. With Pro, "Save & get link" stores your signature so you can reopen and edit it from any device. You can also create as many new signatures as you like with no limits.
 
 **Is there a refund policy?**
 Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
@@ -70,8 +73,24 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 - [Homepage](https://emailsignaturegenerator.ai/) — Product overview, templates, pricing, FAQ
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
 - [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
-- [Health Check](https://emailsignaturegenerator.ai/health-check) — Free signature auditor: paste any HTML to test dark-mode, contrast, Outlook compat, trackers, and accessibility
+- [Health Check](https://emailsignaturegenerator.ai/health-check) — Free email signature checker: paste any HTML to test dark-mode, contrast, Outlook compatibility, trackers, and accessibility
+- [Privacy & Terms](https://emailsignaturegenerator.ai/privacy) — What is stored, where, and why
+
+### Email client setup guides
+
+- [Gmail Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-gmail) — Install a signature in Gmail and fix image, spacing, mobile, and dark-mode problems
+- [Outlook Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-outlook) — Install a signature in Outlook for Windows, Mac, and the web
+- [Apple Mail Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-apple-mail) — Set up a signature on Mac and test images, fonts, iPhone, and dark mode
+
+### Blog
+
+- [Blog index](https://emailsignaturegenerator.ai/blog/) — All guides
+- [Email Signature Best Practices](https://emailsignaturegenerator.ai/blog/email-signature-best-practices) — Practical checklist: what to include, resilient HTML, common mistakes, testing
+- [How to Add an Email Signature in Gmail](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail) — Desktop and mobile steps, defaults, and fixes
+- [How to Add an Email Signature in Outlook](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook) — New Outlook, classic Outlook, Outlook on the web, and Outlook for Mac
 - [Social Media Icons for Email Signatures](https://emailsignaturegenerator.ai/blog/email-signature-social-media-icons) — How to choose, link, size, and test social icons across Gmail, Outlook, and mobile inboxes
+- [Student Email Signature Examples](https://emailsignaturegenerator.ai/blog/student-email-signature-examples) — Seven examples for college, internships, graduate research, and portfolios
+- [Free vs Paid Email Signature Generators](https://emailsignaturegenerator.ai/blog/free-vs-paid-email-signature-generators) — Free, one-time, subscription, and managed tools compared by export, hosting, privacy, and cost
 
 ## Competitor comparison
 

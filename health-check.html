@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Signature Health Check — Free Signature Auditor</title>
-  <meta name="description" content="Paste your existing email signature HTML and get an instant audit — contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and more. Free, runs in your browser.">
+  <title>Email Signature Checker — Free Health Check &amp; Audit</title>
+  <meta name="description" content="Free email signature checker. Paste your signature HTML and get an instant audit of contrast, Gmail dark mode, Outlook compatibility, tracker pixels, accessibility, and size. Runs in your browser.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/health-check">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Email Signature Health Check — Free Signature Auditor">
+  <meta property="og:title" content="Email Signature Checker — Free Health Check &amp; Audit">
   <meta property="og:description" content="Instantly audit any email signature HTML for dark-mode, contrast, Outlook, and tracker issues. No account. Free.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/health-check">
@@ -51,6 +51,55 @@
   }
   </script>
 
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is an email signature checker?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An email signature checker reads your existing signature HTML and flags anything that would make it render badly for recipients. This free checker tests contrast ratios, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and total size."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this signature checker free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The health check is free, needs no account, and runs entirely in your browser. Your signature HTML is never uploaded or stored."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I test if my email signature works in dark mode?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paste your signature HTML into the checker above. It scans for the patterns that break Gmail dark mode: pure #000000 text, missing background colours, and mid-tone greys that Gmail recolours. The report appears in under a second."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does the signature score mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The score is out of 100. Each finding deducts points: critical issues (invisible text, broken layouts) cost 20, warnings cost 7, and info-level items cost 2. 90 or above is excellent, 75 to 89 is good, and below 50 means the signature will likely break for many recipients."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you store the HTML I paste?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The audit runs in your browser using the built-in DOMParser. Nothing is sent to a server or stored, so closing the tab discards it."
+      }
+    }
+  ]
+}
+  </script>
+
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -79,7 +128,7 @@
     <!-- Hero -->
     <section class="check-hero" aria-label="Health check introduction">
       <h1>Email Signature <span class="highlight">Health Check</span></h1>
-      <p class="check-sub">Paste your existing signature HTML or upload an email. Get a full audit in seconds — contrast, Gmail dark-mode safety, Outlook compatibility, trackers, accessibility, and more.</p>
+      <p class="check-sub">A free email signature checker. Paste your existing signature HTML or upload an email and get a full audit in seconds: contrast, Gmail dark-mode safety, Outlook compatibility, trackers, accessibility, and more.</p>
       <p class="check-privacy">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         Runs entirely in your browser. Your HTML is never sent to a server.
@@ -262,6 +311,30 @@
           <p>Use table-based HTML and inline styles for production signatures. Browser CSS such as grid, flexbox, external stylesheets, and background images is fragile inside email clients, especially older Outlook builds.</p>
         </div>
       </div>
+    </section>
+
+    <section class="check-info" aria-label="Frequently asked questions">
+      <h2>Frequently asked questions</h2>
+      <details class="instructions">
+        <summary>What is an email signature checker?</summary>
+        <p>An email signature checker reads your existing signature HTML and flags anything that would make it render badly for recipients. This free checker tests contrast ratios, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and total size.</p>
+      </details>
+      <details class="instructions">
+        <summary>Is this signature checker free?</summary>
+        <p>Yes. The health check is free, needs no account, and runs entirely in your browser. Your signature HTML is never uploaded or stored.</p>
+      </details>
+      <details class="instructions">
+        <summary>How do I test if my email signature works in dark mode?</summary>
+        <p>Paste your signature HTML into the checker above. It scans for the patterns that break Gmail dark mode: pure #000000 text, missing background colours, and mid-tone greys that Gmail recolours. The report appears in under a second.</p>
+      </details>
+      <details class="instructions">
+        <summary>What does the signature score mean?</summary>
+        <p>The score is out of 100. Each finding deducts points: critical issues (invisible text, broken layouts) cost 20, warnings cost 7, and info-level items cost 2. 90 or above is excellent, 75 to 89 is good, and below 50 means the signature will likely break for many recipients.</p>
+      </details>
+      <details class="instructions">
+        <summary>Do you store the HTML I paste?</summary>
+        <p>No. The audit runs in your browser using the built-in <code>DOMParser</code>. Nothing is sent to a server or stored, so closing the tab discards it.</p>
+      </details>
     </section>
 
   </main>

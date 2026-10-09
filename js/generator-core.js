@@ -29,8 +29,51 @@
     ctaUrl: 'https://calendly.com',
   });
 
+  // Templates interpolate these values straight into inline `style="…"`
+  // attributes, and saved signatures restore them from server-stored JSON, so
+  // every value is checked against what the builder controls can produce.
+  // Must match the <select id="fontFamily"> options in generator.html.
+  const fontFamilies = Object.freeze([
+    'Arial, Helvetica, sans-serif',
+    "'Georgia', serif",
+    "'Verdana', Geneva, sans-serif",
+    "'Trebuchet MS', sans-serif",
+    "'Tahoma', Geneva, sans-serif",
+    "'Courier New', monospace",
+    "'Times New Roman', serif",
+    "'Lucida Console', Monaco, monospace",
+  ]);
+  const styleChoices = Object.freeze({
+    dividerStyle: ['line', 'thin', 'dot', 'none', 'pipe'],
+    photoShape: ['circle', 'rounded', 'square'],
+  });
+  const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+  function sanitizeStyle(input) {
+    const src = input && typeof input === 'object' ? input : {};
+    const out = { ...defaultStyle };
+
+    ['primaryColor', 'secondaryColor', 'textColor'].forEach((key) => {
+      if (typeof src[key] === 'string' && HEX_COLOR.test(src[key])) out[key] = src[key];
+    });
+    if (fontFamilies.includes(src.fontFamily)) out.fontFamily = src.fontFamily;
+    Object.keys(styleChoices).forEach((key) => {
+      if (styleChoices[key].includes(src[key])) out[key] = src[key];
+    });
+    // Signatures saved before the 'rounded'/'square' icon styles were removed
+    // still carry them; they always rendered as mono.
+    out.iconStyle = src.iconStyle === 'color' ? 'color' : 'mono';
+    // CTA text and URL are free-form and escaped by the templates, so they are
+    // kept as typed; truncating a URL would change where the button goes.
+    ['ctaText', 'ctaUrl'].forEach((key) => {
+      if (typeof src[key] === 'string') out[key] = src[key];
+    });
+
+    return out;
+  }
+
   function createStyle(overrides) {
-    return { ...defaultStyle, ...(overrides || {}) };
+    return sanitizeStyle({ ...defaultStyle, ...(overrides || {}) });
   }
 
   function escapeAttr(str) {
@@ -103,10 +146,11 @@
       throw new Error('template_missing_render');
     }
 
-    let inner = template.render(data || {}, createStyle(style));
+    const safeStyle = createStyle(style);
+    let inner = template.render(data || {}, safeStyle);
 
     if (compliance && typeof template._complianceBlock === 'function') {
-      inner += template._complianceBlock(compliance, (style || defaultStyle).fontFamily || defaultStyle.fontFamily);
+      inner += template._complianceBlock(compliance, safeStyle.fontFamily);
     }
 
     return typeof template._darkSafeWrap === 'function'
@@ -144,7 +188,7 @@
     switch (code) {
       case 'not_pro': return 'Pro is required to host images for Gmail and Outlook.';
       case 'invalid_type': return 'That image slot is not supported.';
-      case 'rate_limited': return 'Too many uploads this hour. Try again later.';
+      case 'rate_limited': return 'Too many requests in a row. Wait a minute and try again.';
       case 'too_large': return 'Image too large. Use a smaller JPG, PNG, or WebP.';
       case 'unsupported_format': return 'JPG, PNG, or WebP only.';
       case 'invalid_token': return 'Pro session expired. Refresh Pro access and try again.';
@@ -157,6 +201,8 @@
   return Object.freeze({
     defaultStyle,
     previewStyle,
+    fontFamilies,
+    sanitizeStyle,
     createStyle,
     escapeAttr,
     urlValidator,
