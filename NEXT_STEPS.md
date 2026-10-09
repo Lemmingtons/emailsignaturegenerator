@@ -97,11 +97,22 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 ## Deploy checklist
 
-1. Run `npm run validate`.
-2. Run `npm run generate`.
-3. Run `npm run sitemap`.
-4. Review `git diff`.
-5. Deploy to Cloudflare Pages/Workers.
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm run check` and `npm run test:frontend` on every PR and every push to `main`.
+
+Production deploys come from Cloudflare Workers Builds on the Ryan@homesafeinspections.com.au account, connected to this repo's `main` branch. A merge to `main` is a deploy, so only merge with CI green. When a change touches generated output:
+
+1. Run `npm run generate` and `npm run sitemap`.
+2. Review `git diff` and rerun `npm run check`.
+3. Merge the PR; Workers Builds deploys it. Roll back from the Worker's Deployments tab in Cloudflare.
+
+The Hello@brighterdaysoftware.com account also holds a Worker named `emailsignaturegenerator`. Confirm it serves no route before retiring it.
+
+## Monitoring and alerts
+
+- `GET /api/health` returns `{ ok, checks }`: 200 when the assets binding, R2, signing secret, webhook secret, payment link and rate limiter are all wired up, 503 naming the failing check otherwise. It never returns a value.
+- `[observability]` in `wrangler.toml` turns on Workers Logs. Server-side failures log one JSON line with an `event` (`api_error`, `unhandled_error`, `webhook_signature_rejected`, `health_failed`) and a code, never a token, customer id or body.
+- Uncaught exceptions return a clean 500 instead of a Cloudflare error page.
+- Email alerts: a Cloudflare notification on Worker error rate, an external uptime monitor on `/api/health`, and Stripe's webhook-failure emails to an inbox that is read.
 
 ## Smoke test
 
