@@ -44,3 +44,5 @@ reports
 reports/**
 node_modules
 node_modules/**
+.github
+.github/**
