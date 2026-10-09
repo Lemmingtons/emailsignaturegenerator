@@ -2047,11 +2047,10 @@
     if (!state || typeof state !== 'object') return;
 
     if (state.style && typeof state.style === 'object') {
-      Object.assign(style, state.style);
-      // Signatures saved before the dead 'rounded'/'square' icon styles were
-      // removed still carry them. They always rendered as mono, so map them back
-      // onto mono — otherwise the toggle group would show no selected option.
-      if (style.iconStyle !== 'color') style.iconStyle = 'mono';
+      // Saved links are shareable, so the stored style is untrusted input:
+      // sanitizeStyle drops anything the builder controls could not produce,
+      // and maps the removed 'rounded'/'square' icon styles back onto mono.
+      Object.assign(style, CORE.sanitizeStyle(state.style));
       syncStyleControls();
     }
 

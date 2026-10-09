@@ -29,8 +29,51 @@
     ctaUrl: 'https://calendly.com',
   });
 
+  // Templates interpolate these values straight into inline `style="…"`
+  // attributes, and saved signatures restore them from server-stored JSON, so
+  // every value is checked against what the builder controls can produce.
+  // Must match the <select id="fontFamily"> options in generator.html.
+  const fontFamilies = Object.freeze([
+    'Arial, Helvetica, sans-serif',
+    "'Georgia', serif",
+    "'Verdana', Geneva, sans-serif",
+    "'Trebuchet MS', sans-serif",
+    "'Tahoma', Geneva, sans-serif",
+    "'Courier New', monospace",
+    "'Times New Roman', serif",
+    "'Lucida Console', Monaco, monospace",
+  ]);
+  const styleChoices = Object.freeze({
+    dividerStyle: ['line', 'thin', 'dot', 'none', 'pipe'],
+    photoShape: ['circle', 'rounded', 'square'],
+  });
+  const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+  function sanitizeStyle(input) {
+    const src = input && typeof input === 'object' ? input : {};
+    const out = { ...defaultStyle };
+
+    ['primaryColor', 'secondaryColor', 'textColor'].forEach((key) => {
+      if (typeof src[key] === 'string' && HEX_COLOR.test(src[key])) out[key] = src[key];
+    });
+    if (fontFamilies.includes(src.fontFamily)) out.fontFamily = src.fontFamily;
+    Object.keys(styleChoices).forEach((key) => {
+      if (styleChoices[key].includes(src[key])) out[key] = src[key];
+    });
+    // Signatures saved before the 'rounded'/'square' icon styles were removed
+    // still carry them; they always rendered as mono.
+    out.iconStyle = src.iconStyle === 'color' ? 'color' : 'mono';
+    // CTA text and URL are free-form and escaped by the templates, so they are
+    // kept as typed; truncating a URL would change where the button goes.
+    ['ctaText', 'ctaUrl'].forEach((key) => {
+      if (typeof src[key] === 'string') out[key] = src[key];
+    });
+
+    return out;
+  }
+
   function createStyle(overrides) {
-    return { ...defaultStyle, ...(overrides || {}) };
+    return sanitizeStyle({ ...defaultStyle, ...(overrides || {}) });
   }
 
   function escapeAttr(str) {
@@ -103,10 +146,11 @@
       throw new Error('template_missing_render');
     }
 
-    let inner = template.render(data || {}, createStyle(style));
+    const safeStyle = createStyle(style);
+    let inner = template.render(data || {}, safeStyle);
 
     if (compliance && typeof template._complianceBlock === 'function') {
-      inner += template._complianceBlock(compliance, (style || defaultStyle).fontFamily || defaultStyle.fontFamily);
+      inner += template._complianceBlock(compliance, safeStyle.fontFamily);
     }
 
     return typeof template._darkSafeWrap === 'function'
@@ -157,6 +201,8 @@
   return Object.freeze({
     defaultStyle,
     previewStyle,
+    fontFamilies,
+    sanitizeStyle,
     createStyle,
     escapeAttr,
     urlValidator,
