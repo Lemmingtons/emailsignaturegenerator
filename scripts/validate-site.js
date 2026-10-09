@@ -811,6 +811,8 @@ for (const [id, template] of templates) {
   assert(JSON.stringify(clean) === JSON.stringify({ ...core.defaultStyle, ctaText: payload, ctaUrl: 'java\tscript:alert(1)' }),
     'sanitizeStyle must reset every invalid style value to its default: ' + JSON.stringify(clean));
   assert(core.sanitizeStyle({ iconStyle: 'rounded' }).iconStyle === 'mono', 'removed icon styles must map to mono');
+  const longCtaUrl = 'https://example.com/book?' + 'q'.repeat(600);
+  assert(core.sanitizeStyle({ ctaUrl: longCtaUrl }).ctaUrl === longCtaUrl, 'sanitizeStyle must not truncate CTA URLs');
   assert(core.sanitizeStyle(null).fontFamily === core.defaultStyle.fontFamily, 'sanitizeStyle must accept a missing style');
   assert(core.sanitizeStyle({ primaryColor: '#ea580c' }).primaryColor === '#ea580c', 'valid hex colours must survive sanitizeStyle');
 

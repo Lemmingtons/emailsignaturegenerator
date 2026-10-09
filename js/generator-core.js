@@ -48,7 +48,6 @@
     photoShape: ['circle', 'rounded', 'square'],
   });
   const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
-  const MAX_CTA_LENGTH = 500;
 
   function sanitizeStyle(input) {
     const src = input && typeof input === 'object' ? input : {};
@@ -64,8 +63,10 @@
     // Signatures saved before the 'rounded'/'square' icon styles were removed
     // still carry them; they always rendered as mono.
     out.iconStyle = src.iconStyle === 'color' ? 'color' : 'mono';
+    // CTA text and URL are free-form and escaped by the templates, so they are
+    // kept as typed; truncating a URL would change where the button goes.
     ['ctaText', 'ctaUrl'].forEach((key) => {
-      if (typeof src[key] === 'string') out[key] = src[key].slice(0, MAX_CTA_LENGTH);
+      if (typeof src[key] === 'string') out[key] = src[key];
     });
 
     return out;
