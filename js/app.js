@@ -500,6 +500,14 @@
         } catch {}
         // A stored slug that the server no longer recognises would otherwise wedge
         // the button forever, so drop it and let the next press mint a fresh page.
+        if (code === 'card_limit_reached') {
+          setCardStatus(`You have reached the limit of ${FACTS.maxCardsPerBuyer} live card pages for one purchase. Unpublish one on the device that made it, or email ${FACTS.supportEmail}.`, 'error');
+          return;
+        }
+        if (code === 'rate_limited') {
+          setCardStatus('Too many publishes in a row. Wait a minute and try again.', 'error');
+          return;
+        }
         if (code === 'not_found' || code === 'not_your_card') {
           cardState.slug = '';
           cardState.url = '';
@@ -2039,11 +2047,10 @@
     if (!state || typeof state !== 'object') return;
 
     if (state.style && typeof state.style === 'object') {
-      Object.assign(style, state.style);
-      // Signatures saved before the dead 'rounded'/'square' icon styles were
-      // removed still carry them. They always rendered as mono, so map them back
-      // onto mono — otherwise the toggle group would show no selected option.
-      if (style.iconStyle !== 'color') style.iconStyle = 'mono';
+      // Saved links are shareable, so the stored style is untrusted input:
+      // sanitizeStyle drops anything the builder controls could not produce,
+      // and maps the removed 'rounded'/'square' icon styles back onto mono.
+      Object.assign(style, CORE.sanitizeStyle(state.style));
       syncStyleControls();
     }
 
@@ -2187,18 +2194,35 @@
   }
 
   // ── Pro Unlock ──
+  // Reasons that mean the token itself can never become valid again. Anything
+  // else (an outage, a revoked or not-yet-visible entitlement that a won dispute
+  // could restore) keeps the token, because the only way to get a new one is the
+  // original Stripe success link.
+  const BROKEN_TOKEN_REASONS = ['malformed', 'invalid_signature', 'malformed_payload', 'invalid_expiry', 'bad_subject', 'expired'];
+
+  const PRO_VERIFIED_STORAGE_KEY = FACTS.proTokenStorageKey + ':verified';
+
   async function checkProStatus() {
     const token = localStorage.getItem(FACTS.proTokenStorageKey);
-    if (token) {
-      const result = await verifyToken(token);
-      if (result.valid) {
-        unlockPro();
-        return;
-      }
-      // Token invalid or expired — clear it
+    if (!token) return;
+
+    const result = await verifyToken(token);
+    if (result.valid) {
+      localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, token);
+      unlockPro();
+      return;
+    }
+    if (result.unreachable) {
+      // The server could not answer. Only a token this browser has already seen
+      // verified keeps Pro unlocked, so an outage never unlocks a made-up token.
+      // Paid features that touch the server still re-check it there.
+      if (localStorage.getItem(PRO_VERIFIED_STORAGE_KEY) === token) unlockPro();
+      return;
+    }
+    localStorage.removeItem(PRO_VERIFIED_STORAGE_KEY);
+    if (BROKEN_TOKEN_REASONS.includes(result.reason)) {
       localStorage.removeItem(FACTS.proTokenStorageKey);
     }
-
   }
 
   async function verifyToken(token) {
@@ -2208,9 +2232,14 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: token })
       });
-      return await res.json();
+      // Only a 200 is the server's verdict on the token; 5xx, gateway pages
+      // and rate limits say nothing about it.
+      if (res.status !== 200) return { valid: false, unreachable: true };
+      const body = await res.json();
+      if (!body || typeof body.valid !== 'boolean') return { valid: false, unreachable: true };
+      return body;
     } catch (e) {
-      return { valid: false };
+      return { valid: false, unreachable: true };
     }
   }
 

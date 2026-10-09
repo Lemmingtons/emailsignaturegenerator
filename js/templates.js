@@ -929,7 +929,9 @@ const _helpers = {
   escapeUrl(url, context) {
     const raw = String(url == null ? '' : url).trim();
     if (!raw) return '';
-    const lower = raw.toLowerCase();
+    // Browsers drop tabs, newlines and other control characters when parsing a
+    // scheme, so `java\tscript:` still runs. Check the scheme without them.
+    const lower = raw.replace(/[\u0000-\u0020]/g, '').toLowerCase();
     if (/^(javascript|vbscript|file):/.test(lower)) return '';
     if (lower.startsWith('data:')) {
       if (context !== 'src' || !lower.startsWith('data:image/')) return '';
