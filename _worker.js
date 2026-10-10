@@ -495,8 +495,15 @@ function addSecurityHeaders(response) {
   return newHeaders;
 }
 
+// A real page rather than bare text, so a mistyped or retired URL still leads
+// visitors back to the generator and guides. noindex keeps it out of search.
+const NOT_FOUND_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found | Email Signature Generator</title><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/css/styles.css"></head><body><main id="main-content" style="max-width:640px;margin:0 auto;padding:80px 24px;text-align:center"><h1>Page not found</h1><p style="color:var(--text-secondary);margin:16px 0 32px">That page doesn't exist or has moved.</p><p><a class="btn btn-primary" href="/generator">Create your signature</a></p><p style="margin-top:24px"><a href="/">Home</a> &middot; <a href="/email-signature-examples">Examples</a> &middot; <a href="/blog/">Guides</a> &middot; <a href="/health-check">Health check</a></p></main></body></html>`;
+
 function notFoundResponse() {
-  return new Response('Not found', { status: 404 });
+  return new Response(NOT_FOUND_HTML, {
+    status: 404,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }
 
 function permanentRedirect(url, pathname) {
@@ -1211,6 +1218,8 @@ async function handleRequest(request, env) {
         response = htmlResponse;
       }
     }
+
+    if (response.status === 404) response = notFoundResponse();
 
     // Add security headers to all responses
     const newHeaders = addSecurityHeaders(response);

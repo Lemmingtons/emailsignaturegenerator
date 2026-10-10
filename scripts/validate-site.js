@@ -386,6 +386,9 @@ function checkWorkerBehavior() {
     "}",
     "const missingRoute = await worker.default.fetch(new Request('https://example.com/does-not-exist'), env);",
     "if (missingRoute.status !== 404) throw new Error('missing clean route returned ' + missingRoute.status);",
+    "if (!(missingRoute.headers.get('Content-Type') || '').includes('text/html') || !(await missingRoute.text()).includes('Page not found')) throw new Error('missing route did not render the 404 page');",
+    "const missingGuide = await worker.default.fetch(new Request('https://example.com/blog/does-not-exist'), env);",
+    "if (missingGuide.status !== 404 || !(await missingGuide.text()).includes('Page not found')) throw new Error('missing public-pattern page did not render the 404 page');",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
     "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
@@ -464,6 +467,22 @@ assert(templates.length === facts.templateCount, `Expected ${facts.templateCount
   const llmsLinks = new Set([...llmsText.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(m => m[1]));
   for (const loc of sitemapLocs) assert(llmsLinks.has(loc), `llms.txt must link sitemap page ${loc}`);
   for (const link of llmsLinks) assert(sitemapLocs.includes(link), `llms.txt links ${link}, which is not in sitemap.xml`);
+}
+
+// Setup guides must name the export button the generator actually shows.
+{
+  const generatorHtml = fs.readFileSync(fromRoot('generator.html'), 'utf8');
+  assert(generatorHtml.includes('<span class="btn-label">Copy HTML</span>'), 'generator export button label changed; update the setup guides');
+  for (const file of fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html'))) {
+    assert(!/Copy for Gmail/i.test(fs.readFileSync(fromRoot(`seo/${file}`), 'utf8')), `seo/${file} names a "Copy for Gmail" button the generator does not have`);
+  }
+}
+
+// Hand-written pages quote the template count too; keep them on the canonical fact.
+for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`)]) {
+  for (const match of fs.readFileSync(fromRoot(file), 'utf8').matchAll(/\b(\d+) (?:professional |signature )?templates\b/g)) {
+    assert(Number(match[1]) === facts.templateCount, `${file} says "${match[0]}" but site-facts has ${facts.templateCount} templates`);
+  }
 }
 
 const llmsCategoryLabels = {
