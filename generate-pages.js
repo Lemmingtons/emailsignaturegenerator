@@ -213,12 +213,12 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
-  <!-- Article Schema -->
+${dateModified ? `  <!-- Article Schema -->
   <script type="application/ld+json">
   ${articleSchema}
   </script>
 
-  <!-- Breadcrumb Schema -->
+` : ''}  <!-- Breadcrumb Schema -->
   <script type="application/ld+json">
   ${breadcrumbSchema}
   </script>
@@ -286,8 +286,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
-    <p class="post-meta">By Email Signature Generator · Updated <time datetime="${escapeHtml(dateModified)}">${escapeHtml(formatLongDate(dateModified))}</time></p>
-${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
+${dateModified ? `    <p class="post-meta">By Email Signature Generator · Updated <time datetime="${escapeHtml(dateModified)}">${escapeHtml(formatLongDate(dateModified))}</time></p>
+` : ''}${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
 ` : ''}    <p class="intro">${escapeHtml(intro)}</p>
 
     <div class="seo-cta-box">
