@@ -305,7 +305,13 @@ export function extractBrand(html, pageUrl) {
   let phone = org && typeof org.telephone === 'string' ? org.telephone : '';
   if (!phone) {
     const tel = hrefs.find((h) => /^tel:/i.test(h.trim()));
-    if (tel) phone = decodeURIComponent(tel.trim().slice(4).replace(/%(?![0-9a-f]{2})/gi, ''));
+    if (tel) {
+      try {
+        phone = decodeURIComponent(tel.trim().slice(4));
+      } catch {
+        phone = tel.trim().slice(4).replace(/%[0-9a-f]{2}/gi, ' ');
+      }
+    }
   }
   phone = cleanText(phone, 40).replace(/[^\d+()\-.\s]/g, '').trim();
   if (phone.replace(/\D/g, '').length < 6) phone = '';

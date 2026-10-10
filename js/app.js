@@ -683,19 +683,32 @@
       return canvas;
     }
 
-    setLogoStatus('Uploading hosted logo...');
-    canvas.toBlob(async function(blob) {
-      try {
-        const url = await uploadImageBlob(blob, 'logo');
-        document.getElementById('logoUrl').value = url;
-        delete thumb.dataset.previewOnly;
-        setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
-        renderPreview();
-      } catch (err) {
-        setLogoStatus(CORE.describeUploadError(err.message), 'error');
-      }
-    }, 'image/png');
+    hostPreviewLogo();
     return canvas;
+  }
+
+  // Hosts the preview-only logo for Pro buyers. Also runs when Pro unlocks after
+  // a logo was already added (a website import can finish before the token
+  // check does). If the logo is replaced or removed mid-upload, the result is dropped.
+  async function hostPreviewLogo() {
+    const thumb = document.getElementById('logoPreviewThumb');
+    const pending = thumb && thumb.dataset.previewOnly;
+    if (!pending || !isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) return;
+
+    setLogoStatus('Uploading hosted logo...');
+    try {
+      const binary = atob(pending.split(',')[1]);
+      const bytes = Uint8Array.from(binary, function(c) { return c.charCodeAt(0); });
+      const blob = new Blob([bytes], { type: 'image/png' });
+      const url = await uploadImageBlob(blob, 'logo');
+      if (thumb.dataset.previewOnly !== pending) return;
+      document.getElementById('logoUrl').value = url;
+      delete thumb.dataset.previewOnly;
+      setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
+      renderPreview();
+    } catch (err) {
+      if (thumb.dataset.previewOnly === pending) setLogoStatus(CORE.describeUploadError(err.message), 'error');
+    }
   }
 
   function handleLogoUpload(input) {
@@ -877,7 +890,8 @@
   // Give them explicit dimensions large enough to rasterise crisply.
   function sizedSvgDataUri(dataUri) {
     try {
-      const text = atob(dataUri.split(',')[1]);
+      const bytes = Uint8Array.from(atob(dataUri.split(',')[1]), function(c) { return c.charCodeAt(0); });
+      const text = new TextDecoder().decode(bytes);
       const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
       const svg = doc.documentElement;
       if (!svg || svg.nodeName.toLowerCase() !== 'svg') return '';
@@ -2642,6 +2656,7 @@
     // Refresh upload hint copy now that hosting is unlocked
     defaultPhotoStatus();
     defaultLogoStatus();
+    hostPreviewLogo();
     setCardStatus('Tick the box above, then publish whenever you\'re ready.');
     syncCardControls();
 

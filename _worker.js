@@ -684,11 +684,15 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 
-async function fetchBrandLogo(candidates) {
+// Tries logo candidates in order, but never past the deadline, so a page
+// full of dead logo links can't hold the whole lookup open.
+async function fetchBrandLogo(candidates, deadline) {
   for (const candidate of candidates.slice(0, 4)) {
+    const remaining = deadline - Date.now();
+    if (remaining < 500) break;
     let url;
     try { url = new URL(candidate.url); } catch { continue; }
-    const got = await brandFetch(url, 'image/svg+xml,image/png,image/webp,image/jpeg,image/gif;q=0.8', BRAND_LOGO_MAX, 4000);
+    const got = await brandFetch(url, 'image/svg+xml,image/png,image/webp,image/jpeg,image/gif;q=0.8', BRAND_LOGO_MAX, Math.min(4000, remaining));
     if (!got || got.truncated) continue;
     const type = sniffLogoType(got.bytes);
     if (!type) continue;
@@ -716,6 +720,7 @@ async function brandResponse(request, env, url) {
   const target = normalizeBrandSite(site);
   if (!target) return apiError(400, 'invalid_url');
 
+  const started = Date.now();
   const page = await brandFetch(target, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', BRAND_HTML_MAX, 7000);
   if (!page) return apiError(422, 'site_unreachable');
   if (page.contentType && !/html|xml/.test(page.contentType)) return apiError(422, 'site_not_html');
@@ -727,7 +732,7 @@ async function brandResponse(request, env, url) {
   const [css, manifest, logo] = await Promise.all([
     stylesheet ? brandFetch(new URL(stylesheet), 'text/css,*/*;q=0.1', BRAND_CSS_MAX, 4000) : null,
     !brand.themeColor && brand.manifestUrl ? brandFetch(new URL(brand.manifestUrl), 'application/manifest+json,application/json', 100_000, 3000) : null,
-    fetchBrandLogo(brand.logos),
+    fetchBrandLogo(brand.logos, started + 12000),
   ]);
 
   let themeColor = brand.themeColor;

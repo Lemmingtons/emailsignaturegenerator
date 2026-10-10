@@ -64,6 +64,10 @@ assert.ok(!/[<>]/.test(hostile.company), 'company name never carries angle brack
 assert.ok(hostile.company.length <= 80);
 assert.equal(hostile.phone, '');
 
+// A tel: link that isn't valid UTF-8 doesn't sink the lookup.
+assert.doesNotThrow(() => extractBrand('<a href="tel:%E0%A4">Call</a><title>Acme</title>', 'https://x.example.com/'));
+assert.equal(extractBrand('<a href="tel:%E0%A4">Call</a><title>Acme</title>', 'https://x.example.com/').company, 'Acme');
+
 // Broken JSON-LD and junk never throw.
 assert.doesNotThrow(() => extractBrand('<script type="application/ld+json">{nope</script>', 'https://x.example.com/'));
 assert.doesNotThrow(() => extractBrand('', 'https://x.example.com/'));
