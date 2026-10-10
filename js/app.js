@@ -43,6 +43,8 @@
     bindDividerAnimation();
     bindCardControls();
     initPreviewDock();
+    initPreviewModes();
+    initBuilderSteps();
     initCompliance();
     renderPreview();
 
@@ -1621,19 +1623,188 @@
     const preview = document.getElementById('signature-preview');
     if (!preview) return;
 
-    if (!data.fullName) {
-      preview.innerHTML = 'Start typing to preview your signature';
-      preview.classList.add('empty');
-      return;
-    }
-
     const template = TEMPLATES[currentTemplate];
     if (!template) return;
 
-    const html = buildSignatureHtml(template, data, style);
+    // Until a name is typed, show the chosen template filled with sample
+    // details so the first thing a visitor sees is a finished signature.
+    // Copy and save read the form directly, so the sample never leaves the page.
+    const isSample = !data.fullName;
+    const html = buildSignatureHtml(template, isSample ? sampleSignatureData(data) : data, style);
 
     preview.innerHTML = html;
-    preview.classList.remove('empty');
+    preview.classList.toggle('is-sample', isSample);
+    const note = document.getElementById('previewSampleNote');
+    if (note) note.hidden = !isSample;
+
+    if (currentStep === 'install') runSignatureCheck();
+  }
+
+  // Sample details fill the gaps, but anything the visitor has already added
+  // (a photo, a logo, socials) still shows so they can see it in place.
+  function sampleSignatureData(data) {
+    const pick = (value, fallback) => value || fallback;
+    return Object.assign({}, data, {
+      fullName: 'Sarah Mitchell',
+      title: pick(data.title, 'Senior Account Manager'),
+      company: pick(data.company, 'Harbour & Co'),
+      phone: pick(data.phone, '+1 555 012 3456'),
+      email: pick(data.email, 'sarah@harbourco.com'),
+      website: pick(data.website, 'https://harbourco.com'),
+      linkedin: pick(data.linkedin, 'https://linkedin.com/in/sarahmitchell'),
+      nameLinkUrl: '',
+    });
+  }
+
+  // ── Builder steps ──
+  const BUILDER_STEPS = ['template', 'details', 'style', 'install'];
+  const STEP_LABELS = { template: 'Template', details: 'Details', style: 'Style', install: 'Install' };
+  let currentStep = 'details';
+
+  function goToStep(step, options) {
+    if (!BUILDER_STEPS.includes(step)) return;
+    const opts = options || {};
+    currentStep = step;
+    const index = BUILDER_STEPS.indexOf(step);
+
+    BUILDER_STEPS.forEach(name => {
+      const tab = document.getElementById('step-tab-' + name);
+      const panel = document.getElementById('step-' + name);
+      const active = name === step;
+      if (tab) {
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        tab.tabIndex = active ? 0 : -1;
+      }
+      if (panel) panel.hidden = !active;
+    });
+
+    const count = document.getElementById('stepCount');
+    if (count) count.textContent = `Step ${index + 1} of ${BUILDER_STEPS.length}`;
+    const back = document.getElementById('stepBackBtn');
+    if (back) back.hidden = index === 0;
+    const next = document.getElementById('stepNextBtn');
+    if (next) {
+      const nextStep = BUILDER_STEPS[index + 1];
+      next.hidden = !nextStep;
+      if (nextStep) next.textContent = 'Next: ' + STEP_LABELS[nextStep];
+    }
+
+    if (step === 'install') runSignatureCheck();
+    if (opts.focusTab) {
+      const tab = document.getElementById('step-tab-' + step);
+      if (tab) tab.focus();
+    }
+    if (opts.scroll) {
+      const nav = document.querySelector('.builder-steps');
+      if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function initBuilderSteps() {
+    const tabs = BUILDER_STEPS.map(name => document.getElementById('step-tab-' + name)).filter(Boolean);
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => goToStep(tab.dataset.step));
+      tab.addEventListener('keydown', e => {
+        let target = null;
+        if (e.key === 'ArrowRight') target = tabs[(i + 1) % tabs.length];
+        else if (e.key === 'ArrowLeft') target = tabs[(i - 1 + tabs.length) % tabs.length];
+        else if (e.key === 'Home') target = tabs[0];
+        else if (e.key === 'End') target = tabs[tabs.length - 1];
+        if (!target) return;
+        e.preventDefault();
+        goToStep(target.dataset.step, { focusTab: true });
+      });
+    });
+
+    const step = delta => goToStep(BUILDER_STEPS[BUILDER_STEPS.indexOf(currentStep) + delta], { scroll: true });
+    const back = document.getElementById('stepBackBtn');
+    const next = document.getElementById('stepNextBtn');
+    if (back) back.addEventListener('click', () => step(-1));
+    if (next) next.addEventListener('click', () => step(1));
+
+    const installCopy = document.getElementById('installCopyBtn');
+    const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+    if (installCopy && copyHtmlBtn) installCopy.addEventListener('click', () => copyHtmlBtn.click());
+
+    goToStep(currentStep);
+  }
+
+  // Folded sections open themselves when they hold something, so a restored
+  // signature or a field with an error is never hidden behind a closed fold.
+  function openOptionalSectionsWithContent() {
+    document.querySelectorAll('.optional-section').forEach(section => {
+      const filled = [...section.querySelectorAll('input[type="url"], input[type="text"]')].some(el => el.value.trim());
+      const thumb = section.querySelector('[data-preview-only]');
+      const linked = section.querySelector('#nameLinkTarget');
+      if (filled || thumb || (linked && linked.value !== 'none')) section.open = true;
+    });
+  }
+
+  // ── Signature check (install step) ──
+  function runSignatureCheck() {
+    const scoreEl = document.getElementById('sigCheckScore');
+    const titleEl = document.getElementById('sigCheckTitle');
+    const listEl = document.getElementById('sigCheckIssues');
+    const checker = window.SignatureHealthCheck;
+    if (!scoreEl || !titleEl || !listEl || !checker) return;
+
+    const data = getFormData();
+    const box = document.getElementById('sigCheck');
+    if (!data.fullName) {
+      scoreEl.textContent = '\u2013';
+      if (box) box.dataset.grade = '';
+      titleEl.textContent = 'Add your name in step 2 and we\'ll check your signature.';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    const result = checker.runAudit(buildSignatureHtml(TEMPLATES[currentTemplate], data, style));
+    if (!result) return;
+    const grade = result.score >= 90 ? 'great' : result.score >= 75 ? 'good' : 'poor';
+    scoreEl.textContent = String(result.score);
+    if (box) box.dataset.grade = grade;
+    titleEl.textContent = `Signature check: ${result.score}/100. ` + (
+      grade === 'great' ? 'Ready for Gmail, Outlook and Apple Mail.'
+        : grade === 'good' ? 'Works, with a few things worth fixing.'
+          : 'Fix the items below before you install it.'
+    );
+
+    const order = { critical: 0, warning: 1, info: 2 };
+    const issues = result.results
+      .filter(r => r.severity in order)
+      .sort((a, b) => order[a.severity] - order[b.severity])
+      .slice(0, 3);
+    listEl.textContent = '';
+    issues.forEach(r => {
+      const item = document.createElement('li');
+      item.className = 'sig-check-issue ' + r.severity;
+      const label = document.createElement('strong');
+      label.textContent = r.label + '. ';
+      item.appendChild(label);
+      item.appendChild(document.createTextNode(checkMessageText(r.message)));
+      listEl.appendChild(item);
+    });
+  }
+
+  // Check messages carry <code> markup and can quote text from the signature,
+  // which on a shared saved link was written by someone else. They are reduced
+  // to plain text in an inert document and only ever inserted as text.
+  function checkMessageText(message) {
+    return new DOMParser().parseFromString(String(message || ''), 'text/html').body.textContent || '';
+  }
+
+  // ── Preview modes ──
+  function initPreviewModes() {
+    const frame = document.getElementById('previewFrame');
+    [['previewDarkBtn', 'preview-dark'], ['previewPhoneBtn', 'preview-phone']].forEach(([id, cls]) => {
+      const btn = document.getElementById(id);
+      if (!btn || !frame) return;
+      btn.addEventListener('click', () => {
+        const on = btn.getAttribute('aria-pressed') !== 'true';
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        frame.classList.toggle(cls, on);
+      });
+    });
   }
 
   function buildSignatureHtml(template, data, style) {
@@ -1835,6 +2006,8 @@
       el.classList.add('input-error');
       el.setAttribute('aria-invalid', 'true');
       if (errorEl) errorEl.textContent = msg;
+      const fold = el.closest('details');
+      if (fold) fold.open = true;
       return false;
     } else {
       el.classList.remove('input-error');
@@ -1868,6 +2041,7 @@
   async function copyHTML(btn) {
     let data = getFormData();
     if (!data.fullName) {
+      goToStep('details');
       validateField('fullName');
       alert('Please enter your name to generate a signature.');
       return;
@@ -1934,6 +2108,7 @@
   async function copyPlainText(btn) {
     const data = getFormData();
     if (!data.fullName) {
+      goToStep('details');
       validateField('fullName');
       alert('Please enter your name.');
       return;
@@ -2081,6 +2256,7 @@
 
     restoreNameLinkState(state);
     restoreAnimationState(state);
+    openOptionalSectionsWithContent();
     renderPreview();
   }
 

@@ -120,6 +120,12 @@
 
   function addCheck(def) { checks.push(def); }
 
+  // Messages are rendered as HTML, so text quoted from the audited signature
+  // is escaped first.
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   addCheck({
     id: 'size',
     label: 'Total HTML size',
@@ -193,7 +199,7 @@
       if (problems.length === 0) {
         return { severity: 'info', message: `${decorative.length} decorative element(s) (dividers, punctuation) have low contrast. Cosmetic but consider darkening for low-vision users.`, fix: 'Darken divider characters (e.g. #9ca3af → #4b5563) so they remain visible in both themes.' };
       }
-      const top = problems.slice(0, 3).map(p => `"${p.text.slice(0, 30)}" (${p.hex} → ${p.ratio}:1${p.onDark ? ' on dark bg' : ''})`).join('; ');
+      const top = problems.slice(0, 3).map(p => `"${escapeHtml(p.text.slice(0, 30))}" (${p.hex} → ${p.ratio}:1${p.onDark ? ' on dark bg' : ''})`).join('; ');
       const severity = problems.some(p => parseFloat(p.ratio) < 3) ? 'critical' : 'warning';
       return { severity, message: `${problems.length} colour pair(s) fail WCAG AA 4.5:1. Examples: ${top}.`, fix: 'Darken foreground text or add an explicit background-color. Use #4b5563 for muted grays instead of #6b7280.' };
     },
