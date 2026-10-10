@@ -14,8 +14,8 @@
   const defaultStyle = Object.freeze({
     primaryColor: '#0891B2',
     secondaryColor: '#7c3aed',
-    textColor: '#1e293b',
-    fontFamily: 'Arial, Helvetica, sans-serif',
+    textColor: '#1d1d1f',
+    fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
     dividerStyle: 'line',
     photoShape: 'circle',
     iconStyle: 'mono',
@@ -34,6 +34,7 @@
   // every value is checked against what the builder controls can produce.
   // Must match the <select id="fontFamily"> options in generator.html.
   const fontFamilies = Object.freeze([
+    "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
     'Arial, Helvetica, sans-serif',
     "'Georgia', serif",
     "'Verdana', Geneva, sans-serif",
@@ -62,7 +63,7 @@
     });
     // Signatures saved before the 'rounded'/'square' icon styles were removed
     // still carry them; they always rendered as mono.
-    out.iconStyle = src.iconStyle === 'color' ? 'color' : 'mono';
+    out.iconStyle = ['color', 'circle'].includes(src.iconStyle) ? src.iconStyle : 'mono';
     // CTA text and URL are free-form and escaped by the templates, so they are
     // kept as typed; truncating a URL would change where the button goes.
     ['ctaText', 'ctaUrl'].forEach((key) => {
