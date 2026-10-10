@@ -1614,8 +1614,8 @@ ${card.photoUrl ? `<meta property="og:image" content="${escapeHtml(card.photoUrl
     column starts on the same vertical line. */
  .label { flex:0 0 88px; font-size:10px; text-transform:uppercase; letter-spacing:1.1px; color:#9aa3ad; padding-top:4px; }
  .value { font-size:14px; color:#374151; word-break:break-word; }
- .save { display:inline-block; margin-top:24px; padding:11px 20px; border-radius:8px;
-         background:#0891B2; color:#fff; text-decoration:none; font-size:14px; font-weight:600; }
+ .save { display:inline-block; margin-top:24px; padding:11px 20px; border-radius:999px;
+         background:#1d1d1f; color:#fff; text-decoration:none; font-size:14px; font-weight:600; }
  .footer { margin-top:24px; font-size:12px; color:#9aa3ad; }
  .footer a { color:#6b7280; }
  @media (prefers-color-scheme: dark) {

@@ -189,21 +189,47 @@
          HERO
          ══════════════════════════════════════ -->
     <section class="landing-hero" aria-label="Hero" data-reveal-group>
-      <h1 data-reveal>Your email signature,<br><span class="highlight">built from your website.</span></h1>
+      <p class="hero-kicker" data-reveal>Brand from your website</p>
+      <h1 data-reveal>Your email signature, <span class="highlight">built from your website.</span></h1>
       <p class="subtitle" data-reveal>Type your website and we pull in your logo, brand colours and social links. Pick one of 24 templates, then pay $9 once when you're ready to use it. No subscription.</p>
       <form class="hero-brand-form" action="/generator" method="get" data-reveal>
         <label for="heroSite" class="hero-brand-label">Your company website</label>
         <div class="hero-brand-row">
+          <span class="hero-brand-prefix" aria-hidden="true">https://</span>
           <input type="text" id="heroSite" name="site" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourcompany.com" maxlength="300">
           <button type="submit" class="btn btn-primary hero-cta">Build my signature</button>
         </div>
-        <p class="hero-brand-alt">No website? <a href="/generator">Start from a template</a> &middot; <a href="#pricing">See pricing</a></p>
+        <p class="hero-brand-alt">No website? <a href="/generator">Start from a template</a></p>
       </form>
       <div class="hero-price" data-reveal>
-        <span class="price-tag">$9</span>
-        one-time, everything included
+        <span><span class="price-tag">$9</span> once, everything included</span>
         <span class="no-sub">No subscription</span>
       </div>
+
+      <figure class="hero-showcase" aria-label="Example: a signature built from a sample company website" data-reveal>
+        <ul class="hero-found">
+          <li><i style="background:#0e5a8a"></i>Logo</li>
+          <li><i style="background:#0e5a8a"></i><i style="background:#f2a93b"></i>Brand colours</li>
+          <li>Phone and address</li>
+          <li>Social links</li>
+        </ul>
+        <div class="hero-mail" aria-hidden="true">
+          <div class="hero-mail-bar"><span></span><span></span><span></span></div>
+          <div class="hero-mail-head"><div><b>Sarah Mitchell</b> to Tom Walsh</div><div>Re: Thursday's site visit</div></div>
+          <div class="hero-mail-body">
+            Hi Tom,<br>Confirming 9am Thursday. See you then.
+            <div class="hero-sig">
+              <div class="hero-sig-logo"><svg width="28" height="28" viewBox="0 0 34 34" aria-hidden="true"><path d="M5 20c4-5 8-5 12 0s8 5 12 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M5 13c4-5 8-5 12 0s8 5 12 0" fill="none" stroke="#f2a93b" stroke-width="3" stroke-linecap="round"/></svg></div>
+              <div class="hero-sig-text">
+                <div class="hero-sig-name">Sarah Mitchell</div>
+                <div class="hero-sig-role">Senior Account Manager &middot; Harbour &amp; Co</div>
+                <div class="hero-sig-line"><b>P</b> +1 555 012 3456 &nbsp; <b>W</b> harbourco.com</div>
+                <div class="hero-sig-line"><b>E</b> sarah@harbourco.com</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
     </section>
 
     <!-- ══════════════════════════════════════
