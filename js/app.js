@@ -10,6 +10,8 @@
   let currentTemplate = 'classic';
   let currentCategory = 'all';
   let isPro = false;
+  // Set when this page was opened from a team pack link.
+  let teamId = '';
   let style = CORE.createStyle();
 
   function updateLiveStatus(el, text, kind) {
@@ -55,10 +57,15 @@
     const token = params.get('token');
     const savedSignatureId = params.get('s');
     const brandSite = params.get('site');
+    const teamParam = params.get('team');
 
     if (token) {
       localStorage.setItem(FACTS.proTokenStorageKey, token);
-      window.history.replaceState({}, '', window.location.pathname + (savedSignatureId ? '?s=' + encodeURIComponent(savedSignatureId) : ''));
+      const kept = new URLSearchParams();
+      if (savedSignatureId) kept.set('s', savedSignatureId);
+      if (teamParam) kept.set('team', teamParam);
+      const query = kept.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? '?' + query : ''));
     }
 
     // Verify Pro status from the server-backed signed token.
@@ -67,6 +74,15 @@
     // Reopening a saved signature is independent of Pro status — the link itself
     // is the credential.
     restoreSignatureFromLink(savedSignatureId);
+
+    showTeamOffer();
+
+    // A team link carries the whole design, so it takes the place of starters
+    // and the website import.
+    if (teamParam && !savedSignatureId) {
+      loadTeamDesign(teamParam);
+      return;
+    }
 
     // The examples page links here as /generator?template=realestate&role=Real+Estate+Agent
     // to start from a layout that suits the job.
@@ -286,6 +302,11 @@
     const saveLinkBtn = document.getElementById('saveLinkBtn');
     if (saveLinkBtn) saveLinkBtn.addEventListener('click', function() { saveSignatureLink(this); });
     if (buyProBtn) buyProBtn.addEventListener('click', handleProPurchase);
+
+    const teamJoinBtn = document.getElementById('teamJoinBtn');
+    if (teamJoinBtn) teamJoinBtn.addEventListener('click', joinTeam);
+    const teamLinkBtn = document.getElementById('teamLinkBtn');
+    if (teamLinkBtn) teamLinkBtn.addEventListener('click', function() { shareTeamLink(this); });
 
     if (mobilePreviewFab) {
       mobilePreviewFab.addEventListener('click', () => {
@@ -2084,6 +2105,12 @@
   // costs money. Returns false and prompts when the visitor has not paid.
   function requireProForExport() {
     if (isPro) return true;
+    if (teamId) {
+      setExportStatus('Join your team first. It is already paid for.', 'error');
+      const joinBtn = document.getElementById('teamJoinBtn');
+      if (joinBtn) joinBtn.focus();
+      return false;
+    }
     showProPrompt();
     setExportStatus(
       `Unlock for ${FACTS.proPrice.displayWithCurrency} to copy your signature, host your photo, and save an edit link.`,
@@ -2655,6 +2682,7 @@
     if (result.valid) {
       localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, token);
       unlockPro();
+      if (result.plan === 'team') showTeamOwnerPanel();
       return;
     }
     if (result.unreachable) {
@@ -2694,6 +2722,8 @@
     // Hide pro banner
     const banner = document.getElementById('pro-banner');
     if (banner) banner.style.display = 'none';
+    const teamPanel = document.getElementById('teamMemberPanel');
+    if (teamPanel) teamPanel.hidden = true;
 
     // Show success toast
     showProSuccessToast();
@@ -2717,6 +2747,146 @@
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
+  }
+
+  // ── Team pack ──
+  //
+  // The buyer shares their branded design as a team link. Colleagues who open it
+  // get the design with the personal fields left empty, add their own details,
+  // and join the team, which claims one of the pack's seats.
+
+  const TEAM_PERSONAL_FIELDS = ['fullName', 'nameLinkUrl', 'title', 'phone', 'email', 'photoUrl', 'linkedin'];
+
+  function showTeamOffer() {
+    const offer = document.getElementById('teamOffer');
+    const link = document.getElementById('teamOfferLink');
+    if (!offer || !link || !FACTS.teamPaymentLink) return;
+    link.href = FACTS.teamPaymentLink;
+    offer.querySelectorAll('[data-team-price]').forEach(el => { el.textContent = FACTS.teamPrice.display; });
+    offer.querySelectorAll('[data-team-seats]').forEach(el => { el.textContent = String(FACTS.teamSeats); });
+    offer.hidden = false;
+  }
+
+  function clearPersonalFields() {
+    TEAM_PERSONAL_FIELDS.forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    const thumb = document.getElementById('photoPreviewThumb');
+    if (thumb) {
+      thumb.innerHTML = '';
+      thumb.classList.remove('has-photo');
+    }
+    const removeBtn = document.getElementById('photoRemoveBtn');
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+
+  async function loadTeamDesign(id) {
+    const panel = document.getElementById('teamMemberPanel');
+    const text = document.getElementById('teamMemberText');
+    if (!/^[A-Za-z0-9_-]{43}$/.test(id)) return;
+    try {
+      const resp = await fetch('/api/team/' + encodeURIComponent(id));
+      if (!resp.ok) throw new Error('not_found');
+      const team = await resp.json();
+      applySignatureState(team.design);
+      clearPersonalFields();
+      renderPreview();
+      teamId = id;
+      // The brand is already set by the team, so the website import would only
+      // overwrite it.
+      const brandImport = document.getElementById('brandImport');
+      if (brandImport) brandImport.hidden = true;
+      const company = team.design && team.design.data && typeof team.design.data.company === 'string'
+        ? team.design.data.company.trim().slice(0, 80) : '';
+      if (text && company) {
+        text.textContent = '';
+        const strong = document.createElement('strong');
+        strong.textContent = company + '\u2019s team signature.';
+        text.appendChild(strong);
+        text.appendChild(document.createTextNode(' The design and company details are set for you. Add your own name, title and phone, then join the team to copy it.'));
+      }
+      if (isPro) return;
+      const banner = document.getElementById('pro-banner');
+      if (banner) banner.style.display = 'none';
+      if (panel) panel.hidden = false;
+    } catch {
+      setExportStatus('That team link could not be found. Ask whoever shared it for a new one.', 'error');
+    }
+  }
+
+  const TEAM_JOIN_ERRORS = {
+    team_full: 'Every seat in this team pack is taken. Ask whoever shared the link.',
+    team_inactive: 'This team pack is no longer active. Ask whoever shared the link.',
+    team_busy: 'Someone else joined at the same moment. Try again.',
+    rate_limited: 'Too many tries. Wait a minute and try again.',
+  };
+
+  async function joinTeam() {
+    const hint = document.getElementById('teamJoinHint');
+    if (!teamId) return;
+    updateLiveStatus(hint, 'Joining...');
+    try {
+      const resp = await fetch('/api/team/' + encodeURIComponent(teamId) + '/join', { method: 'POST' });
+      let body = {};
+      try { body = await resp.json(); } catch {}
+      if (!resp.ok || !body.token) {
+        updateLiveStatus(hint, TEAM_JOIN_ERRORS[body.code] || 'Could not join the team. Try again.', 'error');
+        return;
+      }
+      localStorage.setItem(FACTS.proTokenStorageKey, body.token);
+      localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, body.token);
+      unlockPro();
+      const panel = document.getElementById('teamMemberPanel');
+      if (panel) panel.hidden = true;
+      setExportStatus('You\u2019ve joined the team. Copy your signature whenever you\u2019re ready.', 'success');
+    } catch {
+      updateLiveStatus(hint, 'Could not reach the server. Try again.', 'error');
+    }
+  }
+
+  function showTeamOwnerPanel() {
+    const panel = document.getElementById('teamOwnerPanel');
+    if (panel && !teamId) panel.hidden = false;
+  }
+
+  async function shareTeamLink(btn) {
+    const hint = document.getElementById('teamLinkHint');
+    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    if (!isPro || !token) return;
+    const design = collectSignatureState();
+    if (!design.data.company) {
+      updateLiveStatus(hint, 'Add your company name first, so colleagues know whose team it is.', 'error');
+      return;
+    }
+    TEAM_PERSONAL_FIELDS.forEach(function(key) { design.data[key] = ''; });
+    design.nameLink = { target: 'none', cardSlug: '' };
+    updateLiveStatus(hint, 'Saving the team design...');
+    try {
+      const resp = await fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(design),
+      });
+      let body = {};
+      try { body = await resp.json(); } catch {}
+      if (!resp.ok || !body.url) throw new Error(body.code || '');
+      const left = Math.max(0, (body.seats || FACTS.teamSeats) - 1 - (body.members || 0));
+      try {
+        await navigator.clipboard.writeText(body.url);
+        showCopied(btn);
+        updateLiveStatus(hint, `Team link copied. ${left} of ${(body.seats || FACTS.teamSeats) - 1} colleague seats left. Your own signature counts as the first seat.`, 'success');
+      } catch {
+        updateLiveStatus(hint, 'Team link: ' + body.url + ` (${left} colleague seats left)`, 'success');
+      }
+    } catch (err) {
+      const message = err.message === 'team_plan_required'
+        ? 'Team links come with the team pack.'
+        : err.message === 'rate_limited' || err.message === 'invalid_token'
+          ? CORE.describeUploadError(err.message)
+          : 'Could not save the team link. Try again.';
+      updateLiveStatus(hint, message, 'error');
+    }
   }
 
   function showProPrompt() {

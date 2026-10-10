@@ -32,6 +32,17 @@
       display: '$9',
       displayWithCurrency: 'US$9',
     },
+    // The team pack goes on sale once its Stripe Payment Link exists. Until
+    // teamPaymentLink is set, every team offer on the site stays hidden.
+    teamPaymentLink: '',
+    teamPrice: {
+      amount: 29,
+      amountText: '29.00',
+      currency: 'USD',
+      display: '$29',
+      displayWithCurrency: 'US$29',
+    },
+    teamSeats: 10,
     templateCount: 28,
     proTokenStorageKey: 'sig_pro_token',
     maxCardsPerBuyer: 10,

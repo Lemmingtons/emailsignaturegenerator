@@ -270,6 +270,7 @@ async function storeActiveEntitlement(env, stripeResult, source) {
     status: 'active',
     paymentIntent: stripeResult.paymentIntent,
     paymentLink: stripeResult.paymentLink,
+    plan: stripeResult.plan === 'team' ? 'team' : 'pro',
     checkoutSession: stripeResult.sessionId,
     createdAt: previous && previous.createdAt ? previous.createdAt : now,
     verifiedAt: now,
@@ -323,17 +324,28 @@ function stripeResultFromSession(session, env) {
   }
   const paymentLink = stripeId(session.payment_link, 'plink');
   const paymentIntent = stripeId(session.payment_intent, 'pi');
+  const plan = planForPaymentLink(paymentLink, env);
   if (
     session.mode !== 'payment' ||
     session.status !== 'complete' ||
     session.payment_status !== 'paid' ||
     session.livemode !== (env.STRIPE_LIVEMODE === 'true') ||
-    paymentLink !== env.STRIPE_PAYMENT_LINK_ID ||
+    !plan ||
     !paymentIntent
   ) {
     return { paid: false, reason: 'payment_not_eligible' };
   }
-  return { paid: true, sessionId, paymentIntent, paymentLink };
+  return { paid: true, sessionId, paymentIntent, paymentLink, plan };
+}
+
+// The team pack is a second Stripe Payment Link. Until STRIPE_TEAM_PAYMENT_LINK_ID
+// is set, only the single-person link is honoured.
+function planForPaymentLink(paymentLink, env) {
+  if (!paymentLink) return '';
+  if (paymentLink === env.STRIPE_PAYMENT_LINK_ID) return 'pro';
+  if (/^plink_[A-Za-z0-9]+$/.test(env.STRIPE_TEAM_PAYMENT_LINK_ID || '') &&
+    paymentLink === env.STRIPE_TEAM_PAYMENT_LINK_ID) return 'team';
+  return '';
 }
 
 async function redeemCheckoutSession(sessionId, env) {
@@ -349,7 +361,7 @@ async function redeemCheckoutSession(sessionId, env) {
   if (!redemption) return { active: false, reason: 'confirmation_pending' };
   if (
     redemption.checkoutSession !== sessionId ||
-    redemption.paymentLink !== env.STRIPE_PAYMENT_LINK_ID ||
+    !planForPaymentLink(redemption.paymentLink, env) ||
     !/^ent_[A-Za-z0-9_-]{40,64}$/.test(redemption.entitlementId || '')
   ) {
     return { active: false, reason: 'payment_not_eligible' };
@@ -433,7 +445,7 @@ async function verifyProAccess(token, env) {
   if (!record || record.status !== 'active' || record.entitlementId !== payload.sub) {
     return { valid: false, reason: 'entitlement_missing' };
   }
-  return { valid: true, payload };
+  return { valid: true, payload, record };
 }
 
 // Cloudflare's native binding allows 25 calls / minute per key. Each Pro action
@@ -475,6 +487,153 @@ async function countOwnedCards(bucket, prefix, limit) {
     cursor = listed.truncated && count < limit ? listed.cursor : undefined;
   } while (cursor);
   return count;
+}
+
+// Team members share their buyer's entitlement, so cards record which member
+// published them; one colleague cannot replace another's page.
+function cardOwnerId(payload) {
+  const member = payload && Number.isInteger(payload.tm) && payload.tm > 0 ? payload.tm : 0;
+  return member ? `${payload.sub}:m${member}` : payload.sub;
+}
+
+// Only the buyer of a team pack (not a colleague who joined it) manages the team.
+function teamOwnerPlan(verified) {
+  return Boolean(verified && verified.valid && verified.record &&
+    verified.record.plan === 'team' && !(verified.payload && verified.payload.tm));
+}
+
+// ── Team pack ────────────────────────────────────────────────────────────────
+//
+// The buyer saves their branded signature as the team design. Colleagues open
+// the team link, type their own details, and claim one of the pack's seats,
+// which mints them a Pro token on the buyer's entitlement. A refund or dispute
+// on the purchase therefore ends access for the whole team.
+
+const TEAM_SEATS = FACTS.teamSeats;
+const TEAM_ID = /^[A-Za-z0-9_-]{43}$/;
+
+async function teamIdFor(sub, secret) {
+  const key = await importKey(secret);
+  const signature = await crypto.subtle.sign('HMAC', key, textToUint8Array(`team:${sub}`));
+  return base64url(signature);
+}
+
+function teamKey(id) {
+  return `teams/${id}.json`;
+}
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, private' },
+  });
+}
+
+async function bearerProAccess(request, env) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) return { valid: false, reason: 'missing' };
+  return verifyProAccess(token, env);
+}
+
+async function teamResponse(request, env, url) {
+  if (!env.PRO_SIGNING_SECRET) return apiError(500, 'server_misconfiguration');
+  const bucket = uploadBucket(env);
+  if (!bucket) return apiError(500, 'storage_not_configured');
+
+  // Buyer: save or update the team design.
+  if (url.pathname === '/api/team') {
+    if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+    const verified = await bearerProAccess(request, env);
+    if (!verified.valid) return proAuthError(verified);
+    if (!teamOwnerPlan(verified)) return apiError(403, 'team_plan_required');
+    const sub = verified.payload.sub;
+    const limited = await enforceRateLimit(env, `team:${sub}`);
+    if (limited) return limited;
+
+    const MAX_TEAM_BYTES = 32_000;
+    const raw = await request.text();
+    if (!raw) return apiError(400, 'empty_body');
+    if (raw.length > MAX_TEAM_BYTES) return apiError(413, 'too_large');
+    let design;
+    try {
+      design = JSON.parse(raw);
+    } catch {
+      return apiError(400, 'invalid_json');
+    }
+    if (!design || typeof design !== 'object' || Array.isArray(design)) return apiError(400, 'invalid_json');
+
+    const id = await teamIdFor(sub, env.PRO_SIGNING_SECRET);
+    const previous = await readJsonObject(bucket, teamKey(id));
+    const record = {
+      version: 1,
+      owner: sub,
+      seats: TEAM_SEATS,
+      members: previous && Number.isInteger(previous.members) ? previous.members : 0,
+      design,
+      updatedAt: Date.now(),
+    };
+    await bucket.put(teamKey(id), JSON.stringify(record), {
+      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+    });
+    return jsonResponse({ id, url: `${url.origin}/generator?team=${id}`, seats: record.seats, members: record.members });
+  }
+
+  const match = url.pathname.match(/^\/api\/team\/([A-Za-z0-9_-]+)(\/join)?$/);
+  if (!match || !TEAM_ID.test(match[1])) return apiError(404, 'not_found');
+  const id = match[1];
+
+  // Colleague: read the design. The unguessable link is the credential, as with
+  // saved signatures.
+  if (!match[2]) {
+    if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
+    const team = await readJsonObject(bucket, teamKey(id));
+    if (!team) return apiError(404, 'not_found');
+    return jsonResponse({ design: team.design, seats: team.seats, members: team.members });
+  }
+
+  // Colleague: claim a seat.
+  if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const limited = await enforceRateLimit(env, `team-join:${id}:${ip}`);
+  if (limited) return limited;
+
+  const object = await bucket.get(teamKey(id));
+  if (!object) return apiError(404, 'not_found');
+  let team;
+  try {
+    team = JSON.parse(await object.text());
+  } catch {
+    return apiError(404, 'not_found');
+  }
+  if (!team || !validProSubject(team.owner || '') || !String(team.owner).startsWith('ent_')) {
+    return apiError(404, 'not_found');
+  }
+  if (await isEntitlementRevoked(bucket, team.owner)) return apiError(403, 'team_inactive');
+  const entitlement = await readJsonObject(bucket, entitlementKey(team.owner));
+  if (!entitlement || entitlement.status !== 'active' || entitlement.plan !== 'team') {
+    return apiError(403, 'team_inactive');
+  }
+  const members = Number.isInteger(team.members) ? team.members : 0;
+  // The buyer uses one of the pack's seats themselves.
+  if (members >= team.seats - 1) return apiError(409, 'team_full', String(team.seats));
+
+  const member = members + 1;
+  // Only write if nobody else claimed a seat since this read, so two colleagues
+  // joining at once cannot both take the last seat.
+  const written = await bucket.put(teamKey(id), JSON.stringify({ ...team, members: member, updatedAt: Date.now() }), {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+    onlyIf: object.etag ? { etagMatches: object.etag } : undefined,
+  });
+  if (written === null) return apiError(409, 'team_busy');
+
+  const now = Math.floor(Date.now() / 1000);
+  const hundredYears = 100 * 365 * 24 * 60 * 60;
+  const token = await signJwt(
+    { sub: team.owner, ent: 1, tm: member, iat: now, exp: now + hundredYears },
+    env.PRO_SIGNING_SECRET
+  );
+  return jsonResponse({ token, seat: member + 1, seats: team.seats });
 }
 
 function proAuthError(result) {
@@ -836,6 +995,7 @@ async function handleRequest(request, env) {
     if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
 
     if (url.pathname === '/api/brand') return brandResponse(request, env, url);
+    if (url.pathname === '/api/team' || url.pathname.startsWith('/api/team/')) return teamResponse(request, env, url);
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {
@@ -968,7 +1128,7 @@ async function handleRequest(request, env) {
         const result = await verifyProAccess(token, env);
         if (result.status >= 500) logServerError('api_error', { status: result.status, code: result.reason });
         const publicResult = result.valid
-          ? { valid: true }
+          ? { valid: true, plan: teamOwnerPlan(result) ? 'team' : 'pro' }
           : { valid: false, reason: result.reason };
         return new Response(JSON.stringify(publicResult), {
           status: result.status || 200,
@@ -1201,6 +1361,7 @@ async function handleRequest(request, env) {
       if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
       if (!validProSubject(sub || '')) return apiError(401, 'invalid_token', 'bad_subject');
+      const ownerId = cardOwnerId(verified.payload);
       const cardLimited = await enforceRateLimit(env, `card:${sub}`);
       if (cardLimited) return cardLimited;
 
@@ -1241,7 +1402,7 @@ async function handleRequest(request, env) {
         } catch {
           owner = null;
         }
-        if (owner !== sub) return apiError(403, 'not_your_card');
+        if (owner !== ownerId) return apiError(403, 'not_your_card');
       } else {
         const owned = await countOwnedCards(bucket, ownerPrefix, MAX_CARDS_PER_BUYER);
         if (owned >= MAX_CARDS_PER_BUYER) {
@@ -1257,7 +1418,7 @@ async function handleRequest(request, env) {
       await bucket.put(`${ownerPrefix}${slug}`, '', {
         httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
       });
-      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
+      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: ownerId, updatedAt: Date.now() }), {
         httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
         // Lets the cards sitemap skip thin cards without reading every card body.
         customMetadata: { indexable: isThinCard(card) ? '0' : '1' },
@@ -1300,7 +1461,7 @@ async function handleRequest(request, env) {
       } catch {
         owner = null;
       }
-      if (owner !== sub) return apiError(403, 'not_your_card');
+      if (owner !== cardOwnerId(verified.payload)) return apiError(403, 'not_your_card');
 
       await bucket.delete(`cards/${match[1]}.json`);
       await bucket.delete(ownerIndexKey);
