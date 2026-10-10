@@ -1623,6 +1623,7 @@ ${card.photoUrl ? `<meta property="og:image" content="${escapeHtml(card.photoUrl
    .card { background:#171a1d; border-color:#272b30; }
    .row { border-color:#272b30; }
    .value { color:#c8ccd0; }
+   .save { background:#f5f5f7; color:#1d1d1f; }
  }
 </style>
 </head><body>

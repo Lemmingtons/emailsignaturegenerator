@@ -494,6 +494,16 @@
   <script src="js/templates.js"></script>
   <script>
   (function () {
+    // The hero box shows "https://" beside the field, so drop a scheme the
+    // visitor pastes or autofills rather than showing it twice.
+    var heroSite = document.getElementById('heroSite');
+    if (heroSite) {
+      heroSite.addEventListener('input', function () {
+        var bare = heroSite.value.replace(/^\s*https?:\/\//i, '');
+        if (bare !== heroSite.value) heroSite.value = bare;
+      });
+    }
+
     var checkoutButton = document.getElementById('checkoutBtn');
     if (checkoutButton && window.SiteFacts) {
       checkoutButton.href = window.SiteFacts.paymentLink;

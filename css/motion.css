@@ -145,7 +145,7 @@
 .form-group input:hover:not(:focus),
 .form-group select:hover:not(:focus),
 .form-group textarea:hover:not(:focus) {
-  border-color: var(--border);
+  border-color: var(--text-muted);
 }
 
 /* Focus ring expands rather than snapping on. */

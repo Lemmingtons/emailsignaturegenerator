@@ -21,6 +21,7 @@
   --glass-border: #e8e8ed;
   --border: #e5e5ea;
   --border-light: #f0f0f3;
+  --field-border: #d2d2d7;
   --text: #1d1d1f;
   --text-secondary: #6e6e73;
   --text-muted: #737378;
@@ -322,7 +323,7 @@ label:has(+ .file-input-accessible:focus-visible) {
 .form-group textarea {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid transparent;
+  border: 1px solid var(--field-border);
   border-radius: 10px;
   font-size: 15px;
   font-family: var(--font-body);
