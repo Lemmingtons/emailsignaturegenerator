@@ -223,9 +223,12 @@ function organization(html) {
 
 // ── Main ──
 
-export function extractBrand(html, pageUrl) {
+export function extractBrand(html, fetchedUrl) {
   const source = String(html || '').slice(0, 600_000);
   const head = source.slice(0, 300_000);
+  // Relative URLs resolve against <base href> when the page declares one.
+  const baseTag = tags(head, 'base').map(parseAttributes).find((a) => a.href);
+  const pageUrl = (baseTag && absoluteUrl(baseTag.href, fetchedUrl)) || fetchedUrl;
   const org = organization(source);
 
   const metas = {};
@@ -267,8 +270,10 @@ export function extractBrand(html, pageUrl) {
     const hint = /logo|brand/i.test([a.class, a.id, a.alt, a.src, a['data-src']].join(' ')) ||
       /class\s*=\s*["'][^"']*(logo|brand)[^"']*["'][^<]*(<a\b[^>]*>|<span\b[^>]*>|<div\b[^>]*>|<picture\b[^>]*>|<source\b[^>]*>|\s)*$/i.test(before);
     if (!hint) continue;
-    const src = a.src && !/^data:/i.test(a.src) ? a.src : a['data-src'] || (a.srcset || '').split(/\s+/)[0];
-    if (src && !/sprite|placeholder|loading|spinner|pixel|tracking/i.test(src)) pushLogo(src, 'page-logo');
+    // Lazy-loaded logos keep a placeholder in src and the real file in data-src.
+    const src = [a.src, a['data-src'], a['data-lazy-src'], (a.srcset || '').split(/\s+/)[0]]
+      .find((c) => c && !/^data:/i.test(c) && !/sprite|placeholder|loading|spinner|pixel|tracking|blank\.gif/i.test(c));
+    if (src) pushLogo(src, 'page-logo');
     if (logos.length >= 6) break;
   }
 

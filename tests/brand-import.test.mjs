@@ -68,6 +68,10 @@ assert.equal(hostile.phone, '');
 assert.doesNotThrow(() => extractBrand('<a href="tel:%E0%A4">Call</a><title>Acme</title>', 'https://x.example.com/'));
 assert.equal(extractBrand('<a href="tel:%E0%A4">Call</a><title>Acme</title>', 'https://x.example.com/').company, 'Acme');
 
+// <base href> and lazy-loaded logos.
+const based = extractBrand('<base href="/"><img class="logo" src="/img/placeholder.png" data-src="logo.png">', 'https://x.example.com/en/');
+assert.equal(based.logos[0].url, 'https://x.example.com/logo.png');
+
 // Broken JSON-LD and junk never throw.
 assert.doesNotThrow(() => extractBrand('<script type="application/ld+json">{nope</script>', 'https://x.example.com/'));
 assert.doesNotThrow(() => extractBrand('', 'https://x.example.com/'));

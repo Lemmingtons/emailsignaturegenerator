@@ -945,8 +945,16 @@
     let best = -1, bestCount = 0;
     counts.forEach(function(count, key) { if (count > bestCount) { best = key; bestCount = count; } });
     if (best < 0 || bestCount < 20) return '';
-    const channel = function(v) { return ((v << 4) | v).toString(16).padStart(2, '0'); };
-    return ('#' + channel((best >> 8) & 15) + channel((best >> 4) & 15) + channel(best & 15)).toUpperCase();
+    return readableOnWhite([((best >> 8) & 15) * 17, ((best >> 4) & 15) * 17, (best & 15) * 17]);
+  }
+
+  // The primary colour sets names and links, so a light logo colour (yellow,
+  // lime) is darkened until it reaches 3:1 on white, the same rule the server uses.
+  function readableOnWhite(rgb) {
+    const lin = function(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const contrast = function(v) { return 1.05 / (0.2126 * lin(v[0]) + 0.7152 * lin(v[1]) + 0.0722 * lin(v[2]) + 0.05); };
+    for (let i = 0; i < 40 && contrast(rgb) < 3; i++) rgb = rgb.map(function(c) { return Math.round(c * 0.94); });
+    return ('#' + rgb.map(function(c) { return c.toString(16).padStart(2, '0'); }).join('')).toUpperCase();
   }
 
   // ── Photo Crop ──
