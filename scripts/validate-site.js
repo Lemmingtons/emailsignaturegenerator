@@ -531,6 +531,18 @@ assert(landingTitle.length > 0 && landingTitle.length <= 60,
   `Landing title must stay within 60 characters, found ${landingTitle.length}`);
 assert(landingDescription.length > 0 && landingDescription.length <= 160,
   `Landing description must stay within 160 characters, found ${landingDescription.length}`);
+// The WiseStamp yearly figure on the homepage, paywall and llms.txt must match the competitor dataset.
+{
+  const wisestamp = JSON.parse(read('datasets/competitors.json')).find((entry) => entry.slug === 'wisestamp-alternative');
+  assert(Number.isInteger(wisestamp?.entryPlanAnnualUsd), 'competitors.json wisestamp-alternative needs entryPlanAnnualUsd');
+  for (const file of ['index.html', 'generator.html', 'llms.txt']) {
+    const text = read(file);
+    assert(text.includes(`$${wisestamp.entryPlanAnnualUsd}`), `${file} must quote WiseStamp's US$${wisestamp.entryPlanAnnualUsd} a year from competitors.json`);
+    for (const [, amount] of text.matchAll(/\$(\d{2,4})(?:\/year| a year)/g)) {
+      assert(Number(amount) === wisestamp.entryPlanAnnualUsd, `${file} quotes $${amount} a year, but competitors.json says ${wisestamp.entryPlanAnnualUsd}`);
+    }
+  }
+}
 // The landing title and description quote the price; a price change must update them.
 for (const [label, text] of [['title', landingTitle], ['description', landingDescription]]) {
   for (const price of text.match(/US\$\d+(?:\.\d+)?/g) || []) {

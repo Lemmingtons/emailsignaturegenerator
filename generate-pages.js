@@ -416,7 +416,7 @@ ${comparisonHTML}
         </div>
         <div class="feature-item">
           <h3>No Account Needed</h3>
-          <p>Works in your browser. No login, no tracking, no stored data.</p>
+          <p>No login and no tracking. Details stay in your browser unless you host a photo or logo, or save an edit link.</p>
         </div>
         <div class="feature-item">
           <h3>One-Click Copy</h3>

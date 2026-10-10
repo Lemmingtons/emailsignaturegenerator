@@ -102,7 +102,7 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 ## Competitor comparison pages
 
-`datasets/competitors.json` owns the `/seo/*-alternative` pages that `generate-pages.js` writes. Each entry has a `checkedOn` date and source links shown on the page. Competitor prices are literal text, while our own price and template count come from `{{price}}` and `{{templates}}` placeholders filled from `js/site-facts.js`. The monthly SEO audit should re-check each competitor's pricing page, update the entry and `checkedOn`, then run `npm run generate`. The homepage "Why pay $108/year" banner quotes the same WiseStamp Pro+ figure. Do not advertise a money-back guarantee anywhere.
+`datasets/competitors.json` owns the `/seo/*-alternative` pages that `generate-pages.js` writes. Each entry has a `checkedOn` date and source links shown on the page. Competitor prices are literal text, while our own price and template count come from `{{price}}` and `{{templates}}` placeholders filled from `js/site-facts.js`. The monthly SEO audit should re-check each competitor's pricing page, update the entry and `checkedOn`, then run `npm run generate`. The homepage banner, paywall and llms.txt quote the WiseStamp Pro+ yearly figure; `npm run check` fails until they match `entryPlanAnnualUsd` in the dataset. Do not advertise a money-back guarantee anywhere.
 
 ## Motion layer
 
