@@ -153,9 +153,18 @@
       inner += template._complianceBlock(compliance, safeStyle.fontFamily);
     }
 
-    return typeof template._darkSafeWrap === 'function'
+    const html = typeof template._darkSafeWrap === 'function'
       ? template._darkSafeWrap(inner)
       : inner;
+    return markLayoutTables(html);
+  }
+
+  // Every table in a signature is for layout. Without role="presentation",
+  // screen readers announce each one as a data table with rows and columns.
+  // User text is escaped before it reaches the template, so any `<table` here
+  // came from the template itself.
+  function markLayoutTables(html) {
+    return html.replace(/<table(?=[\s>])(?![^>]*\brole=)/gi, '<table role="presentation"');
   }
 
   // Inline `data:` images render in our own preview but are stripped by Gmail and

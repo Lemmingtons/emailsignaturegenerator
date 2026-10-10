@@ -256,7 +256,7 @@ const TEMPLATES = {
       <td style="vertical-align: top;">
         ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}<br/>
         <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
-        ${data.company ? `<br/><span style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 1px;">${this.escapeAttr(data.company)}</span>` : ''}
+        ${data.company ? `<br/><span style="font-size: 11px; color: #6b7280; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 1px;">${this.escapeAttr(data.company)}</span>` : ''}
       </td>
     </tr></table>
   </td></tr>
@@ -383,7 +383,7 @@ const TEMPLATES = {
         <tr><td style="padding-bottom: 8px;">
           ${this._socialRowLarge(data, iconStyle, primaryColor)}
         </td></tr>
-        <tr><td style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">
+        <tr><td style="font-size: 11px; color: #6b7280; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily, ' \u00b7 ')}
         </td></tr>
       </table>
@@ -412,12 +412,12 @@ const TEMPLATES = {
   </td></tr>
   <tr><td style="padding-bottom: 8px;">
     <span style="font-size: 12px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title || '')}</span>
-    ${data.company ? `<br/><span style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
+    ${data.company ? `<br/><span style="font-size: 11px; color: #6b7280; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
   </td></tr>
   <tr><td style="padding-bottom: 6px;">
     ${this._socialRowLarge(data, iconStyle, primaryColor)}
   </td></tr>
-  <tr><td style="font-size: 11px; color: #9ca3af; font-family: ${fontFamily};">
+  <tr><td style="font-size: 11px; color: #6b7280; font-family: ${fontFamily};">
     ${this._contactLine(data, fontFamily, ' \u00b7 ')}
   </td></tr>
 </table>`;
@@ -863,7 +863,7 @@ const TEMPLATES = {
 
       // Micro-labels sit in their own table column rather than an inline-block, so
       // the alignment survives Outlook, which ignores inline-block widths.
-      const label = (text) => `<td width="56" style="width: 56px; padding: 3px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: #9aa3ad; font-family: ${fontFamily}; vertical-align: middle;">${text}</td>`;
+      const label = (text) => `<td width="56" style="width: 56px; padding: 3px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: #6b7280; font-family: ${fontFamily}; vertical-align: middle;">${text}</td>`;
       const rows = [
         data.phone && [label('Phone'), `<a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g, ''))}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a>`],
         data.email && [label('Email'), `<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #4b5563; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>`],
