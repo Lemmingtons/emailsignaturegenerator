@@ -468,10 +468,11 @@ function writePage(filename, html) {
   fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
 }
 
-function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
+function removeObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs = []) {
   const retainedFiles = new Set(
     retainedPlatformSlugs.map((slug) => `email-signature-generator-for-${slug}.html`)
   );
+  const retainedComparisons = new Set(retainedComparisonSlugs.map((slug) => `${slug}.html`));
   let removed = 0;
 
   for (const filename of fs.readdirSync(SEO_DIR)) {
@@ -479,7 +480,10 @@ function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
     const isRemovedPlatformPage = /^email-signature-generator-for-[a-z0-9-]+\.html$/.test(filename)
       && !retainedFiles.has(filename);
 
-    if (isRoleOrIndustryPage || isRemovedPlatformPage) {
+    const isRemovedComparisonPage = /^[a-z0-9-]+-alternative\.html$/.test(filename)
+      && !retainedComparisons.has(filename);
+
+    if (isRoleOrIndustryPage || isRemovedPlatformPage || isRemovedComparisonPage) {
       fs.unlinkSync(path.join(SEO_DIR, filename));
       removed++;
     }
@@ -491,13 +495,21 @@ function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
 function generatePages() {
   ensureOutputDir();
   const platforms = readDataset('platforms.json');
-  const removed = removeObsoleteGeneratedPages(platforms.map((platform) => platform.slug));
+  const competitors = readDataset('competitors.json');
+  for (const competitor of competitors) {
+    if (!/^[a-z0-9-]+-alternative$/.test(competitor.slug)) {
+      throw new Error(`competitors.json slug ${competitor.slug} must end in -alternative`);
+    }
+  }
+  const removed = removeObsoleteGeneratedPages(
+    platforms.map((platform) => platform.slug),
+    competitors.map((competitor) => competitor.slug)
+  );
 
   for (const platform of platforms) {
     writePage(`email-signature-generator-for-${platform.slug}.html`, platformPageHTML(platform));
   }
 
-  const competitors = readDataset('competitors.json');
   for (const competitor of competitors) {
     writePage(`${competitor.slug}.html`, comparisonPageHTML(competitor));
   }

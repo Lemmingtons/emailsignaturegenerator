@@ -11,6 +11,7 @@ _worker.js
 .agent/**
 .wrangler
 .wrangler/**
+datasets/competitors.json
 datasets/industries.json
 datasets/platforms.json
 datasets/roles.json
