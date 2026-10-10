@@ -143,10 +143,41 @@ export function rankColors(css, themeColor) {
 
   const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]).map(([hex]) => hex);
   const theme = normalizeHex(themeColor);
-  const primary = isBrandColor(theme) ? theme : ranked[0] || '';
-  if (!primary) return { primary: '', secondary: '' };
-  const secondary = ranked.find((hex) => hex !== primary && hueDistance(hex, primary) >= 25) || '';
-  return { primary, secondary };
+  const top = isBrandColor(theme) ? theme : ranked[0] || '';
+  if (!top) return { primary: '', secondary: '' };
+
+  // Templates set the name, links and rules in the primary colour, so it has
+  // to read on white. A light brand colour (yellow, lime) becomes the accent,
+  // and the primary is the next readable brand colour, or the same hue darkened.
+  if (contrastOnWhite(top) >= MIN_TEXT_CONTRAST) {
+    const secondary = ranked.find((hex) => hex !== top && hueDistance(hex, top) >= 25) || '';
+    return { primary: top, secondary };
+  }
+  const readable = ranked.find((hex) => hex !== top && contrastOnWhite(hex) >= MIN_TEXT_CONTRAST);
+  return { primary: readable || darkenToContrast(top), secondary: top };
+}
+
+const MIN_TEXT_CONTRAST = 3;
+
+function luminance(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * lin(((n >> 16) & 255) / 255) + 0.7152 * lin(((n >> 8) & 255) / 255) + 0.0722 * lin((n & 255) / 255);
+}
+
+export function contrastOnWhite(hex) {
+  return 1.05 / (luminance(hex) + 0.05);
+}
+
+function darkenToContrast(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  let rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  let out = hex;
+  for (let i = 0; i < 40 && contrastOnWhite(out) < MIN_TEXT_CONTRAST; i++) {
+    rgb = rgb.map((c) => Math.round(c * 0.94));
+    out = '#' + rgb.map((c) => c.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+  return out;
 }
 
 // ── Structured data ──

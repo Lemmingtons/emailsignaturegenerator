@@ -1,7 +1,7 @@
 // Brand-from-website: the HTML extractor and the /api/brand Worker route,
 // with the network mocked so every case is deterministic.
 import assert from 'node:assert/strict';
-import { extractBrand, rankColors, normalizeHex, isBrandColor, pickStylesheet } from '../js/brand-extract.js';
+import { extractBrand, rankColors, normalizeHex, isBrandColor, pickStylesheet, contrastOnWhite } from '../js/brand-extract.js';
 
 const worker = await import(new URL('../_worker.js', import.meta.url).href);
 
@@ -78,6 +78,13 @@ assert.equal(isBrandColor('#111111'), false);
 assert.equal(isBrandColor('#808080'), false);
 assert.equal(rankColors('body{color:#333;background:#fafafa}', '').primary, '');
 assert.equal(rankColors('', '#ffffff').primary, '', 'a white theme-color is not a brand colour');
+
+// A light brand colour (Ray White's yellow) becomes the accent; the primary must read on white.
+const yellow = rankColors('.a{color:#FFE512}.b{color:#FFE512}', '');
+assert.equal(yellow.secondary, '#FFE512');
+assert.ok(contrastOnWhite(yellow.primary) >= 3, 'darkened primary reads on white: ' + yellow.primary);
+const yellowAndBlue = rankColors('.a{color:#FFE512}.b{color:#FFE512}.c{color:#1D4ED8}', '#FFE512');
+assert.deepEqual(yellowAndBlue, { primary: '#1D4ED8', secondary: '#FFE512' });
 
 // ── Worker route ──
 
