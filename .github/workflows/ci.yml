@@ -23,3 +23,5 @@ jobs:
         run: npm run test:frontend
       - name: Live-site monitor logic
         run: npm run test:monitor
+      - name: Brand from website
+        run: npm run test:brand

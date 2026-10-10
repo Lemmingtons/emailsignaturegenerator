@@ -406,7 +406,7 @@ function checkWorkerBehavior() {
     "if (missingGuide.status !== 404 || !(await missingGuide.text()).includes('Page not found')) throw new Error('missing public-pattern page did not render the 404 page');",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
-    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
+    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/js/brand-extract.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
     "for (const pathname of blockedPaths) {",
     "  const before = assetRequests.length;",
     "  const blocked = await worker.default.fetch(new Request('https://example.com' + pathname), env);",

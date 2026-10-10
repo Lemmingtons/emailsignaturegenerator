@@ -2683,3 +2683,22 @@ label:has(+ .file-input-accessible:focus-visible) {
   .pro-panel { flex-direction: column; align-items: stretch; text-align: left; }
   .card-header { flex-wrap: wrap; }
 }
+
+/* ══════════════════════════════════════
+   BRAND FROM WEBSITE
+   ══════════════════════════════════════ */
+.brand-import { margin-bottom: 16px; }
+.brand-import .card-body { padding-bottom: 16px; }
+.brand-import-form { margin-bottom: 0; }
+.brand-import-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.brand-import-row input { flex: 1; min-width: 0; }
+.brand-import-row .btn { min-height: 44px; white-space: nowrap; flex-shrink: 0; }
+.brand-import-row .btn[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+.brand-import .photo-hint { font-size: 12px; display: block; }
+@media (max-width: 420px) {
+  .brand-import-row { flex-direction: column; }
+}
