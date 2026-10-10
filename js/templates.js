@@ -1225,7 +1225,7 @@ const _helpers = {
     const safeAlt = this.escapeAttr(data.company || 'Company logo');
     const a = align || 'left';
     return `<tr><td style="text-align: ${a}; padding-bottom: 8px;">
-          <img src="${safeSrc}" alt="${safeAlt}" style="max-height: 36px; max-width: 170px; display: inline-block; border: 0;" />
+          <img src="${safeSrc}" alt="${safeAlt}"${this._logoSize(data, 36, 170, 'inline-block')} />
         </td></tr>
         <tr><td style="padding-bottom: 12px;">
           <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 1px solid #e5e5ea; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>
@@ -1271,7 +1271,23 @@ const _helpers = {
     const safeSrc = this.escapeUrl(data.logoUrl, 'src');
     if (!safeSrc) return '';
     const safeAlt = this.escapeAttr(data.company || 'Company logo');
-    return `<img src="${safeSrc}" alt="${safeAlt}" style="max-height: ${maxHeight}px; max-width: ${maxWidth}px; display: block; border: 0;" />`;
+    return `<img src="${safeSrc}" alt="${safeAlt}"${this._logoSize(data, maxHeight, maxWidth, 'block')} />`;
+  },
+
+  // Sizing attributes for a logo <img>. When the generator knows the logo's pixel
+  // size it fits it inside the box and states width/height outright, since
+  // classic Outlook ignores CSS max-width/max-height and would draw a 400px
+  // hosted logo at full size. Otherwise only the CSS caps are emitted.
+  _logoSize(data, maxHeight, maxWidth, display) {
+    const w = parseInt(data.logoWidth, 10);
+    const h = parseInt(data.logoHeight, 10);
+    if (w > 0 && h > 0) {
+      const scale = Math.min(1, maxHeight / h, maxWidth / w);
+      const fitW = Math.max(1, Math.round(w * scale));
+      const fitH = Math.max(1, Math.round(h * scale));
+      return ` width="${fitW}" height="${fitH}" style="width: ${fitW}px; height: ${fitH}px; display: ${display}; border: 0;"`;
+    }
+    return ` style="max-height: ${maxHeight}px; max-width: ${maxWidth}px; display: ${display}; border: 0;"`;
   },
 
   // Mixes a #rrggbb colour toward white; `amount` is how much of the colour is

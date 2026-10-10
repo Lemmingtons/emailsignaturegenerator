@@ -512,6 +512,11 @@ for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('
 {
   const catalog = fs.readFileSync(fromRoot('index.html'), 'utf8').match(/"numberOfItems":\s*(\d+)/);
   assert(catalog && Number(catalog[1]) === facts.templateCount, `index.html OfferCatalog numberOfItems must be ${facts.templateCount}`);
+  // llms.txt also quotes per-category counts, so only its overall claims are checked here.
+  for (const match of fs.readFileSync(fromRoot('llms.txt'), 'utf8').matchAll(/\b(\d+) (?:professional |signature )templates\b|\ball (\d+) templates\b/g)) {
+    const n = Number(match[1] || match[2]);
+    assert(n === facts.templateCount, `llms.txt says "${match[0]}" but site-facts has ${facts.templateCount} templates`);
+  }
   const fontFiles = ['index.html', 'generator.html', 'llms.txt', ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`)];
   for (const file of fontFiles) {
     for (const match of fs.readFileSync(fromRoot(file), 'utf8').matchAll(/\b(\d+) email-safe fonts\b/gi)) {

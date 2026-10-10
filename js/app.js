@@ -676,6 +676,9 @@
     // stripped by Gmail and Outlook, so this is a preview aid, never a shippable src.
     document.getElementById('logoUrl').value = '';
     thumb.dataset.previewOnly = dataUri;
+    logoDims.src = dataUri;
+    logoDims.width = canvas.width;
+    logoDims.height = canvas.height;
     renderPreview();
 
     if (!isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) {
@@ -704,6 +707,7 @@
       if (thumb.dataset.previewOnly !== pending) return;
       document.getElementById('logoUrl').value = url;
       delete thumb.dataset.previewOnly;
+      if (logoDims.src === pending) logoDims.src = url;
       setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
       renderPreview();
     } catch (err) {
@@ -1306,6 +1310,12 @@
 
   const ctaState = { url: '', width: 0, height: 0 };
 
+  // Pixel size of the current logo and the src it belongs to. Templates turn it
+  // into explicit width/height attributes, because classic Outlook ignores CSS
+  // max-width/max-height and would otherwise draw a hosted logo at full size.
+  // Tied to its src so a hand-pasted URL never inherits another image's size.
+  const logoDims = { src: '', width: 0, height: 0 };
+
   function setCtaStatus(text, kind) {
     updateLiveStatus(document.getElementById('ctaStatusHint'), text, kind);
   }
@@ -1834,6 +1844,8 @@
       company: get('company'),
       photoUrl: photoUrl,
       logoUrl: logoUrl,
+      logoWidth: logoUrl && logoDims.src === logoUrl ? logoDims.width : 0,
+      logoHeight: logoUrl && logoDims.src === logoUrl ? logoDims.height : 0,
       website: get('website'),
       instagram: get('instagram'),
       facebook: get('facebook'),
@@ -2466,6 +2478,11 @@
         const el = document.getElementById(key);
         if (el) el.value = state.data[key] || '';
       });
+      const savedW = parseInt(state.data.logoWidth, 10);
+      const savedH = parseInt(state.data.logoHeight, 10);
+      logoDims.src = state.data.logoUrl && savedW > 0 && savedH > 0 ? String(state.data.logoUrl) : '';
+      logoDims.width = logoDims.src ? savedW : 0;
+      logoDims.height = logoDims.src ? savedH : 0;
       // Hosted photos and logos come back as plain URLs, so show them as such.
       ['photo', 'logo'].forEach(function(slot) {
         const url = state.data[slot + 'Url'];
