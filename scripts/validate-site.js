@@ -257,6 +257,13 @@ function checkWorkerBehavior() {
     "const iconC = await worker.default.fetch(new Request('https://example.com/i/linkedin-ea580c.png'), env);",
     "const bytesC = new Uint8Array(await iconC.arrayBuffer());",
     "if (iconBytes.length === bytesC.length && iconBytes.every((b, i) => b === bytesC[i])) throw new Error('different tints produced identical icons');",
+    // The circle style is a separate render, not the plain tint under a new name.
+    "const iconD = await worker.default.fetch(new Request('https://example.com/i/linkedin-0891b2-c.png'), env);",
+    "if (iconD.status !== 200 || iconD.headers.get('Content-Type') !== 'image/png') throw new Error('circle icon returned ' + iconD.status);",
+    "const bytesD = new Uint8Array(await iconD.arrayBuffer());",
+    "if (iconBytes.length === bytesD.length && iconBytes.every((b, i) => b === bytesD[i])) throw new Error('circle icon matched the plain icon');",
+    "const badSuffix = await worker.default.fetch(new Request('https://example.com/i/linkedin-0891b2-x.png'), env);",
+    "if (badSuffix.status !== 404) throw new Error('unknown icon suffix returned ' + badSuffix.status);",
     // Reject anything not on the allow-list.
     "const badIcon = await worker.default.fetch(new Request('https://example.com/i/nonsense-0891b2.png'), env);",
     "if (badIcon.status !== 404) throw new Error('unknown icon platform returned ' + badIcon.status);",
@@ -505,6 +512,24 @@ for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('
   const starterLinks = [...read('email-signature-examples.html').matchAll(/href="\/generator\?template=([a-z]+)/g)];
   assert(starterLinks.length >= 52, `email-signature-examples.html should link every example to a starter template, found ${starterLinks.length}`);
   for (const [, id] of starterLinks) assert(TEMPLATES[id], `email-signature-examples.html links to unknown template ${id}`);
+}
+
+// The homepage OfferCatalog and every "N email-safe fonts" claim follow the
+// canonical template count and the generator's font list.
+{
+  const catalog = fs.readFileSync(fromRoot('index.html'), 'utf8').match(/"numberOfItems":\s*(\d+)/);
+  assert(catalog && Number(catalog[1]) === facts.templateCount, `index.html OfferCatalog numberOfItems must be ${facts.templateCount}`);
+  // llms.txt also quotes per-category counts, so only its overall claims are checked here.
+  for (const match of fs.readFileSync(fromRoot('llms.txt'), 'utf8').matchAll(/\b(\d+) (?:professional |signature )templates\b|\ball (\d+) templates\b/g)) {
+    const n = Number(match[1] || match[2]);
+    assert(n === facts.templateCount, `llms.txt says "${match[0]}" but site-facts has ${facts.templateCount} templates`);
+  }
+  const fontFiles = ['index.html', 'generator.html', 'llms.txt', ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`)];
+  for (const file of fontFiles) {
+    for (const match of fs.readFileSync(fromRoot(file), 'utf8').matchAll(/\b(\d+) email-safe fonts\b/gi)) {
+      assert(Number(match[1]) === core.fontFamilies.length, `${file} says "${match[0]}" but the generator offers ${core.fontFamilies.length} fonts`);
+    }
+  }
 }
 
 const llmsCategoryLabels = {

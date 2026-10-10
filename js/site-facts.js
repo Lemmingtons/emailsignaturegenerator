@@ -32,7 +32,7 @@
       display: '$9',
       displayWithCurrency: 'US$9',
     },
-    templateCount: 24,
+    templateCount: 28,
     proTokenStorageKey: 'sig_pro_token',
     maxCardsPerBuyer: 10,
   };

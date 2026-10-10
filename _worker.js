@@ -1053,11 +1053,13 @@ async function handleRequest(request, env) {
     // hosted PNGs. Their colour follows the customer's brand, so there is no fixed
     // file to pre-render — this tints a stored alpha mask instead. Output is a few
     // KB and immutable, so it is served from cache after the first request.
+    // A `-c` suffix renders the "circle" style: a brand-coloured disc with the
+    // glyph knocked out in white.
     if (url.pathname.startsWith('/i/')) {
-      const match = url.pathname.match(/^\/i\/([a-z]+)-([0-9a-fA-F]{6})\.png$/);
+      const match = url.pathname.match(/^\/i\/([a-z]+)-([0-9a-fA-F]{6})(-c)?\.png$/);
       if (!match) return notFoundResponse();
 
-      const [, platform, hex] = match;
+      const [, platform, hex, circle] = match;
       if (!ICON_PLATFORMS.includes(platform)) return notFoundResponse();
 
       const mask = decodeMask(platform);
@@ -1069,7 +1071,9 @@ async function handleRequest(request, env) {
         parseInt(hex.slice(4, 6), 16),
       ];
       const png = PngEncoder.encode(
-        PngEncoder.tintMask(mask, ICON_SIZE, ICON_SIZE, rgb),
+        circle
+          ? PngEncoder.discMask(mask, ICON_SIZE, rgb)
+          : PngEncoder.tintMask(mask, ICON_SIZE, ICON_SIZE, rgb),
         ICON_SIZE,
         ICON_SIZE
       );

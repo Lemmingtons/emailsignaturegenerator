@@ -36,6 +36,7 @@ const SITE_URL = SITE_FACTS.origin;
 const PRICE = SITE_FACTS.proPrice.displayWithCurrency;
 const PRICE_SHORT = SITE_FACTS.proPrice.display;
 const TEMPLATE_COUNT = SITE_FACTS.templateCount;
+const FONT_COUNT = require('./js/generator-core').fontFamilies.length;
 
 function readDataset(name) {
   const filePath = path.join(__dirname, 'datasets', name);
@@ -404,7 +405,7 @@ ${comparisonHTML}
         </div>
         <div class="feature-item">
           <h3>Full Customisation</h3>
-          <p>Custom colours, 8 email-safe fonts, photo shapes, and icon styles.</p>
+          <p>Custom colours, ${FONT_COUNT} email-safe fonts, photo shapes, and icon styles.</p>
         </div>
         <div class="feature-item">
           <h3>Works Everywhere</h3>
