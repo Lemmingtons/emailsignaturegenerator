@@ -507,6 +507,19 @@ for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('
   }
 }
 
+// The homepage OfferCatalog and every "N email-safe fonts" claim follow the
+// canonical template count and the generator's font list.
+{
+  const catalog = fs.readFileSync(fromRoot('index.html'), 'utf8').match(/"numberOfItems":\s*(\d+)/);
+  assert(catalog && Number(catalog[1]) === facts.templateCount, `index.html OfferCatalog numberOfItems must be ${facts.templateCount}`);
+  const fontFiles = ['index.html', 'generator.html', 'llms.txt', ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`)];
+  for (const file of fontFiles) {
+    for (const match of fs.readFileSync(fromRoot(file), 'utf8').matchAll(/\b(\d+) email-safe fonts\b/gi)) {
+      assert(Number(match[1]) === core.fontFamilies.length, `${file} says "${match[0]}" but the generator offers ${core.fontFamilies.length} fonts`);
+    }
+  }
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',

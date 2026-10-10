@@ -26,7 +26,7 @@ No subscription. No recurring charges. No account needed.
 - **Jurisdiction-aware compliance** — auto-fills your regulatory licence number (bar, NPI, AFSL, CRD, GMC, AHPRA, SRA, etc.) and appends the correct country-specific disclaimer (HIPAA, Circular 230, FCA, FINRA Reg BI, Legal Professional Privilege, etc.) for 7 regulated professions across US, UK, AU, and CA
 - 28 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
-- 8 email-safe fonts: Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
+- 9 email-safe fonts: Modern (Segoe UI / San Francisco), Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
 - Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
 - Social icon links: website, LinkedIn, Instagram, Facebook — 2 icon styles (mono, colour)
 - CTA buttons: customisable text and URL (e.g. "Book a Meeting")

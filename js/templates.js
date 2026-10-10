@@ -94,8 +94,8 @@ const TEMPLATES = {
         <tr><td>
           <table cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
             ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a></td></tr>` : ''}
-            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a></td></tr>` : ''}
-            ${data.website && this.escapeUrl(data.website, 'href') ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a></td></tr>` : ''}
+            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a></td></tr>` : ''}
+            ${data.website && this.escapeUrl(data.website, 'href') ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a></td></tr>` : ''}
           </table>
         </td></tr>
         ${this._socialRow(data, iconStyle, primaryColor)}
@@ -311,8 +311,8 @@ const TEMPLATES = {
       if (data.title) lines.push(`<span style="color: #55555a;">${this.escapeAttr(data.title)}</span>`);
       if (data.company) lines.push(`<span style="color: #55555a;">${this.escapeAttr(data.company)}</span>`);
       if (data.phone) lines.push(`<a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap;">${this.escapeAttr(data.phone)}</a>`);
-      if (data.email) lines.push(`<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; white-space: nowrap;">${this.escapeAttr(data.email)}</a>`);
-      if (data.website) { const h = this.escapeUrl(data.website, 'href'); if (h) lines.push(`<a href="${h}" style="color: #55555a; text-decoration: none; white-space: nowrap;">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`); }
+      if (data.email) lines.push(`<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none;">${this.escapeAttr(data.email)}</a>`);
+      if (data.website) { const h = this.escapeUrl(data.website, 'href'); if (h) lines.push(`<a href="${h}" style="color: #55555a; text-decoration: none;">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`); }
 
       const socialLabels = [
         { url: data.linkedin, label: 'LinkedIn' },
@@ -613,8 +613,8 @@ const TEMPLATES = {
   </td></tr>
   <tr><td style="padding-top: 8px; font-size: 13px; color: #55555a; font-family: ${fontFamily};">
     ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a><br/>` : ''}
-    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>` : ''}
-    ${data.website && this.escapeUrl(data.website, 'href') ? `${data.phone || data.email ? '<br/>' : ''}<strong style="color: ${textColor};">Web:</strong> <a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>` : ''}
+    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>` : ''}
+    ${data.website && this.escapeUrl(data.website, 'href') ? `${data.email ? '<br/>' : ''}<strong style="color: ${textColor};">Web:</strong> <a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>` : ''}
   </td></tr>
   ${this._socialRow(data, iconStyle, primaryColor, 8)}
 </table>`;
@@ -866,8 +866,8 @@ const TEMPLATES = {
       const label = (text) => `<td width="56" style="width: 56px; padding: 3px 0; font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: #6e6e73; font-family: ${fontFamily}; vertical-align: middle;">${text}</td>`;
       const rows = [
         data.phone && [label('Phone'), `<a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g, ''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a>`],
-        data.email && [label('Email'), `<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>`],
-        data.website && this.escapeUrl(data.website, 'href') && [label('Web'), `<a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`],
+        data.email && [label('Email'), `<a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>`],
+        data.website && this.escapeUrl(data.website, 'href') && [label('Web'), `<a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>`],
       ].filter(Boolean)
         .map(([lab, value]) => `<tr>${lab}<td style="padding: 3px 0; font-size: 13px; font-family: ${fontFamily}; vertical-align: middle;">${value}</td></tr>`)
         .join('');
@@ -1020,7 +1020,7 @@ const TEMPLATES = {
       ${photo ? `<td width="64" style="width: 64px; vertical-align: middle; padding-right: 14px;">${photo}</td>` : ''}
       <td style="vertical-align: middle;">
         ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 17px; color: ${ink}; font-family: ${fontFamily}; white-space: nowrap;`)}
-        ${data.title || data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title || data.company)}</span>` : ''}
+        ${data.title || data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr([data.title, data.company].filter(Boolean).join(' \u00b7 '))}</span>` : ''}
       </td>
       ${logo ? `<td align="right" style="vertical-align: middle; text-align: right; padding-left: 12px;">${logo}</td>` : ''}
     </tr></table>
@@ -1245,13 +1245,15 @@ const _helpers = {
   },
 
   // Phone, email and website as escaped entries, each able to render itself as a
-  // link that never breaks across lines (a phone number split in half was the
-  // most visible flaw in narrow windows). Entries with an unsafe URL are dropped.
+  // link. Phone numbers never break across lines (one split in half was the most
+  // visible flaw in narrow windows); long emails and addresses may still wrap so
+  // they cannot push the signature wider than a phone inbox. Entries with an
+  // unsafe URL are dropped.
   _contactEntries(data) {
     const entries = [];
     const add = (kind, href, text) => entries.push({
       kind,
-      link: (color, fontFamily) => `<a href="${href}" style="color: ${color}; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${text}</a>`,
+      link: (color, fontFamily) => `<a href="${href}" style="color: ${color}; text-decoration: none;${kind === 'phone' ? ' white-space: nowrap;' : ''} font-family: ${fontFamily};">${text}</a>`,
     });
     if (data.phone) add('phone', this.escapeAttr('tel:' + String(data.phone).replace(/\s/g, '')), this.escapeAttr(data.phone));
     if (data.email) add('email', this.escapeAttr('mailto:' + String(data.email)), this.escapeAttr(data.email));
