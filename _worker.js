@@ -1065,6 +1065,8 @@ async function handleRequest(request, env) {
       });
       await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: sub, updatedAt: Date.now() }), {
         httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        // Lets the cards sitemap skip thin cards without reading every card body.
+        customMetadata: { indexable: isThinCard(card) ? '0' : '1' },
       });
 
       return new Response(
@@ -1149,6 +1151,7 @@ async function handleRequest(request, env) {
           'Cache-Control': 'public, max-age=300',
         },
       }));
+      if (isThinCard(card)) headers.set('X-Robots-Tag', 'noindex, follow');
       return new Response(html, { headers });
     }
 
@@ -1167,8 +1170,11 @@ async function handleRequest(request, env) {
       const slugs = [];
       let cursor;
       do {
-        const listed = await bucket.list({ prefix: 'cards/', limit: 1000, cursor });
+        const listed = await bucket.list({ prefix: 'cards/', limit: 1000, cursor, include: ['customMetadata'] });
         for (const obj of listed.objects) {
+          // Cards published before the flag existed have no metadata and stay
+          // listed until their owner republishes; their page still sends noindex.
+          if (obj.customMetadata && obj.customMetadata.indexable === '0') continue;
           const slug = obj.key.replace(/^cards\//, '').replace(/\.json$/, '');
           if (/^[a-z0-9-]{1,64}$/.test(slug)) slugs.push(slug);
         }
@@ -1345,6 +1351,15 @@ function buildVCard(card) {
   return lines.join('\r\n') + '\r\n';
 }
 
+// A card with only a name (no job title or company), or with no website or
+// profile link, is too thin to help search. Its page still works when shared,
+// but it stays out of the index and the cards sitemap.
+function isThinCard(card) {
+  const hasRole = Boolean(card.title || card.company);
+  const hasLink = CARD_LINK_FIELDS.some((field) => card[field]);
+  return !hasRole || !hasLink;
+}
+
 function renderCardPage(card, slug, origin) {
   const name = escapeHtml(card.fullName);
   const role = [card.title, card.company].filter(Boolean).join(', ');
@@ -1389,6 +1404,7 @@ function renderCardPage(card, slug, origin) {
 <title>${name}${roleSafe ? ' — ' + roleSafe : ''}</title>
 <meta name="description" content="${escapeHtml(description)}">
 <link rel="canonical" href="${escapeHtml(origin)}/c/${escapeHtml(slug)}">
+${isThinCard(card) ? '<meta name="robots" content="noindex, follow">' : ''}
 <meta property="og:type" content="profile">
 <meta property="og:title" content="${name}">
 <meta property="og:description" content="${escapeHtml(description)}">
