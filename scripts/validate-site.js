@@ -406,7 +406,7 @@ function checkWorkerBehavior() {
     "if (missingGuide.status !== 404 || !(await missingGuide.text()).includes('Page not found')) throw new Error('missing public-pattern page did not render the 404 page');",
     "const missingAsset = await worker.default.fetch(new Request('https://example.com/missing.js'), env);",
     "if (missingAsset.status !== 404) throw new Error('missing asset returned ' + missingAsset.status);",
-    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/js/brand-extract.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
+    "const blockedPaths = ['/AGENTS.md', '/.gitignore', '/package.json', '/package-lock.json', '/_worker.js', '/wrangler.toml', '/_headers', '/_redirects', '/NEXT_STEPS.md', '/test.html', '/generate-pages.js', '/update-sitemap.js', '/automation/send-email.js', '/scripts/validate-site.js', '/templates/private.html', '/datasets/industries.json', '/datasets/competitors.json', '/assets/icon-masks/linkedin.bin', '/js/png-encoder.js', '/js/icon-masks.js', '/js/brand-extract.js', '/.git/config', '/.claude/launch.json', '/.agent/artifacts/review/manifest.json', '/.wrangler/state.json'];",
     "for (const pathname of blockedPaths) {",
     "  const before = assetRequests.length;",
     "  const blocked = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
@@ -531,6 +531,24 @@ assert(landingTitle.length > 0 && landingTitle.length <= 60,
   `Landing title must stay within 60 characters, found ${landingTitle.length}`);
 assert(landingDescription.length > 0 && landingDescription.length <= 160,
   `Landing description must stay within 160 characters, found ${landingDescription.length}`);
+// The WiseStamp yearly figure on the homepage, paywall and llms.txt must match the competitor dataset.
+{
+  const wisestamp = JSON.parse(read('datasets/competitors.json')).find((entry) => entry.slug === 'wisestamp-alternative');
+  assert(Number.isInteger(wisestamp?.entryPlanAnnualUsd), 'competitors.json wisestamp-alternative needs entryPlanAnnualUsd');
+  for (const file of ['index.html', 'generator.html', 'llms.txt']) {
+    const text = read(file);
+    assert(text.includes(`$${wisestamp.entryPlanAnnualUsd}`), `${file} must quote WiseStamp's US$${wisestamp.entryPlanAnnualUsd} a year from competitors.json`);
+    for (const [, amount] of text.matchAll(/\$(\d{2,4})(?:\/year| a year)/g)) {
+      assert(Number(amount) === wisestamp.entryPlanAnnualUsd, `${file} quotes $${amount} a year, but competitors.json says ${wisestamp.entryPlanAnnualUsd}`);
+    }
+  }
+}
+// The landing title and description quote the price; a price change must update them.
+for (const [label, text] of [['title', landingTitle], ['description', landingDescription]]) {
+  for (const price of text.match(/US\$\d+(?:\.\d+)?/g) || []) {
+    assert(price === facts.proPrice.displayWithCurrency, `Landing ${label} quotes ${price}, but the canonical price is ${facts.proPrice.displayWithCurrency}`);
+  }
+}
 assert(examplesHtml.includes('<title>52 Email Signature Examples for Gmail &amp; Outlook</title>'),
   'Examples page must target examples without mislabelling them as product templates');
 assert(!examplesHtml.includes('52 Professional Templates'),
@@ -1023,7 +1041,7 @@ assert(/^bucket_name\s*=\s*["']email-sig-photos-sandbox["']$/m.test(sandboxWrang
 assert(/^SANDBOX_MODE\s*=\s*["']true["']$/m.test(sandboxWrangler),
   'Sandbox Worker must emit noindex headers');
 const assetsIgnore = read('.assetsignore');
-for (const privateAsset of ['.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
+for (const privateAsset of ['datasets/competitors.json', '.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
   assert(assetsIgnore.split(/\r?\n/).includes(privateAsset), `.assetsignore must exclude ${privateAsset}`);
 }
 checkWorkerBehavior();

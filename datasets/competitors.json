@@ -1,0 +1,83 @@
+[
+  {
+    "slug": "wisestamp-alternative",
+    "label": "WiseStamp",
+    "seoTitle": "WiseStamp Alternative: Pay {{price}} Once, No Subscription",
+    "metaDescription": "A WiseStamp alternative that builds your signature from your website. Paste your URL, get your logo and colours filled in, and pay {{price}} once.",
+    "heading": "WiseStamp Alternative: Your Signature From Your Website, {{price}} Once",
+    "description": "WiseStamp is a capable signature platform, but it is sold as a subscription. If you need one good signature for yourself rather than a managed rollout across a company, you can build it here from your own website and pay once.",
+    "shortAnswer": "WiseStamp's cheapest plan, Pro+, is US$9 a month billed yearly, which is US$108 a year. Here you type your website, the generator fills in your logo, brand colours and links, and you pay {{price}} once with no renewal. WiseStamp is the better fit if you need central control of many staff signatures, banner campaigns or click analytics.",
+    "datePublished": "2026-10-10",
+    "dateModified": "2026-10-10",
+    "checkedOn": "2026-10-10",
+    "entryPlanAnnualUsd": 108,
+    "keywords": "wisestamp alternative, wisestamp alternative one-time payment, cheaper than wisestamp, email signature generator no subscription, wisestamp pricing",
+    "sources": [
+      { "label": "WiseStamp pricing", "url": "https://www.wisestamp.com/pricing/" },
+      { "label": "WiseStamp AI Designer help article", "url": "https://support.wisestamp.com/en/articles/13832414-how-to-use-the-ai-designer" }
+    ],
+    "rows": [
+      { "feature": "Price", "us": "{{price}} once. No renewal.", "them": "Pro+ is US$9 a month billed yearly (US$108 a year). Business plans start at US$19 a month plus US$1 per employee." },
+      { "feature": "Branding setup", "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.", "them": "Upload your logo or a sample image, or describe the design in a prompt. Colours are suggested from the uploaded image." },
+      { "feature": "Templates", "us": "All {{templates}} templates included.", "them": "Pro+ lists 3 templates, plus a template studio." },
+      { "feature": "Photo and logo hosting", "us": "Included. Images are hosted so they load in every inbox.", "them": "Included." },
+      { "feature": "Installing the signature", "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.", "them": "One-click sync to Gmail and Outlook." },
+      { "feature": "Account", "us": "None needed to build or buy.", "them": "Account required, 14-day trial." },
+      { "feature": "Team management and analytics", "us": "Not offered.", "them": "Business plans add central management, banner campaigns and analytics." }
+    ],
+    "whenTheyFit": [
+      "You manage signatures for a whole company and want them pushed out from Google Workspace or Microsoft 365.",
+      "You run banner campaigns in signatures and want click analytics.",
+      "You want one-click sync rather than copying and pasting once."
+    ],
+    "whenWeFit": [
+      "You need a signature for yourself or a few people and do not want another subscription.",
+      "Your brand already lives on your website and you would rather not re-upload a logo and hunt for hex codes.",
+      "You want animated photo and call-to-action effects that fall back safely in Outlook."
+    ],
+    "faqs": [
+      { "q": "Is there a WiseStamp alternative without a subscription?", "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal. You can build and preview with all {{templates}} templates before paying." },
+      { "q": "How much does WiseStamp cost per year?", "a": "On 10 October 2026, WiseStamp's pricing page listed Pro+ at US$9 a month billed yearly, which is US$108 a year. Business plans started at US$19 a month plus US$1 per employee, billed yearly. Check their pricing page for current figures." },
+      { "q": "Can I copy my branding from my website instead of uploading a logo?", "a": "Yes. Type your website in the generator and it reads your logo, brand colours, company name, phone number and social links from the page. You can change anything it fills in." }
+    ]
+  },
+  {
+    "slug": "hubspot-email-signature-generator-alternative",
+    "label": "HubSpot's Email Signature Generator",
+    "seoTitle": "HubSpot Email Signature Generator Alternative",
+    "metaDescription": "Need more than HubSpot's free signature templates? Build from your website with your logo and colours filled in, hosted images and {{templates}} templates, {{price}} once.",
+    "heading": "HubSpot Email Signature Generator Alternative",
+    "description": "HubSpot's generator is free and fine for a plain signature. It leaves the fiddly parts to you: finding somewhere to host your logo, copying image links, and matching your brand colours by hand. This generator does those for you from your website.",
+    "shortAnswer": "HubSpot's email signature generator is free with 12 templates, but you host your logo yourself and paste in its link. Here you type your website and your logo, brand colours and links are filled in, images are hosted for you, and there are {{templates}} templates. Building and previewing is free; using the signature costs {{price}} once.",
+    "datePublished": "2026-10-10",
+    "dateModified": "2026-10-10",
+    "checkedOn": "2026-10-10",
+    "keywords": "hubspot email signature generator alternative, hubspot signature generator, free email signature generator alternative, email signature with logo hosting",
+    "sources": [
+      { "label": "HubSpot email signature generator", "url": "https://www.hubspot.com/email-signature-generator" }
+    ],
+    "rows": [
+      { "feature": "Price", "us": "Free to build and preview. {{price}} once to use it.", "them": "Free." },
+      { "feature": "Branding setup", "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.", "them": "Enter details and pick colours by hand." },
+      { "feature": "Templates", "us": "{{templates}} templates.", "them": "12 templates." },
+      { "feature": "Photo and logo hosting", "us": "Included. Images are hosted so they load in every inbox.", "them": "Not included. Host the image yourself and paste its link." },
+      { "feature": "Animated photo and buttons", "us": "Included, with a still fallback for Outlook.", "them": "Not listed on its page." },
+      { "feature": "Edit later", "us": "Save a private link and reopen the signature on any device.", "them": "Not listed on its page." },
+      { "feature": "Account", "us": "None needed.", "them": "None needed." }
+    ],
+    "whenTheyFit": [
+      "You want a plain signature, already have your logo hosted, and do not want to pay anything.",
+      "You already use HubSpot and want to stay inside its tools."
+    ],
+    "whenWeFit": [
+      "You want your logo and brand colours pulled from your website instead of set up by hand.",
+      "You do not have anywhere to host your logo or headshot.",
+      "You want more templates, animation, or a link to edit the signature later."
+    ],
+    "faqs": [
+      { "q": "Is HubSpot's email signature generator really free?", "a": "Yes. On 10 October 2026 HubSpot described it as free with no registration, and you supply a hosted link for your logo." },
+      { "q": "Why would I pay for a signature generator when HubSpot's is free?", "a": "Mainly to save setup time and get images that load reliably. This generator fills in your branding from your website and hosts your logo and photo, for {{price}} once." },
+      { "q": "Can I try it before paying?", "a": "Yes. You can build and preview with all {{templates}} templates, including the website import, before paying." }
+    ]
+  }
+]

@@ -111,7 +111,59 @@ function platformPageHTML({
   });
 }
 
-function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
+function fillFacts(value) {
+  if (typeof value === 'string') {
+    return value.replace(/\{\{price\}\}/g, PRICE).replace(/\{\{templates\}\}/g, String(TEMPLATE_COUNT));
+  }
+  if (Array.isArray(value)) return value.map(fillFacts);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, fillFacts(inner)]));
+  }
+  return value;
+}
+
+function comparisonPageHTML(entry) {
+  const competitor = fillFacts(entry);
+  for (const field of ['seoTitle', 'metaDescription', 'heading', 'checkedOn', 'sources', 'rows', 'whenTheyFit', 'whenWeFit', 'faqs']) {
+    if (!competitor[field] || (Array.isArray(competitor[field]) && !competitor[field].length)) {
+      throw new Error(`competitors.json ${competitor.slug} missing ${field}`);
+    }
+  }
+
+  return pageHTML({
+    url: `${SITE_URL}/seo/${competitor.slug}`,
+    title: competitor.seoTitle,
+    metaDesc: competitor.metaDescription,
+    h1: competitor.heading,
+    slug: competitor.slug,
+    intro: competitor.description,
+    shortAnswer: competitor.shortAnswer,
+    datePublished: competitor.datePublished,
+    dateModified: competitor.dateModified,
+    keywords: competitor.keywords,
+    ctaText: 'Build Your Signature From Your Website',
+    brandForm: true,
+    seoLabel: competitor.label,
+    comparison: {
+      label: competitor.label,
+      rows: competitor.rows,
+      checkedOn: competitor.checkedOn,
+      sources: competitor.sources,
+    },
+    guideSections: [
+      { heading: `When ${competitor.label} is the better choice`, items: competitor.whenTheyFit },
+      { heading: 'When this generator is the better choice', items: competitor.whenWeFit },
+    ],
+    relatedLinks: [
+      { href: '/generator', label: 'Email signature generator', description: 'type your website and see your signature' },
+      { href: '/#pricing', label: 'Pricing', description: `${PRICE} once, no subscription` },
+      { href: '/health-check', label: 'Signature health check', description: 'test any signature for Gmail, Outlook and dark mode' },
+    ],
+    faqs: competitor.faqs,
+  });
+}
+
+function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks, comparison, brandForm }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -181,6 +233,31 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
         ${relatedLinks.map(link => `<li><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>${link.description ? ` — ${escapeHtml(link.description)}` : ''}</li>`).join('\n        ')}
       </ul>
     </section>` : '';
+
+  const comparisonHTML = comparison ? `
+    <section class="comparison-section" aria-label="Comparison">
+      <h2>Email Signature Generator vs ${escapeHtml(comparison.label)}</h2>
+      <div class="comparison-scroll">
+        <table class="comparison-table">
+          <thead>
+            <tr><th scope="col"></th><th scope="col">Email Signature Generator</th><th scope="col">${escapeHtml(comparison.label)}</th></tr>
+          </thead>
+          <tbody>
+            ${comparison.rows.map(row => `<tr><th scope="row">${escapeHtml(row.feature)}</th><td>${escapeHtml(row.us)}</td><td>${escapeHtml(row.them)}</td></tr>`).join('\n            ')}
+          </tbody>
+        </table>
+      </div>
+      <p class="comparison-note">${escapeHtml(comparison.label)} details checked on <time datetime="${escapeHtml(comparison.checkedOn)}">${escapeHtml(formatLongDate(comparison.checkedOn))}</time> from ${comparison.sources.map(source => `<a href="${escapeHtml(source.url)}" rel="nofollow noopener" target="_blank">${escapeHtml(source.label)}</a>`).join(' and ')}. Prices and features change, so check their site before you decide.</p>
+    </section>` : '';
+
+  const ctaActionHTML = brandForm ? `<form class="seo-brand-form" action="/generator" method="get">
+        <label for="seoSite">Your company website</label>
+        <div class="seo-brand-row">
+          <input type="text" id="seoSite" name="site" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourcompany.com" maxlength="300">
+          <button type="submit" class="btn btn-primary">Build my signature</button>
+        </div>
+        <p class="seo-brand-alt">No website? <a href="/generator">Start from a template</a></p>
+      </form>` : `<a href="/generator" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>`;
 
   const faqHTML = faqs.map(f => `
         <details class="instructions">
@@ -258,6 +335,24 @@ ${dateModified ? `  <!-- Article Schema -->
     .troubleshooting-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
     .troubleshooting-item h3 { font-size: 0.95rem; margin-bottom: 6px; }
     .troubleshooting-item p { font-size: 0.88rem; color: var(--text-secondary); margin: 0; }
+    .comparison-section { margin: 40px 0; }
+    .comparison-section h2 { font-size: 1.3rem; margin-bottom: 14px; }
+    .comparison-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+    .comparison-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 520px; }
+    .comparison-table th, .comparison-table td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); line-height: 1.55; }
+    .comparison-table thead th { background: var(--surface); font-size: 0.9rem; }
+    .comparison-table tbody th { font-weight: 600; width: 24%; }
+    .comparison-table td:nth-child(2) { background: var(--surface); }
+    .comparison-table tr:last-child th, .comparison-table tr:last-child td { border-bottom: 0; }
+    .comparison-note { font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; line-height: 1.6; }
+    .seo-brand-form { max-width: 520px; margin: 0 auto; text-align: left; }
+    .seo-brand-form label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+    .seo-brand-row { display: flex; gap: 8px; }
+    .seo-brand-row input { flex: 1; min-width: 0; padding: 12px 14px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); font-family: inherit; }
+    .seo-brand-row .btn { white-space: nowrap; }
+    .seo-brand-alt { font-size: 0.85rem; margin: 10px 0 0 !important; text-align: center; }
+    @media (max-width: 600px) { .comparison-table { min-width: 0; font-size: 0.82rem; } .comparison-table th, .comparison-table td { padding: 10px 8px; } .comparison-table tbody th { width: 22%; } }
+    @media (max-width: 480px) { .seo-brand-row { flex-direction: column; } }
   </style>
 </head>
 <body>
@@ -289,16 +384,20 @@ ${dateModified ? `  <!-- Article Schema -->
 ${dateModified ? `    <p class="post-meta">By Email Signature Generator · Updated <time datetime="${escapeHtml(dateModified)}">${escapeHtml(formatLongDate(dateModified))}</time></p>
 ` : ''}${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
 ` : ''}    <p class="intro">${escapeHtml(intro)}</p>
-
+${comparisonHTML}
     <div class="seo-cta-box">
       <h2>${escapeHtml(ctaText)} — Free</h2>
       <p>${TEMPLATE_COUNT} templates. Full customisation. Works with Gmail and Outlook.<br>Free to build and preview. ${PRICE_SHORT} once when you are ready to use it.</p>
-      <a href="/generator" class="btn btn-primary" aria-label="${escapeHtml(ctaText)}">${escapeHtml(ctaText)}</a>
+      ${ctaActionHTML}
     </div>
 
     <section aria-label="Features">
       <h2>Everything you need in an email signature</h2>
       <div class="features-grid">
+        <div class="feature-item">
+          <h3>Brand From Your Website</h3>
+          <p>Type your website and your logo, brand colours and social links are filled in.</p>
+        </div>
         <div class="feature-item">
           <h3>${TEMPLATE_COUNT} Templates</h3>
           <p>Professional, Creative, Minimal, Social-First, Sales, and Industry designs.</p>
@@ -312,12 +411,12 @@ ${dateModified ? `    <p class="post-meta">By Email Signature Generator · Updat
           <p>Table-based HTML for Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients.</p>
         </div>
         <div class="feature-item">
-          <h3>$9 One-Time</h3>
-          <p>No subscription. Pay once, use forever. 30-day money-back guarantee.</p>
+          <h3>${PRICE_SHORT} One-Time</h3>
+          <p>No subscription. Pay once, use forever.</p>
         </div>
         <div class="feature-item">
           <h3>No Account Needed</h3>
-          <p>Works in your browser. No login, no tracking, no stored data.</p>
+          <p>No login and no tracking. Details stay in your browser unless you host a photo or logo, or save an edit link.</p>
         </div>
         <div class="feature-item">
           <h3>One-Click Copy</h3>
@@ -369,10 +468,11 @@ function writePage(filename, html) {
   fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
 }
 
-function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
+function removeObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs = []) {
   const retainedFiles = new Set(
     retainedPlatformSlugs.map((slug) => `email-signature-generator-for-${slug}.html`)
   );
+  const retainedComparisons = new Set(retainedComparisonSlugs.map((slug) => `${slug}.html`));
   let removed = 0;
 
   for (const filename of fs.readdirSync(SEO_DIR)) {
@@ -380,7 +480,10 @@ function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
     const isRemovedPlatformPage = /^email-signature-generator-for-[a-z0-9-]+\.html$/.test(filename)
       && !retainedFiles.has(filename);
 
-    if (isRoleOrIndustryPage || isRemovedPlatformPage) {
+    const isRemovedComparisonPage = /^[a-z0-9-]+-alternative\.html$/.test(filename)
+      && !retainedComparisons.has(filename);
+
+    if (isRoleOrIndustryPage || isRemovedPlatformPage || isRemovedComparisonPage) {
       fs.unlinkSync(path.join(SEO_DIR, filename));
       removed++;
     }
@@ -392,16 +495,30 @@ function removeObsoleteGeneratedPages(retainedPlatformSlugs) {
 function generatePages() {
   ensureOutputDir();
   const platforms = readDataset('platforms.json');
-  const removed = removeObsoleteGeneratedPages(platforms.map((platform) => platform.slug));
+  const competitors = readDataset('competitors.json');
+  for (const competitor of competitors) {
+    if (!/^[a-z0-9-]+-alternative$/.test(competitor.slug)) {
+      throw new Error(`competitors.json slug ${competitor.slug} must end in -alternative`);
+    }
+  }
+  const removed = removeObsoleteGeneratedPages(
+    platforms.map((platform) => platform.slug),
+    competitors.map((competitor) => competitor.slug)
+  );
 
   for (const platform of platforms) {
     writePage(`email-signature-generator-for-${platform.slug}.html`, platformPageHTML(platform));
   }
 
+  for (const competitor of competitors) {
+    writePage(`${competitor.slug}.html`, comparisonPageHTML(competitor));
+  }
+
   console.log(`Removed ${removed} obsolete generated SEO pages`);
   console.log(`Generated ${platforms.length} retained platform guides`);
+  console.log(`Generated ${competitors.length} comparison pages`);
   console.log('Output directory: ./seo/');
-  return { generated: platforms.length, removed, platforms: platforms.length };
+  return { generated: platforms.length + competitors.length, removed, platforms: platforms.length, comparisons: competitors.length };
 }
 
 if (require.main === module) {
@@ -409,6 +526,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  comparisonPageHTML,
   generatePages,
   pageHTML,
   platformPageHTML,
