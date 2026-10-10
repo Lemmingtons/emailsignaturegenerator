@@ -112,6 +112,12 @@ assert.equal(res.headers.get('Cache-Control'), 'no-store, private');
 const read = await res.json();
 assert.equal(read.design.template, 'classic');
 assert.ok(!('owner' in read), 'the buyer entitlement id is never returned');
+res = await call(env, '/api/team', bearer(owner.token, { method: 'POST', body: JSON.stringify({ ...design, template: 'classic', data: { ...design.data, fullName: 'Boss', email: 'boss@example.com' }, compliance: { country: 'AU', fieldValues: { lic: '123' } } }) }));
+const stripped = (await (await call(env, `/api/team/${team.id}`)).json()).design;
+assert.equal(stripped.data.fullName, undefined, 'the buyer\'s own details are never stored in the team design');
+assert.equal(stripped.data.email, undefined);
+assert.equal(stripped.data.company, 'Harbour Plumbing');
+assert.deepEqual(stripped.compliance, { country: 'AU', fieldValues: {} });
 assert.equal((await call(env, '/api/team/nope')).status, 404);
 assert.equal((await call(env, '/api/team/' + 'A'.repeat(43))).status, 404);
 

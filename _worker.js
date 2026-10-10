@@ -518,6 +518,7 @@ async function teamIdFor(sub, secret) {
   return base64url(signature);
 }
 
+const TEAM_PERSONAL_FIELDS = ['fullName', 'nameLinkUrl', 'title', 'phone', 'email', 'photoUrl', 'linkedin'];
 const TEAM_CLAIM = /^[A-Za-z0-9_-]{22,64}$/;
 
 async function teamClaimHash(claim) {
@@ -574,6 +575,13 @@ async function teamResponse(request, env, url) {
       return apiError(400, 'invalid_json');
     }
     if (!design || typeof design !== 'object' || Array.isArray(design)) return apiError(400, 'invalid_json');
+    // Anyone with the team link can read the design, so never store the
+    // buyer's own details in it, whatever the client sends.
+    if (design.data && typeof design.data === 'object') {
+      for (const field of TEAM_PERSONAL_FIELDS) delete design.data[field];
+    }
+    if (design.compliance && typeof design.compliance === 'object') design.compliance.fieldValues = {};
+    delete design.nameLink;
 
     const id = await teamIdFor(sub, env.PRO_SIGNING_SECRET);
     // Colleagues may claim seats while the buyer saves, so carry the seat count
