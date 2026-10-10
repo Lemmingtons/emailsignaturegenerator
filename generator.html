@@ -132,6 +132,24 @@
         </section>
 
         <section class="builder-step" id="step-details" role="tabpanel" aria-labelledby="step-tab-details">
+        <!-- Brand from website -->
+        <div class="card brand-import" id="brandImport">
+          <div class="card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            Start from your website
+          </div>
+          <div class="card-body">
+            <form class="brand-import-form form-group" id="brandImportForm" novalidate>
+              <label for="brandSite" class="brand-import-label">Your company website</label>
+              <div class="brand-import-row">
+                <input type="text" id="brandSite" inputmode="url" autocomplete="url" spellcheck="false" placeholder="acme.com" aria-describedby="brandImportStatus">
+                <button type="submit" class="btn btn-primary btn-sm" id="brandImportBtn">Fill from my site</button>
+              </div>
+              <span class="photo-hint" id="brandImportStatus" role="status" aria-live="polite" aria-atomic="true">We read your public homepage for your logo, brand colours, company name and social links. You can change anything after.</span>
+            </form>
+          </div>
+        </div>
+
         <!-- Contact Details -->
         <div class="card">
           <div class="card-header">

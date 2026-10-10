@@ -10,6 +10,7 @@
     "test:automation": "bash automation/test-automation.sh",
     "test:frontend": "node tests/frontend-accessibility.test.js",
     "test:monitor": "node tests/monitor-site.test.js",
+    "test:brand": "node tests/brand-import.test.mjs",
     "monitor": "node scripts/monitor-site.js"
   }
 }

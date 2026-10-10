@@ -42,6 +42,7 @@
     bindCtaAnimation();
     bindDividerAnimation();
     bindCardControls();
+    bindBrandImport();
     initPreviewDock();
     initPreviewModes();
     initBuilderSteps();
@@ -53,6 +54,7 @@
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const savedSignatureId = params.get('s');
+    const brandSite = params.get('site');
 
     if (token) {
       localStorage.setItem(FACTS.proTokenStorageKey, token);
@@ -65,6 +67,9 @@
     // Reopening a saved signature is independent of Pro status — the link itself
     // is the credential.
     restoreSignatureFromLink(savedSignatureId);
+
+    // Landing pages link here as /generator?site=acme.com to start from a brand.
+    if (brandSite && !savedSignatureId) runBrandImport(brandSite.slice(0, 300));
   });
 
   // ── Category Tabs ──
@@ -649,54 +654,75 @@
     return canvas;
   }
 
+  // Shared by uploads and the website import: draws the logo to a PNG canvas,
+  // shows it as a preview, and hosts it straight away for Pro buyers.
+  function applyLogoImage(img) {
+    const thumb = document.getElementById('logoPreviewThumb');
+    if (!thumb) return null;
+
+    const canvas = logoCanvasFromImage(img);
+    const dataUri = canvas.toDataURL('image/png');
+
+    const preview = document.createElement('img');
+    preview.src = dataUri;
+    preview.alt = 'Logo';
+    thumb.replaceChildren(preview);
+    thumb.classList.add('has-logo');
+
+    const removeBtn = document.getElementById('logoRemoveBtn');
+    if (removeBtn) removeBtn.style.display = '';
+
+    // Only fall back to the inline preview when no hosted URL is set. Data URIs are
+    // stripped by Gmail and Outlook, so this is a preview aid, never a shippable src.
+    document.getElementById('logoUrl').value = '';
+    thumb.dataset.previewOnly = dataUri;
+    renderPreview();
+
+    if (!isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) {
+      setLogoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
+      return canvas;
+    }
+
+    hostPreviewLogo();
+    return canvas;
+  }
+
+  // Hosts the preview-only logo for Pro buyers. Also runs when Pro unlocks after
+  // a logo was already added (a website import can finish before the token
+  // check does). If the logo is replaced or removed mid-upload, the result is dropped.
+  async function hostPreviewLogo() {
+    const thumb = document.getElementById('logoPreviewThumb');
+    const pending = thumb && thumb.dataset.previewOnly;
+    if (!pending || !isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) return;
+
+    setLogoStatus('Uploading hosted logo...');
+    try {
+      const binary = atob(pending.split(',')[1]);
+      const bytes = Uint8Array.from(binary, function(c) { return c.charCodeAt(0); });
+      const blob = new Blob([bytes], { type: 'image/png' });
+      const url = await uploadImageBlob(blob, 'logo');
+      if (thumb.dataset.previewOnly !== pending) return;
+      document.getElementById('logoUrl').value = url;
+      delete thumb.dataset.previewOnly;
+      setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
+      renderPreview();
+    } catch (err) {
+      if (thumb.dataset.previewOnly === pending) setLogoStatus(CORE.describeUploadError(err.message), 'error');
+    }
+  }
+
   function handleLogoUpload(input) {
     const file = input.files[0];
     if (!file) return;
 
-    const thumb = document.getElementById('logoPreviewThumb');
-    if (!thumb) return;
+    if (!document.getElementById('logoPreviewThumb')) return;
 
     const blobUrl = URL.createObjectURL(file);
     const img = new Image();
 
     img.onload = function() {
       URL.revokeObjectURL(blobUrl);
-
-      const canvas = logoCanvasFromImage(img);
-      const dataUri = canvas.toDataURL('image/png');
-
-      const preview = document.createElement('img');
-      preview.src = dataUri;
-      preview.alt = 'Logo';
-      thumb.replaceChildren(preview);
-      thumb.classList.add('has-logo');
-
-      const removeBtn = document.getElementById('logoRemoveBtn');
-      if (removeBtn) removeBtn.style.display = '';
-
-      // Only fall back to the inline preview when no hosted URL is set. Data URIs are
-      // stripped by Gmail and Outlook, so this is a preview aid, never a shippable src.
-      document.getElementById('logoUrl').value = '';
-      thumb.dataset.previewOnly = dataUri;
-      renderPreview();
-
-      if (!isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) {
-        setLogoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
-        return;
-      }
-
-      setLogoStatus('Uploading hosted logo...');
-      canvas.toBlob(async function(blob) {
-        try {
-          const url = await uploadImageBlob(blob, 'logo');
-          document.getElementById('logoUrl').value = url;
-          delete thumb.dataset.previewOnly;
-          setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
-          renderPreview();
-        } catch (err) {
-          setLogoStatus(CORE.describeUploadError(err.message), 'error');
-        }
-      }, 'image/png');
+      applyLogoImage(img);
     };
 
     img.onerror = function() {
@@ -723,6 +749,212 @@
 
     defaultLogoStatus();
     renderPreview();
+  }
+
+  // ── Brand from website ──
+  // Reads the visitor's homepage through /api/brand and fills the form: empty
+  // text fields only (never overwriting what they typed), the brand colours, and
+  // the logo when none is set yet.
+
+  const BRAND_ERRORS = {
+    invalid_url: 'That doesn\'t look like a website address. Try something like acme.com.',
+    rate_limited: 'Too many lookups in a row. Wait a minute and try again.',
+    site_unreachable: 'We couldn\'t read that site. Some sites block automated visits. Add your logo and colours by hand below.',
+    site_not_html: 'That address isn\'t a web page we can read. Try your homepage, like acme.com.',
+  };
+
+  function setBrandStatus(text, kind) {
+    updateLiveStatus(document.getElementById('brandImportStatus'), text, kind);
+  }
+
+  function bindBrandImport() {
+    const form = document.getElementById('brandImportForm');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      runBrandImport(document.getElementById('brandSite').value);
+    });
+  }
+
+  function brandHostLabel(value) {
+    try {
+      return new URL(/^[a-z]+:\/\//i.test(value) ? value : 'https://' + value).hostname.replace(/^www\./, '');
+    } catch {
+      return value;
+    }
+  }
+
+  async function runBrandImport(rawValue) {
+    const value = String(rawValue || '').trim();
+    const input = document.getElementById('brandSite');
+    const btn = document.getElementById('brandImportBtn');
+    if (!value) {
+      setBrandStatus('Type your website first, like acme.com.', 'error');
+      if (input) input.focus();
+      return;
+    }
+    if (input && input.value !== value) input.value = value;
+
+    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Reading...'; }
+    setBrandStatus('Reading ' + brandHostLabel(value) + '...');
+    try {
+      const res = await fetch('/api/brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: value }),
+      });
+      const data = await res.json().catch(function() { return {}; });
+      if (!res.ok || !data.ok) {
+        setBrandStatus(BRAND_ERRORS[data.code] || 'Something went wrong reading that site. Try again, or fill in the details below.', 'error');
+        return;
+      }
+      const added = await applyBrand(data);
+      if (!added.length) {
+        setBrandStatus('We reached ' + brandHostLabel(data.site) + ' but found nothing new to add. Fill in the details below.');
+        return;
+      }
+      setBrandStatus('Added ' + joinList(added) + ' from ' + brandHostLabel(data.site) + '. Check them below and change anything you like.', 'success');
+    } catch {
+      setBrandStatus('We couldn\'t reach the server. Check your connection and try again.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = 'Fill from my site'; }
+    }
+  }
+
+  function joinList(items) {
+    if (items.length < 2) return items.join('');
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
+
+  function fillIfEmpty(id, value) {
+    const el = document.getElementById(id);
+    if (!el || !value || el.value.trim()) return false;
+    el.value = value;
+    clearFieldError(id);
+    return true;
+  }
+
+  function setStyleColor(key, hex) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
+    style[key] = hex;
+    const picker = document.getElementById(key);
+    const hexInput = document.getElementById(key + 'Hex');
+    if (picker) picker.value = hex.toLowerCase();
+    if (hexInput) hexInput.value = hex;
+    if (key === 'primaryColor') { schedulePhotoRebuild('accent'); scheduleCtaRebuild(); scheduleDividerRebuild(); }
+    return true;
+  }
+
+  function openOptionalSection(name) {
+    const section = document.querySelector('details[data-optional="' + name + '"]');
+    if (section) section.open = true;
+  }
+
+  async function applyBrand(data) {
+    const added = [];
+    if (fillIfEmpty('company', data.company)) added.push('your company name');
+    if (fillIfEmpty('phone', data.phone)) added.push('phone');
+    const websiteAdded = fillIfEmpty('website', String(data.site || '').replace(/\/$/, ''));
+    const social = data.social || {};
+    const socialCount = ['linkedin', 'instagram', 'facebook', 'google']
+      .filter(function(key) { return fillIfEmpty(key, social[key]); }).length;
+    if (websiteAdded || socialCount) {
+      openOptionalSection('social');
+      const links = socialCount + (websiteAdded ? 1 : 0);
+      added.push(links === 1 ? '1 link' : links + ' links');
+    }
+
+    const colors = data.colors || {};
+    let colorAdded = setStyleColor('primaryColor', colors.primary);
+    if (setStyleColor('secondaryColor', colors.secondary)) colorAdded = true;
+
+    const thumb = document.getElementById('logoPreviewThumb');
+    const hasLogo = document.getElementById('logoUrl').value.trim() || (thumb && thumb.dataset.previewOnly);
+    if (data.logo && data.logo.dataUri && !hasLogo) {
+      const img = await loadBrandLogo(data.logo);
+      if (img) {
+        const canvas = applyLogoImage(img);
+        openOptionalSection('logo');
+        added.unshift('your logo');
+        // No colours on the site itself: borrow the logo's strongest colour.
+        if (!colorAdded && canvas) colorAdded = setStyleColor('primaryColor', dominantColor(canvas));
+      }
+    }
+    if (colorAdded) added.push('brand colours');
+
+    renderPreview();
+    return added;
+  }
+
+  // SVG logos often carry only a viewBox, which draws at zero size on a canvas.
+  // Give them explicit dimensions large enough to rasterise crisply.
+  function sizedSvgDataUri(dataUri) {
+    try {
+      const bytes = Uint8Array.from(atob(dataUri.split(',')[1]), function(c) { return c.charCodeAt(0); });
+      const text = new TextDecoder().decode(bytes);
+      const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+      const svg = doc.documentElement;
+      if (!svg || svg.nodeName.toLowerCase() !== 'svg') return '';
+      const box = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+      let w = parseFloat(svg.getAttribute('width'));
+      let h = parseFloat(svg.getAttribute('height'));
+      if (/%/.test(svg.getAttribute('width') || '') || !(w > 0 && h > 0)) {
+        if (box.length === 4 && box[2] > 0 && box[3] > 0) { w = box[2]; h = box[3]; } else { w = 300; h = 100; }
+      }
+      const scale = LOGO_MAX_EDGE / Math.max(w, h);
+      svg.setAttribute('width', String(Math.round(w * scale)));
+      svg.setAttribute('height', String(Math.round(h * scale)));
+      if (!svg.getAttribute('viewBox')) svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+    } catch {
+      return '';
+    }
+  }
+
+  function loadBrandLogo(logo) {
+    const src = logo.type === 'image/svg+xml' ? sizedSvgDataUri(logo.dataUri) : logo.dataUri;
+    if (!src) return Promise.resolve(null);
+    return new Promise(function(resolve) {
+      const img = new Image();
+      img.onload = function() { resolve(img.naturalWidth && img.naturalHeight ? img : null); };
+      img.onerror = function() { resolve(null); };
+      img.src = src;
+    });
+  }
+
+  // Most common saturated colour in the logo, ignoring transparent, grey,
+  // near-white and near-black pixels.
+  function dominantColor(canvas) {
+    let pixels;
+    try {
+      pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    } catch {
+      return '';
+    }
+    const counts = new Map();
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i + 3] < 200) continue;
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      const max = Math.max(r, g, b) / 255, min = Math.min(r, g, b) / 255;
+      const l = (max + min) / 2;
+      const s = max === min ? 0 : (max - min) / (1 - Math.abs(2 * l - 1));
+      if (s < 0.25 || l < 0.18 || l > 0.78) continue;
+      const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    let best = -1, bestCount = 0;
+    counts.forEach(function(count, key) { if (count > bestCount) { best = key; bestCount = count; } });
+    if (best < 0 || bestCount < 20) return '';
+    return readableOnWhite([((best >> 8) & 15) * 17, ((best >> 4) & 15) * 17, (best & 15) * 17]);
+  }
+
+  // The primary colour sets names and links, so a light logo colour (yellow,
+  // lime) is darkened until it reaches 3:1 on white, the same rule the server uses.
+  function readableOnWhite(rgb) {
+    const lin = function(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const contrast = function(v) { return 1.05 / (0.2126 * lin(v[0]) + 0.7152 * lin(v[1]) + 0.0722 * lin(v[2]) + 0.05); };
+    for (let i = 0; i < 40 && contrast(rgb) < 3; i++) rgb = rgb.map(function(c) { return Math.round(c * 0.94); });
+    return ('#' + rgb.map(function(c) { return c.toString(16).padStart(2, '0'); }).join('')).toUpperCase();
   }
 
   // ── Photo Crop ──
@@ -2432,6 +2664,7 @@
     // Refresh upload hint copy now that hosting is unlocked
     defaultPhotoStatus();
     defaultLogoStatus();
+    hostPreviewLogo();
     setCardStatus('Tick the box above, then publish whenever you\'re ready.');
     syncCardControls();
 

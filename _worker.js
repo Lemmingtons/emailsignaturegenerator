@@ -5,6 +5,7 @@
 import PngEncoder from './js/png-encoder.js';
 import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
 import './js/site-facts.js';
+import { extractBrand, pickStylesheet, rankColors, normalizeHex } from './js/brand-extract.js';
 
 const FACTS = globalThis.SiteFacts;
 
@@ -570,6 +571,193 @@ async function fetchStaticAsset(env, request) {
   }
 }
 
+// ── Brand from website ──────────────────────────────────────────────────────
+// Reads a company's public homepage and returns its name, logo, colours, social
+// links and phone so the generator can fill them in. Nothing is stored. Every
+// hop (including redirects) is re-checked so the fetch can only reach a public
+// http(s) host on a standard port, never an IP literal or this site itself.
+
+const BRAND_UA = 'Mozilla/5.0 (compatible; EmailSignatureGeneratorBot/1.0; +https://emailsignaturegenerator.ai/generator)';
+const BRAND_HTML_MAX = 600_000;
+const BRAND_CSS_MAX = 250_000;
+const BRAND_LOGO_MAX = 1_000_000;
+
+function brandTargetAllowed(url) {
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
+  if (url.username || url.password) return false;
+  if (url.port && url.port !== '80' && url.port !== '443') return false;
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  if (!host.includes('.') || host.length > 253) return false;
+  if (/^[\d.]+$/.test(host) || host.includes(':') || host.startsWith('[')) return false;
+  if (/(^|\.)(localhost|local|internal|intranet|lan|home|corp|test|example|invalid|onion|arpa)$/.test(host)) return false;
+  const own = FACTS.domain;
+  if (host === own || host.endsWith('.' + own) || host.endsWith('.workers.dev')) return false;
+  return true;
+}
+
+function normalizeBrandSite(input) {
+  let value = String(input || '').trim();
+  if (!value || value.length > 300 || /\s/.test(value)) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = 'https://' + value;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if (!brandTargetAllowed(url)) return null;
+  url.hash = '';
+  return url;
+}
+
+async function readCapped(response, max) {
+  if (!response.body) return new Uint8Array(0);
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  while (total < max) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    total += value.byteLength;
+  }
+  try { await reader.cancel(); } catch { /* already closed */ }
+  const out = new Uint8Array(Math.min(total, max));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const take = Math.min(chunk.byteLength, out.length - offset);
+    if (take <= 0) break;
+    out.set(chunk.subarray(0, take), offset);
+    offset += take;
+  }
+  return { bytes: out, truncated: total > max };
+}
+
+async function brandFetch(target, accept, max, timeoutMs) {
+  let url = target;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    for (let hop = 0; hop < 5; hop++) {
+      if (!brandTargetAllowed(url)) return null;
+      const response = await fetch(url.href, {
+        redirect: 'manual',
+        signal: controller.signal,
+        headers: { 'User-Agent': BRAND_UA, Accept: accept, 'Accept-Language': 'en' },
+      });
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('Location');
+        if (!location) return null;
+        url = new URL(location, url);
+        continue;
+      }
+      if (!response.ok) return null;
+      const body = await readCapped(response, max);
+      if (!body) return null;
+      return { url, contentType: (response.headers.get('Content-Type') || '').toLowerCase(), ...body };
+    }
+    return null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function sniffLogoType(bytes) {
+  const b = bytes;
+  if (b.length < 12) return '';
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image/gif';
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  const head = new TextDecoder().decode(b.subarray(0, 1024)).replace(/^﻿/, '').trimStart();
+  if (head.startsWith('<') && /<svg[\s>]/i.test(head)) return 'image/svg+xml';
+  return '';
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+// Tries logo candidates in order, but never past the deadline, so a page
+// full of dead logo links can't hold the whole lookup open.
+async function fetchBrandLogo(candidates, deadline) {
+  for (const candidate of candidates.slice(0, 4)) {
+    const remaining = deadline - Date.now();
+    if (remaining < 500) break;
+    let url;
+    try { url = new URL(candidate.url); } catch { continue; }
+    const got = await brandFetch(url, 'image/svg+xml,image/png,image/webp,image/jpeg,image/gif;q=0.8', BRAND_LOGO_MAX, Math.min(4000, remaining));
+    if (!got || got.truncated) continue;
+    const type = sniffLogoType(got.bytes);
+    if (!type) continue;
+    return { dataUri: `data:${type};base64,${bytesToBase64(got.bytes)}`, type, source: candidate.kind };
+  }
+  return null;
+}
+
+// POST { url } from the generator; GET ?url= for quick checks from a browser.
+async function brandResponse(request, env, url) {
+  if (request.method !== 'POST' && request.method !== 'GET') return apiError(405, 'method_not_allowed');
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const limited = await enforceRateLimit(env, `brand:${ip}`);
+  if (limited) return limited;
+
+  let site = url.searchParams.get('url');
+  if (request.method === 'POST') {
+    try {
+      const body = await request.json();
+      site = body && body.url;
+    } catch {
+      return apiError(400, 'invalid_json');
+    }
+  }
+  const target = normalizeBrandSite(site);
+  if (!target) return apiError(400, 'invalid_url');
+
+  const started = Date.now();
+  const page = await brandFetch(target, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', BRAND_HTML_MAX, 7000);
+  if (!page) return apiError(422, 'site_unreachable');
+  if (page.contentType && !/html|xml/.test(page.contentType)) return apiError(422, 'site_not_html');
+
+  const html = new TextDecoder().decode(page.bytes);
+  const brand = extractBrand(html, page.url.href);
+  const stylesheet = pickStylesheet(brand.stylesheets, page.url.href);
+
+  const [css, manifest, logo] = await Promise.all([
+    stylesheet ? brandFetch(new URL(stylesheet), 'text/css,*/*;q=0.1', BRAND_CSS_MAX, 4000) : null,
+    !brand.themeColor && brand.manifestUrl ? brandFetch(new URL(brand.manifestUrl), 'application/manifest+json,application/json', 100_000, 3000) : null,
+    fetchBrandLogo(brand.logos, started + 12000),
+  ]);
+
+  let themeColor = brand.themeColor;
+  if (!themeColor && manifest) {
+    try {
+      themeColor = normalizeHex(JSON.parse(new TextDecoder().decode(manifest.bytes)).theme_color);
+    } catch { /* not JSON */ }
+  }
+  const cssText = brand.inlineCss + '\n' + (css && /css|text\/plain/.test(css.contentType || 'text/css') ? new TextDecoder().decode(css.bytes) : '');
+  const colors = rankColors(cssText, themeColor);
+
+  return new Response(JSON.stringify({
+    ok: true,
+    site: page.url.origin + '/',
+    company: brand.company,
+    phone: brand.phone,
+    social: brand.social,
+    colors,
+    logo,
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+  });
+}
+
 // ── Main Worker ──────────────────────────────────────────────────────────────
 
 export default {
@@ -646,6 +834,8 @@ async function handleRequest(request, env) {
     if (replacementPath) return permanentRedirect(url, replacementPath);
 
     if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
+
+    if (url.pathname === '/api/brand') return brandResponse(request, env, url);
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {

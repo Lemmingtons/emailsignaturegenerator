@@ -91,6 +91,15 @@ Note: the `rounded` and `square` icon styles render identically to `mono`. The o
 
 The id is 256 bits of randomness and acts as a bearer capability: anyone holding the link can read the saved name, email and phone. It is never derived from the customer ID, and responses are `no-store`. The generator restores from `?s={id}` on load.
 
+## Brand from website
+
+- `POST /api/brand` with `{ url }` (or `GET /api/brand?url=`) reads a public homepage and returns `{ site, company, phone, social, colors: { primary, secondary }, logo: { dataUri, type, source } | null }`. It is free, needs no token, and stores nothing.
+- `js/brand-extract.js` does the parsing: Organization structured data, `og:site_name`, `theme-color`, the web manifest, logo `<img>`s, icons, social links, `tel:` links, and colour ranking over inline CSS plus one same-site stylesheet. It is server-only and blocked from static serving.
+- Every fetch, including each redirect hop, must be http(s) on port 80/443 to a named public host. IP literals, `localhost`, internal TLDs, this site and `*.workers.dev` are refused. Bodies are capped (HTML 600 KB, CSS 250 KB, logo 1 MB), and lookups are rate limited per IP on the shared `RATE_LIMIT` binding.
+- The logo comes back as a data URI, never served from our origin. The generator rasterises it to PNG, including SVG logos, and then follows the normal logo path: preview only for free users, hosted on R2 for Pro.
+- The generator fills only empty fields, but always applies the colours. `/generator?site=acme.com` runs the import on load, for landing pages to link to.
+- Sites that block bots or render their branding entirely in JavaScript return little. The UI says so and the visitor fills in the fields by hand.
+
 ## Motion layer
 
 `css/motion.css` and `js/motion.js` add scroll reveals and micro-interactions. Reveal styles are scoped behind `.js-motion`, which the script adds to `<html>` itself — so if the script fails, nothing is ever hidden. `js/motion.js` also runs a scroll sweep alongside the IntersectionObserver, because an observer alone never fires for content the reader jumps straight past (anchor links, restored scroll), which would leave it invisible.
