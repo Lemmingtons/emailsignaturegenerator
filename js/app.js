@@ -2142,6 +2142,7 @@
         complianceData = data;
         populateComplianceCountries();
         bindComplianceInputs();
+        if (pendingCompliance) applyComplianceSelection(pendingCompliance);
       })
       .catch(err => {
         console.warn('Compliance data unavailable:', err.message);
@@ -2249,6 +2250,34 @@
     if (discPreview) discPreview.textContent = countryEntry.disclaimer || '';
 
     renderPreview();
+  }
+
+  // A team design carries the buyer's country, profession and disclaimer
+  // choice. Registration numbers are each person's own, so they start empty.
+  let pendingCompliance = null;
+  function applyComplianceSelection(saved) {
+    if (!saved || typeof saved !== 'object') return;
+    if (!complianceData) {
+      pendingCompliance = saved;
+      return;
+    }
+    pendingCompliance = null;
+    const country = typeof saved.country === 'string' ? saved.country : '';
+    if (!complianceData.countries.some(c => c.code === country)) return;
+    const role = typeof saved.role === 'string' ? saved.role : '';
+    const roleEntry = Object.prototype.hasOwnProperty.call(complianceData.roles, role) ? complianceData.roles[role] : null;
+    complianceState.country = country;
+    complianceState.role = roleEntry && roleEntry.countries[country] ? role : '';
+    complianceState.fieldValues = {};
+    complianceState.includeDisclaimer = saved.includeDisclaimer !== false;
+    const countrySel = document.getElementById('complianceCountry');
+    const roleSel = document.getElementById('complianceRole');
+    const disclaimerChk = document.getElementById('complianceIncludeDisclaimer');
+    if (countrySel) countrySel.value = complianceState.country;
+    populateComplianceRoles();
+    if (roleSel) roleSel.value = complianceState.role;
+    if (disclaimerChk) disclaimerChk.checked = complianceState.includeDisclaimer;
+    renderComplianceFields();
   }
 
   function bindComplianceInputs() {
@@ -2790,6 +2819,7 @@
       if (!resp.ok) throw new Error('not_found');
       const team = await resp.json();
       applySignatureState(team.design);
+      applyComplianceSelection(team.design && team.design.compliance);
       clearPersonalFields();
       renderPreview();
       teamId = id;
@@ -2822,12 +2852,31 @@
     rate_limited: 'Too many tries. Wait a minute and try again.',
   };
 
+  // A random id this browser keeps per team, so retrying a join returns the
+  // same seat instead of taking another.
+  let teamClaim = '';
+  function teamClaimId() {
+    const key = 'sig_team_claim:' + teamId;
+    try { teamClaim = localStorage.getItem(key) || teamClaim; } catch {}
+    if (!/^[A-Za-z0-9_-]{22,64}$/.test(teamClaim)) {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      teamClaim = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    }
+    try { localStorage.setItem(key, teamClaim); } catch {}
+    return teamClaim;
+  }
+
   async function joinTeam() {
     const hint = document.getElementById('teamJoinHint');
     if (!teamId) return;
     updateLiveStatus(hint, 'Joining...');
     try {
-      const resp = await fetch('/api/team/' + encodeURIComponent(teamId) + '/join', { method: 'POST' });
+      const resp = await fetch('/api/team/' + encodeURIComponent(teamId) + '/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim: teamClaimId() }),
+      });
       let body = {};
       try { body = await resp.json(); } catch {}
       if (!resp.ok || !body.token) {
@@ -2861,6 +2910,14 @@
     }
     TEAM_PERSONAL_FIELDS.forEach(function(key) { design.data[key] = ''; });
     design.nameLink = { target: 'none', cardSlug: '' };
+    if (design.compliance) {
+      design.compliance = {
+        country: complianceState.country,
+        role: complianceState.role,
+        includeDisclaimer: complianceState.includeDisclaimer,
+        fieldValues: {},
+      };
+    }
     updateLiveStatus(hint, 'Saving the team design...');
     try {
       const resp = await fetch('/api/team', {

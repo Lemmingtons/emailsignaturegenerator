@@ -21,6 +21,7 @@ function memoryBucket() {
     async get(key) { return wrap(store.get(key)); },
     async head(key) { return wrap(store.get(key)); },
     async put(key, body, options = {}) {
+      if (this.beforePut) await this.beforePut(key);
       const current = store.get(key);
       if (options.onlyIf && options.onlyIf.etagMatches && (!current || current.etag !== options.onlyIf.etagMatches)) return null;
       const entry = { body: String(body), etag: `e${++version}`, customMetadata: options.customMetadata };
@@ -140,6 +141,47 @@ res = await call(env, `/api/card/${card.slug}`, bearer(owner.token, { method: 'D
 assert.equal(res.status, 403);
 res = await call(env, `/api/card/${card.slug}`, bearer(members[0], { method: 'DELETE' }));
 assert.equal(res.status, 200);
+
+// Colleagues' photos live in their own folders, so one cannot replace another's.
+const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0]);
+const uploadAs = async (token) => (await (await call(env, '/api/upload-image', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer ' + token, 'X-Image-Type': 'photo' },
+  body: png,
+})).json()).url;
+const photoUrls = [await uploadAs(owner.token), await uploadAs(members[0]), await uploadAs(members[1])]
+  .map((u) => new URL(u).pathname);
+assert.equal(new Set(photoUrls).size, 3, 'buyer and each colleague get separate photo links');
+
+// ── Retrying a join keeps the same seat ──
+const envClaim = makeEnv();
+const ownerClaim = await buy(envClaim, 'plink_team123', 7);
+const teamClaim = await (await call(envClaim, '/api/team', bearer(ownerClaim.token, { method: 'POST', body: JSON.stringify(design) }))).json();
+const joinWith = (claim) => call(envClaim, `/api/team/${teamClaim.id}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claim }) });
+const claimA = 'a'.repeat(32);
+const first = await (await joinWith(claimA)).json();
+const again = await (await joinWith(claimA)).json();
+assert.equal(first.seat, 2);
+assert.equal(again.seat, 2, 'the same claim gets the same seat back');
+assert.equal((await (await joinWith('b'.repeat(32))).json()).seat, 3);
+assert.equal((await (await call(envClaim, `/api/team/${teamClaim.id}`)).json()).members, 2);
+assert.equal((await joinWith('short')).status, 200, 'a malformed claim just takes a new seat');
+assert.equal((await call(envClaim, `/api/team/${teamClaim.id}/join`, { method: 'POST', body: '{' })).status, 400);
+
+// A buyer saving the design while a colleague joins does not undo the join.
+const bucketClaim = envClaim.UPLOADS;
+let raced = false;
+bucketClaim.beforePut = async (key) => {
+  if (raced || !key.startsWith('teams/')) return;
+  raced = true;
+  assert.equal((await joinWith('c'.repeat(32))).status, 200);
+};
+res = await call(envClaim, '/api/team', bearer(ownerClaim.token, { method: 'POST', body: JSON.stringify({ ...design, template: 'classic' }) }));
+assert.equal(res.status, 200);
+bucketClaim.beforePut = null;
+const afterRace = await (await call(envClaim, `/api/team/${teamClaim.id}`)).json();
+assert.equal(afterRace.members, 4, 'the seat claimed mid-save is kept');
+assert.equal(afterRace.design.template, 'classic');
 
 // ── Refund ends the whole team ──
 const env2 = makeEnv();

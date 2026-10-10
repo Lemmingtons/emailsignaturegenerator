@@ -518,6 +518,18 @@ async function teamIdFor(sub, secret) {
   return base64url(signature);
 }
 
+const TEAM_CLAIM = /^[A-Za-z0-9_-]{22,64}$/;
+
+async function teamClaimHash(claim) {
+  const digest = await crypto.subtle.digest('SHA-256', textToUint8Array(`team-claim:${claim}`));
+  return base64url(digest).slice(0, 32);
+}
+
+function teamClaims(team) {
+  const claims = team && team.claims;
+  return claims && typeof claims === 'object' && !Array.isArray(claims) ? { ...claims } : {};
+}
+
 function teamKey(id) {
   return `teams/${id}.json`;
 }
@@ -564,19 +576,36 @@ async function teamResponse(request, env, url) {
     if (!design || typeof design !== 'object' || Array.isArray(design)) return apiError(400, 'invalid_json');
 
     const id = await teamIdFor(sub, env.PRO_SIGNING_SECRET);
-    const previous = await readJsonObject(bucket, teamKey(id));
-    const record = {
-      version: 1,
-      owner: sub,
-      seats: TEAM_SEATS,
-      members: previous && Number.isInteger(previous.members) ? previous.members : 0,
-      design,
-      updatedAt: Date.now(),
-    };
-    await bucket.put(teamKey(id), JSON.stringify(record), {
-      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-    });
-    return jsonResponse({ id, url: `${url.origin}/generator?team=${id}`, seats: record.seats, members: record.members });
+    // Colleagues may claim seats while the buyer saves, so carry the seat count
+    // over from the copy just read and only write if it is still the latest.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const object = await bucket.get(teamKey(id));
+      let previous = null;
+      if (object) {
+        try {
+          previous = JSON.parse(await object.text());
+        } catch {
+          previous = null;
+        }
+      }
+      const record = {
+        version: 1,
+        owner: sub,
+        seats: TEAM_SEATS,
+        members: previous && Number.isInteger(previous.members) ? previous.members : 0,
+        claims: teamClaims(previous),
+        design,
+        updatedAt: Date.now(),
+      };
+      const written = await bucket.put(teamKey(id), JSON.stringify(record), {
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        onlyIf: object && object.etag ? { etagMatches: object.etag } : undefined,
+      });
+      if (written !== null) {
+        return jsonResponse({ id, url: `${url.origin}/generator?team=${id}`, seats: record.seats, members: record.members });
+      }
+    }
+    return apiError(409, 'team_busy');
   }
 
   const match = url.pathname.match(/^\/api\/team\/([A-Za-z0-9_-]+)(\/join)?$/);
@@ -598,6 +627,21 @@ async function teamResponse(request, env, url) {
   const limited = await enforceRateLimit(env, `team-join:${id}:${ip}`);
   if (limited) return limited;
 
+  // The browser sends a random claim id it keeps for this team, so a retry
+  // (a lost response, a double click) gets the same seat back.
+  let claim = '';
+  const rawJoin = await request.text();
+  if (rawJoin) {
+    if (rawJoin.length > 1000) return apiError(413, 'too_large');
+    try {
+      const parsed = JSON.parse(rawJoin);
+      claim = parsed && typeof parsed.claim === 'string' && TEAM_CLAIM.test(parsed.claim) ? parsed.claim : '';
+    } catch {
+      return apiError(400, 'invalid_json');
+    }
+  }
+  const claimHash = claim ? await teamClaimHash(claim) : '';
+
   const object = await bucket.get(teamKey(id));
   if (!object) return apiError(404, 'not_found');
   let team;
@@ -614,18 +658,22 @@ async function teamResponse(request, env, url) {
   if (!entitlement || entitlement.status !== 'active' || entitlement.plan !== 'team') {
     return apiError(403, 'team_inactive');
   }
+  const claims = teamClaims(team);
   const members = Number.isInteger(team.members) ? team.members : 0;
-  // The buyer uses one of the pack's seats themselves.
-  if (members >= team.seats - 1) return apiError(409, 'team_full', String(team.seats));
-
-  const member = members + 1;
-  // Only write if nobody else claimed a seat since this read, so two colleagues
-  // joining at once cannot both take the last seat.
-  const written = await bucket.put(teamKey(id), JSON.stringify({ ...team, members: member, updatedAt: Date.now() }), {
-    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-    onlyIf: object.etag ? { etagMatches: object.etag } : undefined,
-  });
-  if (written === null) return apiError(409, 'team_busy');
+  let member = claimHash && Number.isInteger(claims[claimHash]) ? claims[claimHash] : 0;
+  if (!member) {
+    // The buyer uses one of the pack's seats themselves.
+    if (members >= team.seats - 1) return apiError(409, 'team_full', String(team.seats));
+    member = members + 1;
+    if (claimHash) claims[claimHash] = member;
+    // Only write if nobody else claimed a seat since this read, so two colleagues
+    // joining at once cannot both take the last seat.
+    const written = await bucket.put(teamKey(id), JSON.stringify({ ...team, members: member, claims, updatedAt: Date.now() }), {
+      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+      onlyIf: object.etag ? { etagMatches: object.etag } : undefined,
+    });
+    if (written === null) return apiError(409, 'team_busy');
+  }
 
   const now = Math.floor(Date.now() / 1000);
   const hundredYears = 100 * 365 * 24 * 60 * 60;
@@ -958,6 +1006,11 @@ async function healthResponse(env) {
     rateLimit: Boolean(env.RATE_LIMIT && typeof env.RATE_LIMIT.limit === 'function'),
     storage: false,
   };
+  // Once the site sells the team pack, the Worker must recognise its link, or
+  // buyers would pay and never get access.
+  if (FACTS.teamPaymentLink) {
+    checks.teamPaymentLink = planForPaymentLink(env.STRIPE_TEAM_PAYMENT_LINK_ID, env) === 'team';
+  }
   const bucket = uploadBucket(env);
   if (bucket) {
     try {
@@ -1181,7 +1234,9 @@ async function handleRequest(request, env) {
       const sniffed = sniffImage(buf);
       if (!sniffed) return apiError(415, 'unsupported_format');
 
-      const uploadId = await publicUploadId(sub, env.PRO_SIGNING_SECRET);
+      // Team colleagues share the buyer's entitlement, so each gets their own
+      // folder; a buyer's id is unchanged, so existing image links keep working.
+      const uploadId = await publicUploadId(cardOwnerId(verified.payload), env.PRO_SIGNING_SECRET);
 
       // Best-effort delete other-extension siblings so each slot holds at most one file
       await Promise.all(
