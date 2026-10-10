@@ -120,6 +120,12 @@
 
   function addCheck(def) { checks.push(def); }
 
+  // Messages are rendered as HTML, so text quoted from the audited signature
+  // is escaped first.
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   addCheck({
     id: 'size',
     label: 'Total HTML size',
@@ -193,7 +199,7 @@
       if (problems.length === 0) {
         return { severity: 'info', message: `${decorative.length} decorative element(s) (dividers, punctuation) have low contrast. Cosmetic but consider darkening for low-vision users.`, fix: 'Darken divider characters (e.g. #9ca3af → #4b5563) so they remain visible in both themes.' };
       }
-      const top = problems.slice(0, 3).map(p => `"${p.text.slice(0, 30)}" (${p.hex} → ${p.ratio}:1${p.onDark ? ' on dark bg' : ''})`).join('; ');
+      const top = problems.slice(0, 3).map(p => `"${escapeHtml(p.text.slice(0, 30))}" (${p.hex} → ${p.ratio}:1${p.onDark ? ' on dark bg' : ''})`).join('; ');
       const severity = problems.some(p => parseFloat(p.ratio) < 3) ? 'critical' : 'warning';
       return { severity, message: `${problems.length} colour pair(s) fail WCAG AA 4.5:1. Examples: ${top}.`, fix: 'Darken foreground text or add an explicit background-color. Use #4b5563 for muted grays instead of #6b7280.' };
     },
@@ -295,16 +301,47 @@
     },
   });
 
+  // HTML void elements never take a closing tag, and these close implicitly
+  // when a sibling or their parent ends, so neither counts as unclosed.
+  const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+  const OPTIONAL_CLOSE_TAGS = new Set(['p', 'li', 'dt', 'dd', 'tr', 'td', 'th', 'thead', 'tbody', 'tfoot', 'option', 'colgroup', 'html', 'head', 'body']);
+
+  // Walks the tags with a stack. Parsing as XML instead would reject valid
+  // HTML such as <br> and <img ...> without a trailing slash.
+  function unbalancedTags(html) {
+    const source = html
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
+    const stack = [];
+    const problems = [];
+    const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*?(\/?)>/g;
+    let m;
+    while ((m = tagRe.exec(source))) {
+      const name = m[2].toLowerCase();
+      if (VOID_TAGS.has(name) || m[3] === '/') continue;
+      if (!m[1]) { stack.push(name); continue; }
+      const at = stack.lastIndexOf(name);
+      if (at === -1) { problems.push(`stray </${name}>`); continue; }
+      stack.splice(at).slice(1).forEach(open => {
+        if (!OPTIONAL_CLOSE_TAGS.has(open)) problems.push(`unclosed <${open}>`);
+      });
+    }
+    stack.forEach(open => {
+      if (!OPTIONAL_CLOSE_TAGS.has(open)) problems.push(`unclosed <${open}>`);
+    });
+    return problems;
+  }
+
   addCheck({
     id: 'valid',
     label: 'Valid HTML',
     run(ctx) {
-      // Parse as XML to actually catch unclosed tags and malformed markup
-      const xmlParser = new DOMParser();
-      const xmlDoc = xmlParser.parseFromString(ctx.html, 'application/xml');
-      const xmlErrs = xmlDoc.querySelectorAll('parsererror');
-      if (xmlErrs.length) return { severity: 'critical', message: 'Parser errors detected — the HTML is malformed and will render unpredictably.', fix: 'Close every tag, escape & characters as &amp;, and quote attribute values.' };
-      return { severity: 'pass', message: 'HTML parses cleanly.' };
+      const problems = unbalancedTags(ctx.fragment);
+      if (problems.length) {
+        const examples = [...new Set(problems)].slice(0, 3).map(p => p.replace(/</g, '&lt;').replace(/>/g, '&gt;')).join(', ');
+        return { severity: 'critical', message: `Tags don't match up (${examples}), so email clients may render it unpredictably.`, fix: 'Close every tag you open, in the reverse order you opened them.' };
+      }
+      return { severity: 'pass', message: 'Every tag is opened and closed in order.' };
     },
   });
 
@@ -395,6 +432,10 @@
     };
   }
 
+  // The generator runs the same audit on the signature being built, so the
+  // engine is exposed and the page wiring below only runs on /health-check.
+  window.SignatureHealthCheck = Object.freeze({ runAudit, scoreCategory });
+
   // ── UI wiring ──────────────────────────────────────────
   const input = document.getElementById('signatureInput');
   const runBtn = document.getElementById('runCheckBtn');
@@ -412,6 +453,8 @@
   const countInfo = document.getElementById('countInfo');
   const countPass = document.getElementById('countPass');
   const rerunBtn = document.getElementById('rerunBtn');
+
+  if (!input || !runBtn) return;
 
   const SEVERITY_ICONS = {
     critical: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',

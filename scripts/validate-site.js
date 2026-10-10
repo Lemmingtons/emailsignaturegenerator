@@ -807,6 +807,8 @@ assert(examplesHtml.includes('"dateModified": "2026-07-29"'),
         `${id} (${iconStyle}) emits an inline data: image, which Gmail and Outlook strip`);
       assert(!/src="[^"]*\.svg"/i.test(html),
         `${id} (${iconStyle}) references an SVG, which Outlook cannot render`);
+      assert(!/<table(?![^>]*\brole="presentation")[\s>]/i.test(html),
+        `${id} (${iconStyle}) has a layout table without role="presentation"`);
     }
   }
 
