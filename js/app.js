@@ -68,9 +68,29 @@
     // is the credential.
     restoreSignatureFromLink(savedSignatureId);
 
+    // The examples page links here as /generator?template=realestate&role=Real+Estate+Agent
+    // to start from a layout that suits the job.
+    if (!savedSignatureId) applyStarterParams(params);
+
     // Landing pages link here as /generator?site=acme.com to start from a brand.
     if (brandSite && !savedSignatureId) runBrandImport(brandSite.slice(0, 300));
   });
+
+  // Starter links only pick a template and fill an empty job title; anything the
+  // visitor has typed wins.
+  function applyStarterParams(params) {
+    const template = params.get('template');
+    if (template && Object.prototype.hasOwnProperty.call(TEMPLATES, template)) {
+      currentTemplate = template;
+      renderTemplateGrid();
+    }
+
+    const role = (params.get('role') || '').trim().slice(0, 80);
+    const titleInput = document.getElementById('title');
+    if (role && titleInput && !titleInput.value) titleInput.value = role;
+
+    if (template || role) renderPreview();
+  }
 
   // ── Category Tabs ──
   function renderCategoryTabs() {

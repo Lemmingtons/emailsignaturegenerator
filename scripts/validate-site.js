@@ -500,6 +500,13 @@ for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('
   }
 }
 
+// Example starter links must open a template that exists.
+{
+  const starterLinks = [...read('email-signature-examples.html').matchAll(/href="\/generator\?template=([a-z]+)/g)];
+  assert(starterLinks.length >= 52, `email-signature-examples.html should link every example to a starter template, found ${starterLinks.length}`);
+  for (const [, id] of starterLinks) assert(TEMPLATES[id], `email-signature-examples.html links to unknown template ${id}`);
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',
