@@ -2878,6 +2878,6 @@ label:has(+ .file-input-accessible:focus-visible) {
 }
 
 @media (max-width: 600px) {
-  .site-logo { font-size: 15px; white-space: nowrap; }
+  .site-logo { font-size: 15px; line-height: 1.15; min-width: 0; }
   .site-nav .nav-cta { white-space: nowrap; padding: 8px 14px; font-size: 13px; }
 }
