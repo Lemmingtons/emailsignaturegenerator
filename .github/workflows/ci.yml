@@ -21,3 +21,5 @@ jobs:
         run: npm run check
       - name: Frontend accessibility regressions
         run: npm run test:frontend
+      - name: Live-site monitor logic
+        run: npm run test:monitor
