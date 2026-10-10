@@ -24,6 +24,13 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
+// "2026-10-09" -> "9 October 2026", matching the blog's byline format.
+function formatLongDate(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return `${day} ${months[month - 1]} ${year}`;
+}
+
 const SEO_DIR = path.join(__dirname, 'seo');
 const SITE_URL = SITE_FACTS.origin;
 const PRICE = SITE_FACTS.proPrice.displayWithCurrency;
@@ -37,7 +44,7 @@ function readDataset(name) {
     throw new Error(`${name} must contain an array`);
   }
   data.forEach((entry, index) => {
-    for (const field of ['slug', 'label', 'description', 'shortAnswer', 'keywords']) {
+    for (const field of ['slug', 'label', 'description', 'shortAnswer', 'datePublished', 'dateModified', 'keywords']) {
       if (!entry[field]) throw new Error(`${name}[${index}] missing ${field}`);
     }
   });
@@ -57,6 +64,8 @@ function platformPageHTML({
   label,
   description,
   shortAnswer,
+  datePublished,
+  dateModified,
   installInstructions,
   guideSections,
   troubleshooting,
@@ -76,6 +85,8 @@ function platformPageHTML({
     url, title, metaDesc, h1, slug,
     intro: description,
     shortAnswer,
+    datePublished,
+    dateModified,
     keywords,
     ctaText: `Create Your ${label} Signature`,
     seoLabel: label,
@@ -86,11 +97,11 @@ function platformPageHTML({
     faqs: [
       {
         q: `How do I add a professional email signature to ${label}?`,
-        a: `To add an email signature to ${label}: (1) Use our free generator above to create your signature. (2) Click "Copy for Gmail" (our HTML format works across all major email clients). (3) Open ${label} settings and find the Signature section. (4) Paste your signature and save. It usually takes under 2 minutes.`
+        a: `To add an email signature to ${label}: (1) Use our free generator above to create your signature. (2) Click "Copy HTML" (the same table-based HTML works across the major email clients). (3) Open ${label} settings and find the Signature section. (4) Paste your signature and save. It usually takes under 2 minutes.`
       },
       {
         q: `Do your email signatures work in ${label}?`,
-        a: `Yes. All our email signatures use HTML table-based layouts that are compatible with ${label} and 50+ other email clients. We test every template across major email clients to ensure consistent rendering.`
+        a: `Yes. All our email signatures use HTML table-based layouts that are compatible with ${label} and the other major email clients, including Gmail, Outlook, Apple Mail, and Yahoo Mail. We test every template across major email clients to ensure consistent rendering.`
       },
       {
         q: `Is there a free email signature generator for ${label}?`,
@@ -100,7 +111,7 @@ function platformPageHTML({
   });
 }
 
-function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
+function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -109,6 +120,20 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords
       "name": f.q,
       "acceptedAnswer": { "@type": "Answer", "text": f.a }
     }))
+  }, null, 2);
+
+  const articleSchema = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": h1,
+    "description": metaDesc,
+    "datePublished": datePublished,
+    "dateModified": dateModified,
+    "image": `${SITE_URL}/assets/og-image.png`,
+    "author": { "@type": "Organization", "name": "Email Signature Generator", "url": `${SITE_URL}/` },
+    "publisher": { "@type": "Organization", "name": "Email Signature Generator", "url": `${SITE_URL}/` },
+    "mainEntityOfPage": { "@type": "WebPage", "@id": url },
+    "inLanguage": "en"
   }, null, 2);
 
   const breadcrumbSchema = JSON.stringify({
@@ -188,7 +213,12 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
 
-  <!-- Breadcrumb Schema -->
+${dateModified ? `  <!-- Article Schema -->
+  <script type="application/ld+json">
+  ${articleSchema}
+  </script>
+
+` : ''}  <!-- Breadcrumb Schema -->
   <script type="application/ld+json">
   ${breadcrumbSchema}
   </script>
@@ -202,6 +232,7 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords
   <style>
     .seo-page { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
     .seo-page h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin-bottom: 16px; }
+    .seo-page .post-meta { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; }
     .seo-page .short-answer { font-size: 1.05rem; line-height: 1.7; margin-bottom: 16px; padding: 16px 20px; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 8px; }
     .seo-page .intro { font-size: 1.1rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 40px; }
     .seo-cta-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; margin: 40px 0; }
@@ -255,7 +286,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, keywords
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
-${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
+${dateModified ? `    <p class="post-meta">By Email Signature Generator · Updated <time datetime="${escapeHtml(dateModified)}">${escapeHtml(formatLongDate(dateModified))}</time></p>
+` : ''}${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> ${escapeHtml(shortAnswer)}</p>
 ` : ''}    <p class="intro">${escapeHtml(intro)}</p>
 
     <div class="seo-cta-box">
@@ -277,7 +309,7 @@ ${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> 
         </div>
         <div class="feature-item">
           <h3>Works Everywhere</h3>
-          <p>Gmail, Outlook, Apple Mail, Yahoo, and 50+ other email clients.</p>
+          <p>Table-based HTML for Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients.</p>
         </div>
         <div class="feature-item">
           <h3>$9 One-Time</h3>
@@ -309,7 +341,7 @@ ${shortAnswer ? `    <p class="short-answer"><strong>The short answer:</strong> 
 
     <div class="seo-cta-box" style="margin-top: 48px;">
       <h2>Ready to create your professional email signature?</h2>
-      <p>Join thousands of professionals who've ditched the $108/year subscription for a ${PRICE_SHORT} one-time tool.</p>
+      <p>Skip the monthly subscription. Build free, then pay ${PRICE_SHORT} once when you are ready to use your signature.</p>
       <a href="/generator" class="btn btn-primary">Create Free Signature</a>
     </div>
 

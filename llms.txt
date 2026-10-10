@@ -30,7 +30,7 @@ No subscription. No recurring charges. No account needed.
 - Social icon links: website, LinkedIn, Instagram, Facebook — 2 icon styles (mono, colour)
 - CTA buttons: customisable text and URL (e.g. "Book a Meeting")
 - One-click copy: rich HTML for Gmail / plain text for any client
-- Works in 50+ email clients: Gmail, Outlook, Apple Mail, Yahoo Mail, and more
+- Table-based HTML built for Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients
 - 30-day money-back guarantee
 - No account and no third-party analytics or ad trackers. Signature details stay in the browser unless the user hosts a photo/logo or uses "Save & get link", which stores them on Cloudflare R2
 
@@ -49,7 +49,7 @@ No subscription. No recurring charges. No account needed.
 Yes. Pay US$9 once and get lifetime access to all 24 templates, including future templates. No subscription, no recurring charges.
 
 **Does it work in Gmail and Outlook?**
-Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and 50+ other email clients.
+Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients.
 
 **Do I need an account?**
 No. The generator runs in your browser with no login and no account. Pro access is stored in your browser as a signed token.
@@ -90,8 +90,10 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 - [How to Add an Email Signature in Outlook](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook) — New Outlook, classic Outlook, Outlook on the web, and Outlook for Mac
 - [Social Media Icons for Email Signatures](https://emailsignaturegenerator.ai/blog/email-signature-social-media-icons) — How to choose, link, size, and test social icons across Gmail, Outlook, and mobile inboxes
 - [Student Email Signature Examples](https://emailsignaturegenerator.ai/blog/student-email-signature-examples) — Seven examples for college, internships, graduate research, and portfolios
+- [How to Add an Email Signature on iPhone and Android](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-on-iphone-and-android) — iPhone Mail, Gmail, Outlook mobile and Samsung Email setup, plus what belongs in a mobile signature
+- [Email Signature With Credentials](https://emailsignaturegenerator.ai/blog/email-signature-credentials) — Which degrees, licences and certifications to list, in what order, and how to show one in progress
 - [Free vs Paid Email Signature Generators](https://emailsignaturegenerator.ai/blog/free-vs-paid-email-signature-generators) — Free, one-time, subscription, and managed tools compared by export, hosting, privacy, and cost
 
 ## Competitor comparison
 
-Unlike subscription-based tools (typically $9/month = $108/year), Email Signature Generator charges a single $9 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.
+Unlike subscription-based signature tools, which charge monthly or per user, Email Signature Generator charges a single $9 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.
