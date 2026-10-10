@@ -478,6 +478,13 @@ assert(templates.length === facts.templateCount, `Expected ${facts.templateCount
   }
 }
 
+// Hand-written pages quote the template count too; keep them on the canonical fact.
+for (const file of ['index.html', 'generator.html', ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`)]) {
+  for (const match of fs.readFileSync(fromRoot(file), 'utf8').matchAll(/\b(\d+) (?:professional |signature )?templates\b/g)) {
+    assert(Number(match[1]) === facts.templateCount, `${file} says "${match[0]}" but site-facts has ${facts.templateCount} templates`);
+  }
+}
+
 const llmsCategoryLabels = {
   professional: 'Professional', creative: 'Creative', minimal: 'Minimal',
   social: 'Social-First', sales: 'Sales / CTA', industry: 'Industry',
