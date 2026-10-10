@@ -893,6 +893,150 @@ const TEMPLATES = {
 </table>`;
     }
   },
+
+  // ═══════════════════════════════════════════
+  // BRAND SET — built around the website import: one brand accent, a clear type
+  // scale, and a logo that sits beside or below the person instead of on top.
+  // ═══════════════════════════════════════════
+
+  signature: {
+    name: 'Signature',
+    category: 'professional',
+    pro: false,
+    icon: '&#9998;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const brand = this._safeColor(primaryColor);
+      const ink = this._safeColor(textColor);
+      const photo = this._photoTile(data, photoRadius, 84);
+      const logo = this._logoImg(data, 30, 170);
+      const keys = { phone: 'M', email: 'E', website: 'W' };
+      const rows = this._contactEntries(data).map(c =>
+        `<tr><td style="padding: 0 10px 3px 0; font-size: 11px; font-weight: 700; color: ${brand}; font-family: ${fontFamily}; white-space: nowrap;">${keys[c.kind]}</td><td style="padding: 0 0 3px 0; font-size: 13px; font-family: ${fontFamily};">${c.link('#55555a', fontFamily)}</td></tr>`
+      ).join('');
+      const socials = this._socialIcons(data, iconStyle, primaryColor, 22, 6);
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5;">
+  <tr>
+    ${photo ? `<td style="vertical-align: top; padding: 2px 18px 0 0;">${photo}</td>` : ''}
+    <td style="vertical-align: top; border-left: 2px solid ${brand}; padding-left: 18px;">
+      ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 18px; color: ${ink}; font-family: ${fontFamily}; letter-spacing: -0.2px;`)}
+      ${data.title ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title)}</span>` : ''}
+      ${data.company ? `<br/><span style="font-size: 13px; font-weight: 600; color: ${brand}; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
+      ${rows ? `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 12px;">${rows}</table>` : ''}
+      ${socials ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 10px;">${socials}</td></tr></table>` : ''}
+    </td>
+  </tr>
+  ${logo ? `<tr><td colspan="2" style="padding-top: 16px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 1px solid #e5e5ea; padding-top: 12px;">${logo}</td></tr></table>
+  </td></tr>` : ''}
+</table>`;
+    }
+  },
+
+  letterhead: {
+    name: 'Letterhead',
+    category: 'professional',
+    pro: true,
+    icon: '&#127963;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const brand = this._safeColor(primaryColor);
+      const ink = this._safeColor(textColor);
+      // The logo leads; a headshot stands in only when there is no logo.
+      const mark = this._logoImg(data, 48, 160) || this._photoTile(data, photoRadius, 72);
+      const sep = '<span style="color: #8e8e93;">&nbsp;&nbsp;&middot;&nbsp;</span> ';
+      const items = this._contactEntries(data).map(c => c.link('#55555a', fontFamily));
+      const socials = this._socialIcons(data, iconStyle, primaryColor, 18, 10);
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5;">
+  <tr>
+    ${mark ? `<td style="vertical-align: middle; padding-right: 22px;">${mark}</td>
+    <td width="1" bgcolor="#e5e5ea" style="width: 1px; background-color: #e5e5ea; font-size: 1px; line-height: 1px;">&nbsp;</td>` : ''}
+    <td style="vertical-align: middle;${mark ? ' padding-left: 22px;' : ''}">
+      ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 17px; color: ${ink}; font-family: ${fontFamily};`)}
+      ${data.title || data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}${data.title && data.company ? sep : ''}${data.company ? `<span style="color: ${brand}; font-weight: 600;">${this.escapeAttr(data.company)}</span>` : ''}</span>` : ''}
+      ${items.length ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 8px; font-size: 13px; line-height: 1.7; font-family: ${fontFamily};">${items.slice(0, 2).join(sep)}${items[2] ? '<br/>' + items[2] : ''}</td></tr></table>` : ''}
+      ${socials ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 8px;">${socials}</td></tr></table>` : ''}
+    </td>
+  </tr>
+</table>`;
+    }
+  },
+
+  minimal: {
+    name: 'Minimal',
+    category: 'minimal',
+    pro: false,
+    icon: '&#8212;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, iconStyle } = style;
+      const brand = this._safeColor(primaryColor);
+      const ink = this._safeColor(textColor);
+      const sep = '<span style="color: #8e8e93;">&nbsp;&nbsp;/&nbsp;</span> ';
+      const items = this._contactEntries(data).map(c => c.link('#55555a', fontFamily));
+      const socials = this._socialIcons(data, iconStyle, primaryColor, 16, 10);
+      const role = [
+        data.title ? this.escapeAttr(data.title) : '',
+        data.company ? `<span style="color: ${ink}; font-weight: 600;">${this.escapeAttr(data.company)}</span>` : '',
+      ].filter(Boolean).join(', ');
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5;">
+  <tr><td>${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${ink}; font-family: ${fontFamily};`)}</td></tr>
+  ${role ? `<tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${role}</td></tr>` : ''}
+  <tr><td style="padding: 10px 0;">
+    <table cellpadding="0" cellspacing="0" border="0"><tr><td width="28" height="2" bgcolor="${brand}" style="width: 28px; height: 2px; background-color: ${brand}; font-size: 1px; line-height: 2px;">&nbsp;</td></tr></table>
+  </td></tr>
+  ${items.length ? `<tr><td style="font-size: 13px; line-height: 1.6; font-family: ${fontFamily};">${items.join(sep)}</td></tr>` : ''}
+  ${socials ? `<tr><td style="padding-top: 8px;">${socials}</td></tr>` : ''}
+</table>`;
+    }
+  },
+
+  showcase: {
+    name: 'Showcase',
+    category: 'sales',
+    pro: true,
+    icon: '&#127873;',
+    render(data, style) {
+      const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
+      const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const brand = this._safeColor(primaryColor);
+      const ink = this._safeColor(textColor);
+      const tint = this._tint(brand, 0.08);
+      const cta = ctaText || 'Book a meeting';
+      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const photo = this._photoTile(data, photoRadius, 64);
+      const logo = this._logoImg(data, 28, 120);
+      const sep = '<span style="color: #8e8e93;">&nbsp;&nbsp;&middot;&nbsp;</span> ';
+      const items = this._contactEntries(data).map(c => c.link('#55555a', fontFamily));
+      const socials = this._socialIcons(data, iconStyle, primaryColor, 18, 8);
+
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5; border: 1px solid #e5e5ea; border-radius: 12px; border-collapse: separate;">
+  <tr><td style="padding: 18px 20px 14px 20px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+      ${photo ? `<td width="64" style="width: 64px; vertical-align: middle; padding-right: 14px;">${photo}</td>` : ''}
+      <td style="vertical-align: middle;">
+        ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 17px; color: ${ink}; font-family: ${fontFamily}; white-space: nowrap;`)}
+        ${data.title || data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title || data.company)}</span>` : ''}
+      </td>
+      ${logo ? `<td align="right" style="vertical-align: middle; text-align: right; padding-left: 12px;">${logo}</td>` : ''}
+    </tr></table>
+    ${items.length ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 12px; font-size: 13px; line-height: 1.7; font-family: ${fontFamily};">${items.slice(0, 2).join(sep)}${items[2] ? '<br/>' + items[2] : ''}</td></tr></table>` : ''}
+  </td></tr>
+  <tr><td bgcolor="${tint}" style="background-color: ${tint}; padding: 10px 20px; border-radius: 0 0 11px 11px;">
+    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+      <td style="vertical-align: middle;">
+        ${this._ctaButton(data, ctaLink, `${cta} →`, `display: inline-block; background-color: ${brand}; color: #ffffff; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};`)}
+      </td>
+      ${socials ? `<td align="right" style="vertical-align: middle; text-align: right;">${socials}</td>` : ''}
+    </tr></table>
+  </td></tr>
+</table>`;
+    }
+  },
 };
 
 // ═══════════════════════════════════════════
@@ -1097,26 +1241,48 @@ const _helpers = {
   },
 
   _contactItems(data, fontFamily) {
-    const items = [];
-    if (data.phone) {
-      const telHref = this.escapeAttr('tel:' + String(data.phone).replace(/\s/g, ''));
-      const phoneText = this.escapeAttr(data.phone);
-      items.push(`<a href="${telHref}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${phoneText}</a>`);
-    }
-    if (data.email) {
-      const mailHref = this.escapeAttr('mailto:' + String(data.email));
-      const emailText = this.escapeAttr(data.email);
-      items.push(`<a href="${mailHref}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${emailText}</a>`);
-    }
+    return this._contactEntries(data).map(c => c.link('#55555a', fontFamily));
+  },
+
+  // Phone, email and website as escaped entries, each able to render itself as a
+  // link that never breaks across lines (a phone number split in half was the
+  // most visible flaw in narrow windows). Entries with an unsafe URL are dropped.
+  _contactEntries(data) {
+    const entries = [];
+    const add = (kind, href, text) => entries.push({
+      kind,
+      link: (color, fontFamily) => `<a href="${href}" style="color: ${color}; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${text}</a>`,
+    });
+    if (data.phone) add('phone', this.escapeAttr('tel:' + String(data.phone).replace(/\s/g, '')), this.escapeAttr(data.phone));
+    if (data.email) add('email', this.escapeAttr('mailto:' + String(data.email)), this.escapeAttr(data.email));
     if (data.website) {
       const webHref = this.escapeUrl(data.website, 'href');
-      if (webHref) {
-        const webText = this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''));
-        items.push(`<a href="${webHref}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${webText}</a>`);
-      }
+      if (webHref) add('website', webHref, this.escapeAttr(String(data.website).replace(/^https?:\/\//, '')));
     }
-    return items;
+    return entries;
   },
+
+  // Logo image alone, for layouts that place it beside or below the details
+  // rather than in the full-width row `_logoRow` draws. '' when unset or unsafe.
+  _logoImg(data, maxHeight, maxWidth) {
+    if (!data.logoUrl) return '';
+    const safeSrc = this.escapeUrl(data.logoUrl, 'src');
+    if (!safeSrc) return '';
+    const safeAlt = this.escapeAttr(data.company || 'Company logo');
+    return `<img src="${safeSrc}" alt="${safeAlt}" style="max-height: ${maxHeight}px; max-width: ${maxWidth}px; display: block; border: 0;" />`;
+  },
+
+  // Mixes a #rrggbb colour toward white; `amount` is how much of the colour is
+  // kept. Used for soft brand-tinted panels, which need a solid bgcolor because
+  // Outlook ignores rgba().
+  _tint(hex, amount) {
+    if (!/^#[0-9a-fA-F]{6}$/.test(String(hex))) return '#f5f5f7';
+    return '#' + [1, 3, 5].map(i => {
+      const c = parseInt(hex.slice(i, i + 2), 16);
+      return Math.round(255 - (255 - c) * amount).toString(16).padStart(2, '0');
+    }).join('');
+  },
+
 
   // `data` is optional so existing callers keep working; when an animated divider
   // has been generated and hosted, the border rule is replaced by that image.
@@ -1176,27 +1342,33 @@ const _helpers = {
     return (facts && facts.origin) || 'https://emailsignaturegenerator.ai';
   },
 
-  _socialRow(data, iconStyle, primaryColor, topPad = 10) {
+  // The icon links on their own, as a one-row table, for templates that place
+  // them freely. '' when no profile links are set.
+  _socialIcons(data, iconStyle, primaryColor, size = 22, gap = 8) {
     // No website icon: every template already writes the address out in full, and a
     // globe beside it only repeats it.
     const socials = [
+      { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
       { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
       { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
-      { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
       { url: data.google, platform: 'google', alt: 'Google' },
-    ].filter(s => s.url);
-
-    if (!socials.length) return '';
+    ];
 
     const cells = socials.map(s => {
-      const safeUrl = this.escapeUrl(s.url, 'href');
+      const safeUrl = s.url ? this.escapeUrl(s.url, 'href') : '';
       if (!safeUrl) return '';
       const icon = this._iconUrl(s.platform, iconStyle, primaryColor);
-      return `<td style="padding-right: 8px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="22" height="22" style="display: block; width: 22px; height: 22px; border: 0;" /></a></td>`;
+      return `<td style="padding-right: ${gap}px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="${size}" height="${size}" style="display: block; width: ${size}px; height: ${size}px; border: 0;" /></a></td>`;
     }).join('');
 
-    return `<tr><td style="padding-top: ${topPad}px;"><table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table></td></tr>`;
+    return cells ? `<table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>` : '';
   },
+
+  _socialRow(data, iconStyle, primaryColor, topPad = 10) {
+    const icons = this._socialIcons(data, iconStyle, primaryColor, 22, 8);
+    return icons ? `<tr><td style="padding-top: ${topPad}px;">${icons}</td></tr>` : '';
+  },
+
 
   // Renders an optional regulatory / compliance block beneath the main signature.
   // `conf.fields` is an array of {label, value} licence identifiers; `conf.disclaimer`
@@ -1225,26 +1397,9 @@ const _helpers = {
   },
 
   _socialRowLarge(data, iconStyle, primaryColor) {
-    // No website icon: every template already writes the address out in full, and a
-    // globe beside it only repeats it.
-    const socials = [
-      { url: data.instagram, platform: 'instagram', alt: 'Instagram' },
-      { url: data.facebook, platform: 'facebook', alt: 'Facebook' },
-      { url: data.linkedin, platform: 'linkedin', alt: 'LinkedIn' },
-      { url: data.google, platform: 'google', alt: 'Google' },
-    ].filter(s => s.url);
-
-    if (!socials.length) return '';
-
-    const cells = socials.map(s => {
-      const safeUrl = this.escapeUrl(s.url, 'href');
-      if (!safeUrl) return '';
-      const icon = this._iconUrl(s.platform, iconStyle, primaryColor);
-      return `<td style="padding-right: 10px;"><a href="${safeUrl}" target="_blank" style="text-decoration: none;"><img src="${icon}" alt="${s.alt}" width="30" height="30" style="display: block; width: 30px; height: 30px; border: 0;" /></a></td>`;
-    }).join('');
-
-    return `<table cellpadding="0" cellspacing="0" border="0"><tr>${cells}</tr></table>`;
+    return this._socialIcons(data, iconStyle, primaryColor, 30, 10);
   },
+
 };
 
 // Attach helpers to all templates
