@@ -257,6 +257,13 @@ function checkWorkerBehavior() {
     "const iconC = await worker.default.fetch(new Request('https://example.com/i/linkedin-ea580c.png'), env);",
     "const bytesC = new Uint8Array(await iconC.arrayBuffer());",
     "if (iconBytes.length === bytesC.length && iconBytes.every((b, i) => b === bytesC[i])) throw new Error('different tints produced identical icons');",
+    // The circle style is a separate render, not the plain tint under a new name.
+    "const iconD = await worker.default.fetch(new Request('https://example.com/i/linkedin-0891b2-c.png'), env);",
+    "if (iconD.status !== 200 || iconD.headers.get('Content-Type') !== 'image/png') throw new Error('circle icon returned ' + iconD.status);",
+    "const bytesD = new Uint8Array(await iconD.arrayBuffer());",
+    "if (iconBytes.length === bytesD.length && iconBytes.every((b, i) => b === bytesD[i])) throw new Error('circle icon matched the plain icon');",
+    "const badSuffix = await worker.default.fetch(new Request('https://example.com/i/linkedin-0891b2-x.png'), env);",
+    "if (badSuffix.status !== 404) throw new Error('unknown icon suffix returned ' + badSuffix.status);",
     // Reject anything not on the allow-list.
     "const badIcon = await worker.default.fetch(new Request('https://example.com/i/nonsense-0891b2.png'), env);",
     "if (badIcon.status !== 404) throw new Error('unknown icon platform returned ' + badIcon.status);",

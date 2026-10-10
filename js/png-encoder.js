@@ -173,9 +173,53 @@
     return rgba;
   }
 
+  /**
+   * Build RGBA pixels for a filled disc in `rgb` with the mask knocked out in
+   * white, for the "circle" icon style. The glyph is resampled to `inner` pixels
+   * (bilinear) and centred so it sits inside the disc with breathing room; the
+   * disc edge is antialiased by 4x4 supersampling.
+   */
+  function discMask(mask, size, rgb, inner) {
+    const glyph = inner || Math.round(size * 0.58);
+    const off = (size - glyph) / 2;
+    const r = size / 2;
+    const rgba = new Uint8Array(size * size * 4);
+    const at = (x, y) => mask[y * size + x];
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        let cover = 0;
+        for (let sy = 0; sy < 4; sy++) {
+          for (let sx = 0; sx < 4; sx++) {
+            const dx = x + (sx + 0.5) / 4 - r;
+            const dy = y + (sy + 0.5) / 4 - r;
+            if (dx * dx + dy * dy <= r * r) cover++;
+          }
+        }
+
+        let ink = 0;
+        const gx = (x + 0.5 - off) * size / glyph - 0.5;
+        const gy = (y + 0.5 - off) * size / glyph - 0.5;
+        if (gx >= 0 && gy >= 0 && gx < size - 1 && gy < size - 1) {
+          const x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+          ink = (at(x0, y0) * (1 - fx) * (1 - fy) + at(x0 + 1, y0) * fx * (1 - fy)
+            + at(x0, y0 + 1) * (1 - fx) * fy + at(x0 + 1, y0 + 1) * fx * fy) / 255;
+        }
+
+        const i = (y * size + x) * 4;
+        rgba[i] = Math.round(rgb[0] + (255 - rgb[0]) * ink);
+        rgba[i + 1] = Math.round(rgb[1] + (255 - rgb[1]) * ink);
+        rgba[i + 2] = Math.round(rgb[2] + (255 - rgb[2]) * ink);
+        rgba[i + 3] = Math.round(cover / 16 * 255);
+      }
+    }
+    return rgba;
+  }
+
   return Object.freeze({
     encode,
     tintMask,
+    discMask,
     _crc32: crc32,
     _adler32: adler32,
   });
