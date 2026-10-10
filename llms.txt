@@ -1,6 +1,6 @@
 # Email Signature Generator
 
-> A browser-based email signature generator with 24 professional templates. One-time payment of US$9 for Pro. No subscription, no account required.
+> A browser-based email signature generator that builds your signature from your website: type your company URL and it fills in your logo, brand colours, company name, phone and social links. 24 professional templates. One-time payment of US$9 for Pro. No subscription, no account required.
 
 ## What this tool does
 
@@ -20,6 +20,7 @@ No subscription. No recurring charges. No account needed.
 
 ## Key features
 
+- **Brand from your website** — type your company website and the generator reads your logo, brand colours, company name, phone number and social links from it. No other signature tool we checked does this; they ask you to upload a logo and pick colours by hand
 - Free **signature health check** — paste any signature HTML, get a full audit (contrast, Gmail dark-mode, Outlook, trackers, accessibility) in seconds
 - Gmail dark-mode safe — every template renders correctly in both light and dark inboxes
 - **Jurisdiction-aware compliance** — auto-fills your regulatory licence number (bar, NPI, AFSL, CRD, GMC, AHPRA, SRA, etc.) and appends the correct country-specific disclaimer (HIPAA, Circular 230, FCA, FINRA Reg BI, Legal Professional Privilege, etc.) for 7 regulated professions across US, UK, AU, and CA
@@ -31,7 +32,6 @@ No subscription. No recurring charges. No account needed.
 - CTA buttons: customisable text and URL (e.g. "Book a Meeting")
 - One-click copy: rich HTML for Gmail / plain text for any client
 - Table-based HTML built for Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients
-- 30-day money-back guarantee
 - No account and no third-party analytics or ad trackers. Signature details stay in the browser unless the user hosts a photo/logo or uses "Save & get link", which stores them on Cloudflare R2
 
 ## Template categories
@@ -60,8 +60,11 @@ Only if you choose to. Signature details stay in your browser by default. Hostin
 **Can I update my signature later?**
 Yes. With Pro, "Save & get link" stores your signature so you can reopen and edit it from any device. You can also create as many new signatures as you like with no limits.
 
+**Can it use my company's branding automatically?**
+Yes. Type your company website and the generator fills in your logo, brand colours, company name, phone and social links. Anything it can't read, you add by hand.
+
 **Is there a refund policy?**
-Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
+Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 14 days of purchase if Pro doesn't work for you.
 
 ## Contact
 
@@ -81,6 +84,11 @@ Yes. 30-day money-back guarantee. Email info@emailsignaturegenerator.ai.
 - [Gmail Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-gmail) — Install a signature in Gmail and fix image, spacing, mobile, and dark-mode problems
 - [Outlook Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-outlook) — Install a signature in Outlook for Windows, Mac, and the web
 - [Apple Mail Email Signature Guide](https://emailsignaturegenerator.ai/seo/email-signature-generator-for-apple-mail) — Set up a signature on Mac and test images, fonts, iPhone, and dark mode
+
+### Comparisons
+
+- [WiseStamp Alternative](https://emailsignaturegenerator.ai/seo/wisestamp-alternative) — Side-by-side price and feature comparison with WiseStamp (US$9 once vs US$108 a year for Pro+)
+- [HubSpot Email Signature Generator Alternative](https://emailsignaturegenerator.ai/seo/hubspot-email-signature-generator-alternative) — Comparison with HubSpot's free generator: website branding import, hosted images, 24 vs 12 templates
 
 ### Blog
 

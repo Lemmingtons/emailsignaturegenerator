@@ -100,6 +100,10 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 - The generator fills only empty fields, but always applies the colours. `/generator?site=acme.com` runs the import on load, for landing pages to link to.
 - Sites that block bots or render their branding entirely in JavaScript return little. The UI says so and the visitor fills in the fields by hand.
 
+## Competitor comparison pages
+
+`datasets/competitors.json` owns the `/seo/*-alternative` pages that `generate-pages.js` writes. Each entry has a `checkedOn` date and source links shown on the page. Competitor prices are literal text, while our own price and template count come from `{{price}}` and `{{templates}}` placeholders filled from `js/site-facts.js`. The monthly SEO audit should re-check each competitor's pricing page, update the entry and `checkedOn`, then run `npm run generate`. The homepage "Why pay $108/year" banner quotes the same WiseStamp Pro+ figure. Do not advertise a money-back guarantee anywhere.
+
 ## Motion layer
 
 `css/motion.css` and `js/motion.js` add scroll reveals and micro-interactions. Reveal styles are scoped behind `.js-motion`, which the script adds to `<html>` itself — so if the script fails, nothing is ever hidden. `js/motion.js` also runs a scroll sweep alongside the IntersectionObserver, because an observer alone never fires for content the reader jumps straight past (anchor links, restored scroll), which would leave it invisible.
