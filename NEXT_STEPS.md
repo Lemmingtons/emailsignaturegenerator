@@ -104,6 +104,15 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 `datasets/competitors.json` owns the `/seo/*-alternative` pages that `generate-pages.js` writes. Each entry has a `checkedOn` date and source links shown on the page. Competitor prices are literal text, while our own price and template count come from `{{price}}` and `{{templates}}` placeholders filled from `js/site-facts.js`. The monthly SEO audit should re-check each competitor's pricing page, update the entry and `checkedOn`, then run `npm run generate`. The homepage banner, paywall and llms.txt quote the WiseStamp Pro+ yearly figure; `npm run check` fails until they match `entryPlanAnnualUsd` in the dataset. Do not advertise a money-back guarantee anywhere.
 
+## Team pack
+
+A second Stripe Payment Link sells the team pack (`teamPrice`, `teamSeats` in `js/site-facts.js`). It stays hidden on the site until both are set: `teamPaymentLink` in `js/site-facts.js` (the public buy.stripe.com URL) and `STRIPE_TEAM_PAYMENT_LINK_ID` (its `plink_` id) in `wrangler.toml`. The link's success URL must be the same `/api/verify-payment?session_id={CHECKOUT_SESSION_ID}` as the Pro link, and the existing webhook covers it.
+
+- The buyer's entitlement record carries `plan: "team"`. `/api/verify-token` returns `plan`, and the generator then shows "Copy team link".
+- `POST /api/team` (buyer only) saves the design without personal fields to `teams/<HMAC of entitlement>.json`, so the link never changes. `GET /api/team/<id>` returns it.
+- `POST /api/team/<id>/join` claims a seat (the buyer counts as one) and mints a Pro token on the buyer's entitlement with a `tm` member number. A refund or dispute on the purchase ends access for everyone. Colleagues' card pages are owned per member.
+- Tests: `npm run test:team`.
+
 ## Motion layer
 
 `css/motion.css` and `js/motion.js` add scroll reveals and micro-interactions. Reveal styles are scoped behind `.js-motion`, which the script adds to `<html>` itself — so if the script fails, nothing is ever hidden. `js/motion.js` also runs a scroll sweep alongside the IntersectionObserver, because an observer alone never fires for content the reader jumps straight past (anchor links, restored scroll), which would leave it invisible.

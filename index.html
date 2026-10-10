@@ -423,6 +423,7 @@
             </ul>
             <a href="/generator" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
             <p class="pricing-try-note">Or <a href="/generator">try the builder first</a> — free, no account.</p>
+            <p class="pricing-try-note team-offer" id="teamOffer" hidden>Buying for a team? <a id="teamOfferLink" href="/generator">Team pack: <span data-team-price></span> once for up to <span data-team-seats></span> people</a>. Set the brand once and share a link; each person adds their own details.</p>
           </div>
 
         </div>
@@ -507,6 +508,15 @@
     var checkoutButton = document.getElementById('checkoutBtn');
     if (checkoutButton && window.SiteFacts) {
       checkoutButton.href = window.SiteFacts.paymentLink;
+    }
+
+    // The team pack shows only once its Stripe link exists.
+    var teamOffer = document.getElementById('teamOffer');
+    if (teamOffer && window.SiteFacts && window.SiteFacts.teamPaymentLink) {
+      document.getElementById('teamOfferLink').href = window.SiteFacts.teamPaymentLink;
+      teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = window.SiteFacts.teamPrice.display; });
+      teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(window.SiteFacts.teamSeats); });
+      teamOffer.hidden = false;
     }
 
     var D = {

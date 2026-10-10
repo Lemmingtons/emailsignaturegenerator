@@ -2827,6 +2827,25 @@ label:has(+ .file-input-accessible:focus-visible) {
 
 .pro-panel .btn-unlock:hover { background: var(--primary-hover); }
 
+.pro-panel { flex-wrap: wrap; }
+.pro-panel .team-offer,
+.pro-panel .photo-hint { flex-basis: 100%; margin: 0; }
+.pro-panel .photo-hint:empty { display: none; }
+.pro-panel .team-offer a { color: var(--text); }
+
+.team-panel:not(.pro-panel) {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+}
+.team-panel:not(.pro-panel) p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin: 0; }
+.team-panel:not(.pro-panel) strong { color: var(--text); }
+.team-panel:not(.pro-panel) .btn { justify-self: start; }
+.team-panel[hidden], .team-offer[hidden], .brand-import[hidden] { display: none; }
+
 /* ══════════════════════════════════════
    CHECK & INSTALL
    ══════════════════════════════════════ */
