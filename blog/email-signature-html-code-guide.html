@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Signature HTML Code: Template for Gmail and Outlook</title>
+  <meta name="description" content="Copy a working email signature HTML template, learn the rules that keep it intact in Gmail and Outlook (tables, inline styles, hosted images), and paste it in without breaking it.">
+  <meta name="robots" content="index, follow">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/blog/email-signature-html-code-guide">
+  <meta property="og:title" content="Email Signature HTML Code: A Template That Works in Gmail and Outlook">
+  <meta property="og:description" content="Copy a working email signature HTML template, learn the rules that keep it intact in Gmail and Outlook (tables, inline styles, hosted images), and paste it in without breaking it.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://emailsignaturegenerator.ai/blog/email-signature-html-code-guide">
+  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:site_name" content="Email Signature Generator">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Email Signature HTML Code: A Template That Works in Gmail and Outlook">
+  <meta name="twitter:description" content="Copy a working email signature HTML template, learn the rules that keep it intact in Gmail and Outlook (tables, inline styles, hosted images), and paste it in without breaking it.">
+  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Email Signature HTML Code: A Template That Works in Gmail and Outlook",
+    "description": "Copy a working email signature HTML template, learn the rules that keep it intact in Gmail and Outlook (tables, inline styles, hosted images), and paste it in without breaking it.",
+    "datePublished": "2026-10-12",
+    "dateModified": "2026-10-12",
+    "author": {
+      "@type": "Organization",
+      "name": "Email Signature Generator",
+      "url": "https://emailsignaturegenerator.ai/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Email Signature Generator",
+      "url": "https://emailsignaturegenerator.ai/"
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://emailsignaturegenerator.ai/blog/email-signature-html-code-guide"
+    },
+    "image": "https://emailsignaturegenerator.ai/assets/og-image.png",
+    "inLanguage": "en"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I write HTML code for an email signature?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Build the layout with a table, put every style inline on the element it affects, load images from public HTTPS URLs with width and height set, and keep the code to a few kilobytes. Open the finished file in a browser, copy the rendered signature, and paste it into your email client's signature settings."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I paste HTML code directly into Gmail's signature box?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Gmail's signature editor is a rich-text box, so pasted code appears as plain text. Open the HTML file in a browser, select the rendered signature, copy it, and paste that into Gmail instead."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why use tables instead of divs in an email signature?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Classic Outlook for Windows renders email with Microsoft Word's engine, which ignores flexbox, grid, floats and most positioning. Tables are the one layout method that holds up in Outlook, Gmail, Apple Mail and mobile apps alike."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Should email signature CSS go in a style tag?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Signature editors and many email clients strip style blocks and class names when a signature is pasted or forwarded. Put each style in a style attribute on the element it applies to."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How long can email signature HTML be?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Gmail limits signatures to 10,000 characters, and that count includes the HTML. A typical table-based signature with hosted images is well under that. Embedded images and copied styling from word processors are what usually push a signature over."
+        }
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://emailsignaturegenerator.ai/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://emailsignaturegenerator.ai/blog/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Email Signature HTML Code",
+        "item": "https://emailsignaturegenerator.ai/blog/email-signature-html-code-guide"
+      }
+    ]
+  }
+  </script>
+
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .blog-post { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+    .blog-post h1 { font-size: clamp(1.75rem, 4vw, 2.4rem); margin-bottom: 12px; line-height: 1.2; }
+    .post-meta { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 32px; }
+    .blog-post h2 { font-size: 1.35rem; margin: 42px 0 12px; }
+    .blog-post h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+    .blog-post p { line-height: 1.75; margin-bottom: 16px; }
+    .blog-post ol, .blog-post ul { padding-left: 24px; line-height: 1.8; margin-bottom: 16px; }
+    .answer-box { background: var(--surface-soft); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 18px 20px; border-radius: 8px; margin: 24px 0; }
+    .answer-box p:last-child, .note-box p:last-child { margin-bottom: 0; }
+    .note-box { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #a16207; padding: 18px 20px; border-radius: 8px; margin: 24px 0; }
+    .decision-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 0.92rem; }
+    .decision-table th { background: var(--surface); padding: 11px 13px; text-align: left; border-bottom: 2px solid var(--border); }
+    .decision-table td { padding: 11px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .example-grid { display: grid; gap: 16px; margin: 24px 0; }
+    .signature-example { border: 1px solid var(--border); border-radius: 12px; padding: 22px; background: var(--surface); }
+    .signature-example h3 { margin: 0 0 6px; color: var(--primary); }
+    .signature-example .use-case { margin: 0 0 16px; color: var(--text-secondary); font-size: 0.88rem; }
+    .signature-sample { border-left: 3px solid var(--primary); padding-left: 16px; line-height: 1.55; }
+    .signature-sample strong { font-size: 1.03rem; }
+    .article-visual { margin: 30px 0 36px; }
+    .visual-hint { display: none; }
+    .visual-scroll { border-radius: 14px; }
+    .article-visual img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); background: var(--surface); }
+    .article-visual figcaption { margin-top: 10px; color: var(--text-secondary); font-size: 0.86rem; line-height: 1.55; }
+    .checklist { list-style: none; padding-left: 0 !important; }
+    .checklist li { padding: 8px 0 8px 30px; position: relative; border-bottom: 1px solid var(--border); }
+    .checklist li::before { content: '✓'; position: absolute; left: 4px; color: #166534; font-weight: 700; }
+    .cta-inline { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; text-align: center; margin: 40px 0; }
+    .cta-inline h2 { margin-top: 0; }
+    .cta-inline p { color: var(--text-secondary); margin-bottom: 20px; }
+    .breadcrumb { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; }
+    .breadcrumb a { color: var(--text-secondary); text-decoration: none; }
+    .faq-section { margin-top: 48px; }
+    .code-sample { overflow-x: auto; background: #111827; color: #e5e7eb; border-radius: 8px; padding: 18px; margin: 20px 0; font-size: 0.82rem; line-height: 1.6; }
+    .blog-post p code, .blog-post li code, .blog-post td code { font-size: 0.88em; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+    @media (max-width: 560px) {
+      .decision-table { display: block; overflow-x: auto; }
+      .blog-post { padding-left: 18px; padding-right: 18px; }
+      .visual-hint { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; }
+      .visual-scroll { overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 6px; }
+      .visual-scroll img { width: auto; max-width: none; min-width: 820px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+  <header class="site-header" role="banner">
+    <a href="/" class="site-logo" aria-label="Email Signature Generator home">
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      Email Signature Generator
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/#templates">Templates</a>
+      <a href="/email-signature-examples">Examples</a>
+      <a href="/health-check">Health Check</a>
+      <a href="/blog/">Guides</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/generator" class="nav-cta">Create Signature</a>
+    </nav>
+  </header>
+
+  <main id="main-content" class="blog-post">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Email Signature HTML Code</nav>
+    <h1>Email Signature HTML Code: A Template That Works in Gmail and Outlook</h1>
+    <p class="post-meta">By Email Signature Generator · Published <time datetime="2026-10-12">October 2026</time> · 8 min read</p>
+
+    <div class="answer-box"><p><strong>The short answer:</strong> good email signature HTML is old-fashioned on purpose. Lay it out with a <code>&lt;table&gt;</code>, write every style inline in a <code>style</code> attribute, load images from public HTTPS URLs with <code>width</code> and <code>height</code> set, and keep names and phone numbers as real text. Do not paste the code itself into Gmail or Outlook. Open the file in a browser, copy the rendered signature, and paste that into your signature settings. A working template is below.</p></div>
+
+    <p>Email clients are not browsers. Classic Outlook for Windows draws messages with Microsoft Word's rendering engine, Gmail rewrites and strips parts of what you send, and mobile apps shrink everything to fit. Code that looks perfect in Chrome can arrive with its columns stacked, its logo at full size, or its fonts replaced. The rules below are the ones that survive all of them.</p>
+
+    <h2>A copy-paste email signature HTML template</h2>
+    <p>This is a two-column signature: logo on the left, contact details on the right. Replace the placeholder text, links and image address with your own.</p>
+
+    <pre class="code-sample"><code>&lt;table role="presentation" cellpadding="0" cellspacing="0" border="0"
+       style="border-collapse: collapse; font-family: Arial, Helvetica, sans-serif;"&gt;
+  &lt;tr&gt;
+    &lt;td style="padding-right: 14px; border-right: 2px solid #1d4ed8; vertical-align: top;"&gt;
+      &lt;img src="https://yourcompany.com/email/logo.png" alt="Your Company"
+           width="120" height="40"
+           style="display: block; width: 120px; height: 40px; border: 0;"&gt;
+    &lt;/td&gt;
+    &lt;td style="padding-left: 14px; vertical-align: top;"&gt;
+      &lt;p style="margin: 0; font-size: 15px; font-weight: bold; color: #111827;"&gt;Alex Morgan&lt;/p&gt;
+      &lt;p style="margin: 2px 0 8px; font-size: 13px; color: #4b5563;"&gt;Operations Manager, Your Company&lt;/p&gt;
+      &lt;p style="margin: 0; font-size: 13px; line-height: 20px; color: #111827;"&gt;
+        &lt;a href="tel:+15550100100" style="color: #111827; text-decoration: none;"&gt;+1 555 010 0100&lt;/a&gt;&lt;br&gt;
+        &lt;a href="mailto:alex@yourcompany.com" style="color: #1d4ed8; text-decoration: none;"&gt;alex@yourcompany.com&lt;/a&gt;&lt;br&gt;
+        &lt;a href="https://yourcompany.com" style="color: #1d4ed8; text-decoration: none;"&gt;yourcompany.com&lt;/a&gt;
+      &lt;/p&gt;
+    &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+
+    <p>Every choice in it is deliberate. The sections below explain why, so you can change the design without breaking it.</p>
+
+    <h2>The rules that keep signature HTML intact</h2>
+
+    <h3>1. Use tables for layout</h3>
+    <p>Classic Outlook for Windows ignores flexbox, grid, floats and most positioning, so a <code>&lt;div&gt;</code> layout collapses into a single column there. Tables are the one layout method every major client understands. Nest a second table inside a cell if you need rows within a column. Add <code>role="presentation"</code> to each layout table so screen readers do not announce your signature as a data table.</p>
+
+    <h3>2. Put every style inline</h3>
+    <p>Signature editors strip <code>&lt;style&gt;</code> blocks and class names when you paste, and replies and forwards strip more. A style only survives when it sits in a <code>style</code> attribute on the element it affects. That is why the template repeats colours and font sizes on each paragraph and link rather than declaring them once.</p>
+
+    <h3>3. Stick to CSS that Outlook understands</h3>
+    <ul class="checklist">
+      <li>Safe: <code>font-family</code>, <code>font-size</code>, <code>font-weight</code>, <code>color</code>, <code>line-height</code>, <code>text-decoration</code>, <code>padding</code> on table cells, solid borders.</li>
+      <li>Use with care: <code>margin</code> on paragraphs (set it explicitly, or Outlook adds its own spacing), <code>background-color</code> (dark mode may invert it).</li>
+      <li>Avoid: <code>border-radius</code>, <code>box-shadow</code>, <code>background-image</code>, <code>max-width</code>, flexbox, grid, web fonts and anything animated. Outlook for Windows ignores them, so the design must still work without them.</li>
+    </ul>
+
+    <h3>4. Use web-safe fonts with a fallback</h3>
+    <p>Custom web fonts do not load in most inboxes. Pick a font the recipient already has, such as Arial, Helvetica, Verdana, Tahoma, Georgia or Times New Roman, and always end the stack with a generic family like <code>sans-serif</code>.</p>
+
+    <h3>5. Host images and size them twice</h3>
+    <p>Load every image from a public HTTPS address. Gmail and Outlook strip images written into the code as <code>data:</code> URIs, and pasted or attached images can arrive as attachments. Set the size both as HTML attributes (<code>width="120" height="40"</code>) and in the inline style. Outlook for Windows reads the attributes and ignores CSS sizing, while other clients use the CSS. Save the file at about twice the display size so it stays sharp on high-resolution screens. Our <a href="/blog/email-signature-size">email signature size guide</a> lists dimensions for logos, headshots and icons, and the <a href="/blog/email-signature-with-logo">logo guide</a> covers hosting and dark mode.</p>
+
+    <h3>6. Keep the details as text, with real links</h3>
+    <p>Many recipients block images until they choose to load them, and screen readers cannot read text inside a picture. Keep your name, role and contact details as text. Link phone numbers with <code>tel:</code> and email addresses with <code>mailto:</code> so they work with one tap on a phone, and give each image short alt text such as your company name.</p>
+
+    <h3>7. Keep it small</h3>
+    <p>Gmail allows 10,000 characters per signature, and that count includes the HTML. The template above is around 1,200 characters. Signatures built in a word processor or website builder often carry thousands of characters of hidden styling, which is the usual reason Gmail reports a signature as too long.</p>
+
+    <h2>How to install signature HTML in your email client</h2>
+    <p>The common mistake is pasting the raw code. Most signature editors are rich-text boxes, so the code shows up as text in every email. Install the rendered version instead.</p>
+    <ol>
+      <li>Save the code as a file ending in <code>.html</code> and open it in Chrome, Edge, Firefox or Safari.</li>
+      <li>Select the whole signature with your mouse, or press Ctrl+A (Cmd+A on a Mac), and copy it.</li>
+      <li>Paste into your client's signature settings and save.</li>
+    </ol>
+    <table class="decision-table">
+      <thead><tr><th>Client</th><th>Where to paste</th><th>Watch for</th></tr></thead>
+      <tbody>
+        <tr><td>Gmail</td><td>Settings, See all settings, General, Signature</td><td>The 10,000-character limit and a separate mobile signature</td></tr>
+        <tr><td>New Outlook and Outlook on the web</td><td>Settings, Accounts, Signatures</td><td>Defaults for new messages and replies are set separately</td></tr>
+        <tr><td>Classic Outlook for Windows</td><td>File, Options, Mail, Signatures</td><td>Images must already be the right size</td></tr>
+        <tr><td>Apple Mail</td><td>Mail, Settings, Signatures</td><td>Untick "Always match my default message font"</td></tr>
+      </tbody>
+    </table>
+    <p>Step-by-step instructions for each version are in our guides to <a href="/blog/how-to-add-email-signature-in-gmail">adding a signature in Gmail</a>, <a href="/blog/how-to-add-email-signature-in-outlook">adding a signature in Outlook</a> and <a href="/blog/how-to-add-email-signature-on-iphone-and-android">setting one up on iPhone and Android</a>.</p>
+
+    <h2>Test the received email, not the editor</h2>
+    <ol>
+      <li>Send a test to a Gmail address and an Outlook address, and open each on desktop and on a phone.</li>
+      <li>Switch to dark mode and check the text and logo are still readable.</li>
+      <li>Reply to the test and forward it, then check the signature in the reply.</li>
+      <li>Open the test with images turned off and confirm your contact details still show.</li>
+    </ol>
+    <p>To catch problems before you send anything, paste your code into the <a href="/health-check">email signature health check</a>. It runs in your browser and flags Outlook-breaking CSS, style blocks, Gmail dark-mode problems, low contrast, images with no size or an insecure address, accessibility gaps and oversized code.</p>
+
+    <h2>Common HTML signature problems and fixes</h2>
+    <table class="decision-table">
+      <thead><tr><th>Problem</th><th>Likely cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Code appears as text in emails</td><td>Raw HTML pasted into a rich-text editor</td><td>Open the file in a browser and copy the rendered signature</td></tr>
+        <tr><td>Columns stack in Outlook</td><td>Layout built with divs, flexbox or floats</td><td>Rebuild the layout with a table</td></tr>
+        <tr><td>Colours and fonts disappear</td><td>Styles in a <code>&lt;style&gt;</code> block or classes</td><td>Move every style inline</td></tr>
+        <tr><td>Logo is huge in Outlook</td><td>No <code>width</code> and <code>height</code> attributes</td><td>Set both attributes and resize the file</td></tr>
+        <tr><td>Broken image icon</td><td>Private, local, <code>data:</code> or HTTP image address</td><td>Use a public HTTPS URL</td></tr>
+        <tr><td>Extra blank lines</td><td>Default paragraph margins in Outlook</td><td>Set <code>margin</code> on every paragraph, or use <code>&lt;br&gt;</code></td></tr>
+        <tr><td>Gmail says the signature is too long</td><td>Embedded images or copied word-processor styling</td><td>Host images and strip unused styling</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cta-inline"><h2>Skip writing the code</h2><p>The generator writes this kind of HTML for you: table layout, inline styles, sized images, escaped text and links, and layout tables marked for screen readers. Fill in your details, pick a template, then press Copy HTML and paste into Gmail or Outlook.</p>
+      <a href="/generator" class="btn btn-primary">Create your signature</a>
+    </div>
+
+    <section class="faq-section">
+      <h2>Frequently asked questions</h2>
+      <h3>How do I write HTML code for an email signature?</h3><p>Build the layout with a table, put every style inline on the element it affects, load images from public HTTPS URLs with width and height set, and keep the code to a few kilobytes. Open the finished file in a browser, copy the rendered signature, and paste it into your email client's signature settings.</p>
+      <h3>Can I paste HTML code directly into Gmail's signature box?</h3><p>No. Gmail's signature editor is a rich-text box, so pasted code appears as plain text. Open the HTML file in a browser, select the rendered signature, copy it, and paste that into Gmail instead.</p>
+      <h3>Why use tables instead of divs in an email signature?</h3><p>Classic Outlook for Windows renders email with Microsoft Word's engine, which ignores flexbox, grid, floats and most positioning. Tables are the one layout method that holds up in Outlook, Gmail, Apple Mail and mobile apps alike.</p>
+      <h3>Should email signature CSS go in a style tag?</h3><p>No. Signature editors and many email clients strip style blocks and class names when a signature is pasted or forwarded. Put each style in a style attribute on the element it applies to.</p>
+      <h3>How long can email signature HTML be?</h3><p>Gmail limits signatures to 10,000 characters, and that count includes the HTML. A typical table-based signature with hosted images is well under that. Embedded images and copied styling from word processors are what usually push a signature over.</p>
+    </section>
+
+    <h2>Related guides</h2>
+    <ul>
+      <li><a href="/blog/email-signature-best-practices">Email Signature Best Practices 2026</a></li>
+      <li><a href="/blog/email-signature-size">Email Signature Size: Dimensions, Logo and Image Sizes</a></li>
+      <li><a href="/blog/email-signature-with-logo">How to Add a Logo to Your Email Signature</a></li>
+      <li><a href="/blog/email-signature-social-media-icons">How to Add Social Media Icons to an Email Signature</a></li>
+      <li><a href="/email-signature-examples">Email Signature Examples</a></li>
+    </ul>
+  </main>
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="/generator">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/email-signature-examples">Examples</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/health-check">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/blog/">Guides</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/privacy">Privacy &amp; Terms</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@emailsignaturegenerator.ai">Contact</a>
+    </p>
+  </footer>
+</body>
+</html>
