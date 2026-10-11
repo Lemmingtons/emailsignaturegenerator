@@ -106,7 +106,7 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 ## Team pack
 
-A second Stripe Payment Link sells the team pack (`teamPrice`, `teamSeats` in `js/site-facts.js`). It stays hidden on the site until both are set: `teamPaymentLink` in `js/site-facts.js` (the public buy.stripe.com URL) and `STRIPE_TEAM_PAYMENT_LINK_ID` (its `plink_` id) in `wrangler.toml`. The link's success URL must be the same `/api/verify-payment?session_id={CHECKOUT_SESSION_ID}` as the Pro link, and the existing webhook covers it.
+A second Stripe Payment Link sells the team pack (`teamPrice`, `teamSeats` in `js/site-facts.js`). On sale since 2026-10-11 (Payment Link `plink_1UPJOvBjqL7zQu5VQtr3E85s`). The offer stays hidden whenever either is unset: `teamPaymentLink` in `js/site-facts.js` (the public buy.stripe.com URL) and `STRIPE_TEAM_PAYMENT_LINK_ID` (its `plink_` id) in `wrangler.toml`. The link's success URL must be the same `/api/verify-payment?session_id={CHECKOUT_SESSION_ID}` as the Pro link, and the existing webhook covers it.
 
 - The buyer's entitlement record carries `plan: "team"`. `/api/verify-token` returns `plan`, and the generator then shows "Copy team link".
 - `POST /api/team` (buyer only) saves the design without personal fields to `teams/<HMAC of entitlement>.json`, so the link never changes. `GET /api/team/<id>` returns it.

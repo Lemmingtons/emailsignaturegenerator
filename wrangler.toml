@@ -10,6 +10,7 @@ run_worker_first = true
 [vars]
 STRIPE_LIVEMODE = "true"
 STRIPE_PAYMENT_LINK_ID = "plink_1TyARMBjqL7zQu5V2oL0hWyd"
+STRIPE_TEAM_PAYMENT_LINK_ID = "plink_1UPJOvBjqL7zQu5VQtr3E85s"
 
 [[r2_buckets]]
 binding = "UPLOADS"
