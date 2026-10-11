@@ -129,7 +129,7 @@
     .blog-post h3 { font-size: 1.1rem; margin: 28px 0 8px; }
     .blog-post p { line-height: 1.75; margin-bottom: 16px; }
     .blog-post ol, .blog-post ul { padding-left: 24px; line-height: 1.8; margin-bottom: 16px; }
-    .answer-box { background: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0369a1; padding: 18px 20px; border-radius: 8px; margin: 24px 0; }
+    .answer-box { background: var(--surface-soft); border: 1px solid var(--border); border-left: 3px solid var(--accent); padding: 18px 20px; border-radius: 8px; margin: 24px 0; }
     .answer-box p:last-child, .note-box p:last-child { margin-bottom: 0; }
     .note-box { background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #a16207; padding: 18px 20px; border-radius: 8px; margin: 24px 0; }
     .decision-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 0.92rem; }
@@ -168,10 +168,19 @@
   <a href="#main-content" class="skip-link">Skip to content</a>
   <header class="site-header" role="banner">
     <a href="/" class="site-logo" aria-label="Email Signature Generator home">
-      <span class="logo-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+      <span class="logo-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
       Email Signature Generator
     </a>
-    <nav class="site-nav" aria-label="Main navigation"><a href="/#templates">Templates</a><a href="/#pricing">Pricing</a><a href="/generator" class="nav-cta">Create Signature</a></nav>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/#templates">Templates</a>
+      <a href="/email-signature-examples">Examples</a>
+      <a href="/health-check">Health Check</a>
+      <a href="/blog/">Guides</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/generator" class="nav-cta">Create Signature</a>
+    </nav>
   </header>
 
   <main id="main-content" class="blog-post">
@@ -261,6 +270,23 @@
       <li><a href="/email-signature-examples">52 Email Signature Examples</a></li>
     </ul>
   </main>
-  <footer class="site-footer" role="contentinfo"><p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p><p style="margin-top: 8px;"><a href="/generator">Generator</a> &nbsp;&middot;&nbsp; <a href="/#pricing">Pricing</a> &nbsp;&middot;&nbsp; <a href="mailto:info@emailsignaturegenerator.ai">Contact</a></p></footer>
+  <footer class="site-footer" role="contentinfo">
+    <p>&copy; 2026 emailsignaturegenerator.ai — No subscriptions. No lock-in. Just great signatures.</p>
+    <p style="margin-top: 8px;">
+      <a href="/generator">Generator</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/email-signature-examples">Examples</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/health-check">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/blog/">Guides</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/privacy">Privacy &amp; Terms</a>
+      &nbsp;&middot;&nbsp;
+      <a href="mailto:info@emailsignaturegenerator.ai">Contact</a>
+    </p>
+  </footer>
 </body>
 </html>

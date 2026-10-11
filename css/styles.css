@@ -127,6 +127,7 @@ label:has(+ .file-input-accessible:focus-visible) {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 
 .site-logo .logo-icon {
@@ -154,9 +155,23 @@ label:has(+ .file-input-accessible:focus-visible) {
   text-decoration: none;
   transition: color 0.2s;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .site-nav a:hover { color: var(--text); }
+.site-nav a[aria-current="page"]:not(.nav-cta) { color: var(--text); }
+
+/* Every page shares one nav; collapse to the CTA before the links would wrap. */
+@media (max-width: 1000px) {
+  .site-nav { gap: 16px; }
+}
+@media (max-width: 760px) {
+  .site-nav a:not(.nav-cta) { display: none; }
+}
+@media (max-width: 420px) {
+  .site-logo { white-space: normal; line-height: 1.2; }
+  .site-nav .nav-cta { white-space: nowrap; padding: 8px 14px; }
+}
 
 .site-nav .nav-cta {
   background: var(--primary);
