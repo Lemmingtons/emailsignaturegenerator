@@ -24,7 +24,7 @@ const path = require('path');
 const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const DEFAULT_SITES = ['sc-domain:emailsignaturegenerator.ai', 'https://emailsignaturegenerator.ai/'];
-const ROW_LIMIT = 5000;
+const ROW_LIMIT = 25000;
 
 const base64url = (input) => Buffer.from(input).toString('base64url');
 
@@ -45,6 +45,16 @@ async function accessToken(key) {
   });
   if (!res.ok) throw new Error(`token request failed: HTTP ${res.status}`);
   return (await res.json()).access_token;
+}
+
+// The API returns at most 25,000 rows per request and pages with startRow.
+async function queryAll(token, site, body) {
+  const rows = [];
+  for (let startRow = 0; ; startRow += ROW_LIMIT) {
+    const page = await query(token, site, { ...body, rowLimit: ROW_LIMIT, startRow });
+    rows.push(...page);
+    if (page.length < ROW_LIMIT) return rows;
+  }
 }
 
 async function query(token, site, body) {
@@ -84,13 +94,14 @@ async function main() {
   const window = dateWindow();
 
   const candidates = process.env.GSC_SITE ? [process.env.GSC_SITE] : DEFAULT_SITES;
+  // Pick the first property with data; fall back to the first accessible one.
   let site = null;
   let totals = null;
   for (const candidate of candidates) {
     try {
-      totals = await query(token, candidate, { ...window, dimensions: [] });
-      site = candidate;
-      break;
+      const rows = await query(token, candidate, { ...window, dimensions: [] });
+      if (!site) { site = candidate; totals = rows; }
+      if (rows.length) { site = candidate; totals = rows; break; }
     } catch (err) {
       // 403 means this property form isn't the one the service account was added to.
       if (err.status !== 403 && err.status !== 404) throw err;
@@ -102,7 +113,7 @@ async function main() {
 
   const report = { site, ...window, generatedAt: new Date().toISOString(), totals: tidy(totals, [])[0] || null };
   for (const dims of [['query'], ['page'], ['query', 'page'], ['country'], ['device']]) {
-    const rows = await query(token, site, { ...window, dimensions: dims, rowLimit: ROW_LIMIT });
+    const rows = await queryAll(token, site, { ...window, dimensions: dims });
     report[dims.join('_')] = tidy(rows, dims);
   }
 
