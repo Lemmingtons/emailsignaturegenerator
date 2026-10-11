@@ -318,6 +318,9 @@
     let m;
     while ((m = tagRe.exec(source))) {
       const name = m[2].toLowerCase();
+      // Blank out quoted values so an "=" inside a URL isn't read as an attribute.
+      const unquoted = m[0].replace(/"[^"]*"|'[^']*'/g, '""').match(/\s([^\s"'=<>\/]+)\s*=\s*(?!["'\s])/);
+      if (unquoted) problems.push(`unquoted ${unquoted[1]}= value on <${name}>`);
       if (VOID_TAGS.has(name) || m[3] === '/') continue;
       if (!m[1]) { stack.push(name); continue; }
       const at = stack.lastIndexOf(name);
@@ -329,6 +332,29 @@
     stack.forEach(open => {
       if (!OPTIONAL_CLOSE_TAGS.has(open)) problems.push(`unclosed <${open}>`);
     });
+    return problems.concat(strayAmpersands(source));
+  }
+
+  // Named entities are checked by letting the HTML parser decode them, so
+  // &nbsp; and friends pass while &foo; or a bare & in a URL does not.
+  const entityCache = new Map();
+  function isKnownEntity(ref) {
+    if (!entityCache.has(ref)) {
+      const decoded = new DOMParser().parseFromString(ref, 'text/html').body.textContent;
+      entityCache.set(ref, decoded !== ref);
+    }
+    return entityCache.get(ref);
+  }
+
+  function strayAmpersands(source) {
+    const problems = [];
+    const ampRe = /&(#[0-9]+;|#x[0-9a-f]+;|[a-z][a-z0-9]*;)?/gi;
+    let m;
+    while ((m = ampRe.exec(source))) {
+      const ref = m[0];
+      if (m[1] && (ref[1] === '#' || isKnownEntity(ref))) continue;
+      problems.push(m[1] ? `unknown entity ${ref}` : 'unescaped &');
+    }
     return problems;
   }
 
@@ -338,10 +364,10 @@
     run(ctx) {
       const problems = unbalancedTags(ctx.fragment);
       if (problems.length) {
-        const examples = [...new Set(problems)].slice(0, 3).map(p => p.replace(/</g, '&lt;').replace(/>/g, '&gt;')).join(', ');
-        return { severity: 'critical', message: `Tags don't match up (${examples}), so email clients may render it unpredictably.`, fix: 'Close every tag you open, in the reverse order you opened them.' };
+        const examples = [...new Set(problems)].slice(0, 3).map(escapeHtml).join(', ');
+        return { severity: 'critical', message: `Markup problems (${examples}), so email clients may render it unpredictably.`, fix: 'Close every tag you open in reverse order, quote every attribute value, and write a literal & as &amp;amp;.' };
       }
-      return { severity: 'pass', message: 'Every tag is opened and closed in order.' };
+      return { severity: 'pass', message: 'Every tag is opened and closed in order, attributes are quoted, and entities are valid.' };
     },
   });
 

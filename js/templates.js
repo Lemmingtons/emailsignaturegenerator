@@ -343,8 +343,8 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
-    ${data.logoUrl && this.escapeUrl(data.logoUrl, 'src') ? `<img src="${this.escapeUrl(data.logoUrl, 'src')}" alt="${this.escapeAttr(data.company || 'Company logo')}" style="max-height: 40px; max-width: 180px; display: block; margin-bottom: 8px; border: 0;" />
-    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 10px;"><tr><td style="border-top: 2px solid ${this._safeColor(primaryColor)}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>` : ''}
+    ${this._logoImg(data, 40, 180) ? `${this._logoImg(data, 40, 180)}
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 8px; margin-bottom: 10px;"><tr><td style="border-top: 2px solid ${this._safeColor(primaryColor)}; font-size: 1px; line-height: 1px; height: 1px; background-color: #ffffff;" bgcolor="#ffffff">&nbsp;</td></tr></table>` : ''}
     ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 14px; color: ${textColor}; font-family: ${fontFamily};`)}<br/>
     ${data.title ? `<span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title)}</span><br/>` : ''}
     ${data.company ? `<span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span><br/>` : ''}

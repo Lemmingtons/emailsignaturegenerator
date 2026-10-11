@@ -1014,9 +1014,9 @@ async function healthResponse(env) {
     rateLimit: Boolean(env.RATE_LIMIT && typeof env.RATE_LIMIT.limit === 'function'),
     storage: false,
   };
-  // Once the site sells the team pack, the Worker must recognise its link, or
-  // buyers would pay and never get access.
-  if (FACTS.teamPaymentLink) {
+  // Once the live site sells the team pack, the Worker must recognise its
+  // link, or buyers would pay and never get access. The sandbox has no team link.
+  if (FACTS.teamPaymentLink && env.STRIPE_LIVEMODE === 'true') {
     checks.teamPaymentLink = planForPaymentLink(env.STRIPE_TEAM_PAYMENT_LINK_ID, env) === 'team';
   }
   const bucket = uploadBucket(env);
