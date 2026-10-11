@@ -126,6 +126,11 @@ function checkWorkerBehavior() {
     "if (noMode.status !== 503 || (await noMode.json()).checks.stripeMode !== false) throw new Error('health check missed an invalid STRIPE_LIVEMODE');",
     "const brokenBucket = await worker.default.fetch(new Request('https://example.com/api/health'), { ...env, UPLOADS: { head: async () => { throw new Error('r2 down'); } } });",
     "if (brokenBucket.status !== 503) throw new Error('health check missed an R2 failure');",
+    // While the live site sells the team pack, the Worker must recognise its link.
+    "const liveNoTeam = await worker.default.fetch(new Request('https://example.com/api/health'), { ...env, STRIPE_LIVEMODE: 'true', STRIPE_TEAM_PAYMENT_LINK_ID: '' });",
+    "if (globalThis.SiteFacts.teamPaymentLink && (liveNoTeam.status !== 503 || (await liveNoTeam.json()).checks.teamPaymentLink !== false)) throw new Error('health check missed a missing team Payment Link');",
+    "const liveTeam = await worker.default.fetch(new Request('https://example.com/api/health'), { ...env, STRIPE_LIVEMODE: 'true', STRIPE_TEAM_PAYMENT_LINK_ID: 'plink_TEAM' });",
+    "if (liveTeam.status !== 200) throw new Error('health check failed with the team Payment Link set');",
     // Unexpected exceptions become a logged 500 rather than a Cloudflare error page.
     "const throwingEnv = { ...env, UPLOADS: { ...bucket, put: async () => { throw new Error('r2 put failed'); } } };",
     "const crashed = await worker.default.fetch(new Request('https://example.com/api/signature', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}' }), throwingEnv);",
@@ -1075,6 +1080,11 @@ assert(/^namespace_id\s*=\s*["']1001["']$/m.test(wrangler), 'Native rate limiter
 assert(/^\[ratelimits\.simple\]$/m.test(wrangler), 'Native rate limiter simple configuration is missing');
 assert(/^limit\s*=\s*25$/m.test(wrangler) && /^period\s*=\s*60$/m.test(wrangler),
   'Native rate limiter must allow 25 uploads per minute');
+// A team offer the Worker cannot redeem would take payments with no access.
+if (facts.teamPaymentLink) {
+  assert(/^https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+$/.test(facts.teamPaymentLink), 'teamPaymentLink must be a live buy.stripe.com link');
+  assert(/^STRIPE_TEAM_PAYMENT_LINK_ID\s*=\s*"plink_[A-Za-z0-9]+"$/m.test(wrangler), 'wrangler.toml must set STRIPE_TEAM_PAYMENT_LINK_ID once the team pack is on sale');
+}
 const sandboxWrangler = read('wrangler.sandbox.toml');
 assert(/^name\s*=\s*["']emailsignaturegenerator-sandbox["']$/m.test(sandboxWrangler),
   'Sandbox Worker must stay isolated from the production Worker');

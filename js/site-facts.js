@@ -32,9 +32,9 @@
       display: '$9',
       displayWithCurrency: 'US$9',
     },
-    // The team pack goes on sale once its Stripe Payment Link exists. Until
-    // teamPaymentLink is set, every team offer on the site stays hidden.
-    teamPaymentLink: '',
+    // Every team offer on the site stays hidden while teamPaymentLink is
+    // empty. The sandbox has no team link, so it hides the offer there.
+    teamPaymentLink: useSandboxPayments ? '' : 'https://buy.stripe.com/7sY4gydud9Hpa7CblJ5Ne01',
     teamPrice: {
       amount: 29,
       amountText: '29.00',
