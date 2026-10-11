@@ -1,0 +1,53 @@
+name: Search Console export
+
+# Saves the last 28 days of Google Search Console data to the
+# `data/search-console` branch, so the monthly SEO audit can read real clicks
+# and impressions with git. The branch never merges into main, so nothing here
+# deploys. Needs the GSC_SERVICE_ACCOUNT_JSON secret; GSC_SITE is optional.
+on:
+  schedule:
+    # Weekly, Monday 20:23 UTC (Tuesday morning in Sydney).
+    - cron: '23 20 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: search-console-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Export Search Console data
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE: ${{ vars.GSC_SITE }}
+          OUT_DIR: ${{ runner.temp }}/search-console
+        run: node scripts/export-search-console.js
+      - name: Commit to the data branch
+        env:
+          OUT_DIR: ${{ runner.temp }}/search-console
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data/search-console >/dev/null; then
+            git fetch --depth=1 origin data/search-console
+            git checkout -B data/search-console FETCH_HEAD
+          else
+            git checkout --orphan data/search-console
+            git rm -rq --cached .
+            find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          fi
+          mkdir -p search-console
+          cp "$OUT_DIR"/*.json search-console/
+          git add search-console
+          git diff --cached --quiet || git commit -qm "Search Console export $(date -u +%F)"
+          git push origin data/search-console
