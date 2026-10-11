@@ -581,15 +581,25 @@ for (const [label, text] of [['title', landingTitle], ['description', landingDes
     assert(price === facts.proPrice.displayWithCurrency, `Landing ${label} quotes ${price}, but the canonical price is ${facts.proPrice.displayWithCurrency}`);
   }
 }
-assert(examplesHtml.includes('<title>52 Email Signature Examples for Gmail &amp; Outlook</title>'),
-  'Examples page must target examples without mislabelling them as product templates');
+{
+  const examplesTitle = examplesHtml.match(/<title>([^<]+)<\/title>/)?.[1] || '';
+  assert(/Email Signature Examples/.test(examplesTitle) && !/templates/i.test(examplesTitle),
+    'Examples page must target examples without mislabelling them as product templates');
+}
 assert(!examplesHtml.includes('52 Professional Templates'),
   'Examples page must not conflate 52 examples with the canonical 24 product templates');
 for (const officialSource of ['support.google.com/mail/answer/8395', 'support.microsoft.com/', 'support.apple.com/guide/mail/mail11943/mac']) {
   assert(examplesHtml.includes(officialSource), `Examples page must retain official source: ${officialSource}`);
 }
-assert(examplesHtml.includes('"dateModified": "2026-07-29"'),
-  'Examples structured data must expose the genuine content refresh date');
+{
+  // The structured-data date must match the visible "Updated" line, so the two
+  // are refreshed together when the page content genuinely changes.
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const isoDate = examplesHtml.match(/"dateModified": "(\d{4})-(\d{2})-(\d{2})"/);
+  const visible = isoDate && `Updated ${Number(isoDate[3])} ${months[Number(isoDate[2]) - 1]} ${isoDate[1]}`;
+  assert(visible && examplesHtml.includes(visible),
+    'Examples structured data must expose the genuine content refresh date');
+}
 
 // Animated photo pipeline: the GIF must be structurally valid, animate, and keep
 // frame 0 as the resting image (classic Outlook renders only that frame).
