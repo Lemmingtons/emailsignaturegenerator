@@ -370,6 +370,9 @@ ${dateModified ? `  <!-- Article Schema -->
     </a>
     <nav class="site-nav" aria-label="Main navigation">
       <a href="/#templates">Templates</a>
+      <a href="/email-signature-examples">Examples</a>
+      <a href="/health-check">Health Check</a>
+      <a href="/blog/">Guides</a>
       <a href="/#pricing">Pricing</a>
       <a href="/generator" class="nav-cta">Create Signature</a>
     </nav>
@@ -453,7 +456,15 @@ ${comparisonHTML}
     <p style="margin-top: 8px;">
       <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
+      <a href="/email-signature-examples">Examples</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/health-check">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/blog/">Guides</a>
+      &nbsp;&middot;&nbsp;
       <a href="/#pricing">Pricing</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/privacy">Privacy &amp; Terms</a>
       &nbsp;&middot;&nbsp;
       <a href="mailto:${SITE_FACTS.contactEmail}">Contact</a>
     </p>
