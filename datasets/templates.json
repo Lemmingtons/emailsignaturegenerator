@@ -1,0 +1,282 @@
+[
+  {
+    "id": "classic",
+    "summary": "A headshot on the left, then your name, title and company, a thin rule in your brand colour, one contact line and social icons.",
+    "bestFor": [
+      "Most office and client-facing roles",
+      "A first signature when you are not sure what you need",
+      "Teams that want one safe design for everyone"
+    ],
+    "notes": "The contact details sit on a single line separated by pipes, which keeps the signature short. On a narrow phone screen that line wraps rather than overflowing."
+  },
+  {
+    "id": "executive",
+    "summary": "Your name in capitals beside a vertical bar in your brand colour, with title, company and contact details stacked underneath.",
+    "bestFor": [
+      "Directors, partners and senior leaders",
+      "Finance, law and other formal industries",
+      "Anyone who wants a restrained, traditional look"
+    ],
+    "notes": "Stacking each contact detail on its own line makes the signature taller but easier to scan, and the vertical bar does the branding without a logo."
+  },
+  {
+    "id": "corporate",
+    "summary": "A thick brand-colour bar across the top, then your details with P, E and W labels in your brand colour.",
+    "bestFor": [
+      "Larger companies with a strong brand colour",
+      "Roles where people mainly call you",
+      "Signatures that sit under long, formal emails"
+    ],
+    "notes": "The labelled rows tell the reader which number is which at a glance, and the top bar clearly separates the signature from the message above it."
+  },
+  {
+    "id": "boardroom",
+    "summary": "A small headshot beside your name and title, with the company and contact details below, divided by fine horizontal rules.",
+    "bestFor": [
+      "Consultants and account managers",
+      "People who reply to long threads",
+      "A wide, compact signature that stays short"
+    ],
+    "notes": "The photo is smaller than in most templates, so the signature reads as information first and portrait second."
+  },
+  {
+    "id": "branded",
+    "summary": "Built around your company logo: logo, name and title, a brand-colour rule, one contact line and social icons.",
+    "bestFor": [
+      "Businesses whose website lookup found a clean logo",
+      "Small companies that want the logo seen in every email",
+      "Staff who represent the company more than themselves"
+    ],
+    "notes": "When a logo is added it takes the company name's place, so the signature does not repeat the business name twice."
+  },
+  {
+    "id": "gradient",
+    "summary": "Your name in your primary colour, your title in your secondary colour, and a two-colour gradient rule underneath.",
+    "bestFor": [
+      "Brands with two strong colours",
+      "Marketing, design and creative roles",
+      "Startups that want something less corporate"
+    ],
+    "notes": "Outlook for Windows does not render CSS gradients, so the rule falls back to your primary colour there. Everything else in the layout is unchanged."
+  },
+  {
+    "id": "bold",
+    "summary": "A brand-colour ring around your headshot and your job title set in a filled brand-colour pill.",
+    "bestFor": [
+      "Sales and business development",
+      "Creative and agency roles",
+      "Anyone whose job title is the selling point"
+    ],
+    "notes": "The pill makes the title the most visible thing after your name, so it suits roles where what you do matters more than where you work."
+  },
+  {
+    "id": "modern",
+    "summary": "Headshot, name and company in small capitals, with the contact details in a tinted strip along the bottom.",
+    "bestFor": [
+      "Tech and product companies",
+      "Freelancers with a personal brand",
+      "People who want a contemporary layout without loud colour"
+    ],
+    "notes": "The tinted strip groups every way to reach you in one place, which helps on mobile where the signature is often the only thing visible after a short reply."
+  },
+  {
+    "id": "clean",
+    "summary": "No photo: name and title on one line, contact details on the next, then small social icons.",
+    "bestFor": [
+      "Internal email and quick replies",
+      "People who prefer not to use a headshot",
+      "Very short signatures for busy threads"
+    ],
+    "notes": "It is one of the lightest templates, which keeps long reply chains readable when every message repeats the signature."
+  },
+  {
+    "id": "textonly",
+    "summary": "Plain text only: your name, title, company and contact details stacked line by line, with social links written as words.",
+    "bestFor": [
+      "Organisations that block images in email",
+      "Accessibility-first and plain-text users",
+      "Academics, government and legal teams"
+    ],
+    "notes": "There are no images at all, so nothing can be blocked, stripped or flagged. It is the most predictable template across every email client."
+  },
+  {
+    "id": "dash",
+    "summary": "A thin vertical line in your brand colour beside stacked text details, with no photo.",
+    "bestFor": [
+      "Minimal personal brands",
+      "Writers, editors and researchers",
+      "A quiet signature that still carries your colour"
+    ],
+    "notes": "The single line is the only decoration, which gives a hint of brand colour without a logo or headshot."
+  },
+  {
+    "id": "socialstar",
+    "summary": "A headshot and your details with larger social icons, so your profiles get more attention than in a standard layout.",
+    "bestFor": [
+      "Recruiters and community managers",
+      "Small businesses that sell through Instagram or Facebook",
+      "Anyone who wants replies to turn into follows"
+    ],
+    "notes": "The icons are 30 pixels, larger than the 22-pixel icons most templates use, which makes them easier to tap on a phone."
+  },
+  {
+    "id": "creator",
+    "summary": "A centred layout with the headshot on top, your name and role below, and a row of large social icons.",
+    "bestFor": [
+      "Content creators and influencers",
+      "Coaches and speakers",
+      "Personal brands that live on social platforms"
+    ],
+    "notes": "Centred signatures look best when the email body is also short. In a long, left-aligned email it can feel detached from the text above it."
+  },
+  {
+    "id": "ctabox",
+    "summary": "A compact signature with a filled call-to-action button, such as Book a meeting, under your contact details.",
+    "bestFor": [
+      "Sales reps who book demos",
+      "Consultants who take discovery calls",
+      "Anyone with one link they want clicked"
+    ],
+    "notes": "The button is a styled link rather than an image, so it still shows when images are blocked. Pro can also host an animated version of the button."
+  },
+  {
+    "id": "banner",
+    "summary": "Your details with a full-width call-to-action banner underneath, wider and more prominent than a button.",
+    "bestFor": [
+      "Promotions, launches and events",
+      "Booking and enquiry links",
+      "Teams running a campaign through everyday email"
+    ],
+    "notes": "Change the banner text when the campaign changes. Old campaign wording is the most common reason signatures look out of date."
+  },
+  {
+    "id": "meetinglink",
+    "summary": "A standard signature with a text link to your calendar under a brand-colour rule, rather than a button.",
+    "bestFor": [
+      "People who share a Calendly or booking link",
+      "Account managers and customer success",
+      "A softer call to action than a button"
+    ],
+    "notes": "A text link is less pushy than a button and survives every email client, including ones that strip background colours."
+  },
+  {
+    "id": "realestate",
+    "summary": "Headshot, stacked contact details and a filled button for a booking or listing link, with room for licence details below.",
+    "bestFor": [
+      "Real estate agents and property managers",
+      "Mortgage brokers",
+      "Any role where the next step is a booking"
+    ],
+    "notes": "Turn on the compliance fields in the generator to add your licence number, brokerage and a standard disclaimer under the signature."
+  },
+  {
+    "id": "trades",
+    "summary": "A brand-colour bar beside your details, with labelled Call, Email and Web rows and the phone number first.",
+    "bestFor": [
+      "Builders, electricians, plumbers and other trades",
+      "Field services and inspections",
+      "Businesses where customers phone rather than email"
+    ],
+    "notes": "Putting the phone number first and labelling it Call means a customer reading on a phone can tap it straight away."
+  },
+  {
+    "id": "consultant",
+    "summary": "Your title in spaced capitals in your brand colour, an accent rule and a clean contact block.",
+    "bestFor": [
+      "Consultants and advisers",
+      "Professional services firms",
+      "Specialists whose title carries weight"
+    ],
+    "notes": "The spaced-capital title reads as a credential, which suits roles where clients choose you for your expertise."
+  },
+  {
+    "id": "atelier",
+    "summary": "Name, then title and company in small spaced capitals, an accent rule and stacked contact details.",
+    "bestFor": [
+      "Design studios and architects",
+      "Boutique agencies",
+      "Hospitality and lifestyle brands"
+    ],
+    "notes": "The small capitals give an editorial, studio feel without needing a special font, since it uses the same email-safe fonts as every template."
+  },
+  {
+    "id": "cardstock",
+    "summary": "A bordered card with your details on the left, a call-to-action link on the right and social icons along the bottom.",
+    "bestFor": [
+      "People who want a business-card look",
+      "Freelancers who share one key link",
+      "Signatures that need to stand apart from the message"
+    ],
+    "notes": "The border makes the signature read as a separate object, which helps when your emails are long or you often forward threads."
+  },
+  {
+    "id": "portrait",
+    "summary": "A taller rectangular headshot beside a serif name and a spaced-capital title.",
+    "bestFor": [
+      "Photographers and creative professionals",
+      "Authors and speakers",
+      "Anyone with a strong professional portrait"
+    ],
+    "notes": "This template needs a good photo. A low-resolution or busy headshot is more noticeable here than in the circular layouts."
+  },
+  {
+    "id": "monogram",
+    "summary": "Your initials in a brand-colour circle instead of a photo, with your details beside it.",
+    "bestFor": [
+      "People who do not want a headshot",
+      "New businesses without a logo yet",
+      "Shared team inboxes"
+    ],
+    "notes": "By default the monogram is text on a coloured circle, not an image, so it shows even when the recipient blocks images."
+  },
+  {
+    "id": "stacked",
+    "summary": "A headshot with your details listed under small capital labels: phone, email and web.",
+    "bestFor": [
+      "Roles with several ways to be contacted",
+      "Customer-facing support teams",
+      "People who like information laid out like a form"
+    ],
+    "notes": "The labels make it obvious which line is which, which helps readers who skim the signature looking for one detail."
+  },
+  {
+    "id": "signature",
+    "summary": "A headshot, a brand-colour accent and contact rows marked M, E and W in your brand colour.",
+    "bestFor": [
+      "People who are mainly reached by mobile",
+      "Managers and team leads",
+      "A classic layout with a little more structure"
+    ],
+    "notes": "The single-letter markers are text in your brand colour, so they add structure without any extra images."
+  },
+  {
+    "id": "letterhead",
+    "summary": "A headshot, your name, your title with the company in your brand colour, then your contact lines.",
+    "bestFor": [
+      "Firms that want to echo their printed letterhead",
+      "Accountants and advisers",
+      "People who send formal correspondence"
+    ],
+    "notes": "Highlighting the company name in brand colour keeps the business visible even when no logo is used."
+  },
+  {
+    "id": "minimal",
+    "summary": "No photo: your name, title and company, a short rule, one contact line and small social icons.",
+    "bestFor": [
+      "Developers and technical roles",
+      "Founders who want understatement",
+      "Anyone who finds most signatures too busy"
+    ],
+    "notes": "The short rule is the only decoration. It suits people who want a signature that does its job and gets out of the way."
+  },
+  {
+    "id": "showcase",
+    "summary": "A tinted panel holding your headshot, details, a call-to-action button and social icons together.",
+    "bestFor": [
+      "Founders and sales leaders",
+      "Event and launch periods",
+      "People who want every link in one tidy block"
+    ],
+    "notes": "The panel colour is set with the bgcolor attribute as well as CSS, so email clients that ignore CSS backgrounds still show the block."
+  }
+]

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How to Add an Email Signature in Gmail: Desktop & Mobile</title>
-  <meta name="description" content="Add or paste an email signature in Gmail, set defaults, handle the separate mobile signature, and fix missing images, formatting, or size errors.">
+  <title>How to Add or Change Your Email Signature in Gmail (2026)</title>
+  <meta name="description" content="How to add, change or remove your email signature in Gmail on desktop, Android and iPhone, set defaults for replies, and fix missing images, formatting and size errors.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail">
-  <meta property="og:title" content="How to Add an Email Signature in Gmail: Desktop & Mobile">
-  <meta property="og:description" content="Current Gmail setup paths, HTML paste guidance, mobile behavior, and practical troubleshooting.">
+  <meta property="og:title" content="How to Add or Change Your Email Signature in Gmail (2026)">
+  <meta property="og:description" content="Add, change or remove a Gmail signature on desktop and mobile, with paste guidance and troubleshooting.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail">
   <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
@@ -17,18 +17,18 @@
   <meta property="og:image:height" content="630">
   <meta property="og:site_name" content="Email Signature Generator">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="How to Add an Email Signature in Gmail">
+  <meta name="twitter:title" content="How to Add or Change Your Signature in Gmail">
   <meta name="twitter:description" content="Desktop and mobile setup paths, HTML paste guidance, and troubleshooting.">
   <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "How to Add an Email Signature in Gmail: Desktop & Mobile",
-    "description": "Current Gmail setup paths, HTML paste guidance, mobile behavior, and troubleshooting.",
+    "headline": "How to Add or Change Your Email Signature in Gmail (2026)",
+    "description": "How to add, change or remove an email signature in Gmail on desktop, Android and iPhone.",
     "image": "https://emailsignaturegenerator.ai/assets/og-image.png",
     "datePublished": "2026-04-12",
-    "dateModified": "2026-08-15",
+    "dateModified": "2026-10-25",
     "author": { "@type": "Organization", "name": "Email Signature Generator", "url": "https://emailsignaturegenerator.ai/" },
     "publisher": { "@type": "Organization", "name": "Email Signature Generator", "url": "https://emailsignaturegenerator.ai/" },
     "mainEntityOfPage": { "@type": "WebPage", "@id": "https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail" },
@@ -42,7 +42,19 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://emailsignaturegenerator.ai/" },
       { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://emailsignaturegenerator.ai/blog/" },
-      { "@type": "ListItem", "position": 3, "name": "How to Add an Email Signature in Gmail", "item": "https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail" }
+      { "@type": "ListItem", "position": 3, "name": "How to Add or Change Your Signature in Gmail", "item": "https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "How do I change my email signature in Gmail?", "acceptedAnswer": { "@type": "Answer", "text": "On a computer, open Gmail, select Settings, then See all settings. On the General tab, scroll to Signature, select the signature you want to change, edit it or paste the new version over it, then select Save Changes at the bottom of the page." } },
+      { "@type": "Question", "name": "Why is my Gmail signature not showing?", "acceptedAnswer": { "@type": "Answer", "text": "Check the signature defaults under Settings, General, Signature. Gmail has separate defaults for new emails and for replies and forwards, and a separate mobile signature in the Gmail app. If you send from another address with Send mail as, each address has its own signature." } },
+      { "@type": "Question", "name": "How do I remove my signature in Gmail?", "acceptedAnswer": { "@type": "Answer", "text": "Open Settings, See all settings, General, Signature. Set both defaults to No signature to stop using it, or select the signature and choose Delete to remove it, then select Save Changes." } },
+      { "@type": "Question", "name": "How long can a Gmail signature be?", "acceptedAnswer": { "@type": "Answer", "text": "Google says a Gmail signature can be up to 10,000 characters. The HTML for formatting counts toward that limit, so a heavily styled signature reaches it sooner than plain text." } }
     ]
   }
   </script>
@@ -74,9 +86,13 @@
     .breadcrumb { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px; }
     .breadcrumb a { color: var(--text-secondary); text-decoration: none; }
     code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    .cta-brand-form { display: flex; gap: 8px; max-width: 520px; margin: 0 auto; }
+    .cta-brand-form input { flex: 1; min-width: 0; padding: 12px 14px; font-size: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     @media (max-width: 560px) {
       .trouble-table { display: block; overflow-x: auto; }
       .blog-post { padding-left: 18px; padding-right: 18px; }
+      .cta-brand-form { flex-direction: column; }
       .visual-hint { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.78rem; font-weight: 600; }
       .visual-scroll { overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 6px; }
       .visual-scroll img { width: auto; max-width: none; min-width: 860px; }
@@ -93,7 +109,7 @@
       Email Signature Generator
     </a>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="/#templates">Templates</a>
+      <a href="/email-signature-templates">Templates</a>
       <a href="/email-signature-examples">Examples</a>
       <a href="/health-check">Health Check</a>
       <a href="/blog/">Guides</a>
@@ -102,10 +118,10 @@
     </nav>
   </header>
   <main id="main-content" class="blog-post">
-    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › How to Add an Email Signature in Gmail</nav>
-    <h1>How to Add an Email Signature in Gmail: Desktop &amp; Mobile</h1>
-    <p class="post-meta">By Email Signature Generator · Updated 15 August 2026 · 7 min read</p>
-    <div class="answer-box"><p><strong>On desktop:</strong> open Gmail, select Settings → See all settings, find Signature under General, add or paste the signature, choose defaults for new messages and replies, then Save Changes. Gmail’s Android and iPhone/iPad apps have a separate mobile-signature setting.</p></div>
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a> › Add or Change Your Signature in Gmail</nav>
+    <h1>How to Add or Change Your Email Signature in Gmail</h1>
+    <p class="post-meta">By Email Signature Generator · Updated 25 October 2026 · 8 min read</p>
+    <div class="answer-box"><p><strong>On desktop:</strong> open Gmail, select Settings → See all settings, find Signature under General, add or paste the signature, choose defaults for new messages and replies, then Save Changes. To change a signature, select it in the same place, edit it and save again. Gmail’s Android and iPhone/iPad apps have a separate mobile-signature setting.</p></div>
     <p>Google’s current instructions confirm these paths, support multiple desktop signatures, and state that a Gmail signature can contain up to 10,000 characters. Use Google’s <a href="https://support.google.com/mail/answer/8395?hl=en" rel="noopener">official Gmail signature guide</a> beside the steps below.</p>
 
     <figure class="article-visual">
@@ -114,7 +130,7 @@
       <figcaption>Gmail desktop and the Gmail mobile apps use separate controls. The final check belongs in a received message.</figcaption>
     </figure>
 
-    <h2>Add or paste a Gmail signature on desktop</h2>
+    <h2 id="add">Add or paste a Gmail signature on desktop</h2>
     <div class="step-box"><ol>
       <li>Open Gmail in a desktop browser.</li>
       <li>At the top right, select <strong>Settings</strong>, then <strong>See all settings</strong>.</li>
@@ -124,6 +140,23 @@
       <li>Scroll to the bottom and select <strong>Save Changes</strong>.</li>
       <li>Compose a new message, confirm the intended signature appears, and send a test.</li>
     </ol></div>
+
+    <h2 id="change">How to change your Gmail signature</h2>
+    <div class="step-box"><ol>
+      <li>Open <strong>Settings → See all settings</strong> and stay on <strong>General</strong>.</li>
+      <li>Under <strong>Signature</strong>, select the signature you want to change from the list on the left.</li>
+      <li>Edit it in the editor, or select everything inside it and paste your new signature over the old one.</li>
+      <li>Check the defaults for new emails and replies/forwards still point at the right signature.</li>
+      <li>Select <strong>Save Changes</strong> at the bottom of the page. Gmail does not save signature edits until you do.</li>
+    </ol></div>
+    <p>To use a different signature for one message only, open the message, select the <strong>Insert signature</strong> pen icon at the bottom of the compose window, and pick another saved signature.</p>
+
+    <h2 id="remove">How to remove or turn off a Gmail signature</h2>
+    <ul>
+      <li><strong>Stop using it:</strong> set both defaults to <strong>No signature</strong> and select Save Changes. The signature stays saved for later.</li>
+      <li><strong>Delete it:</strong> select the signature, choose the delete (bin) icon beside it, confirm, then select Save Changes.</li>
+      <li><strong>Mobile:</strong> in the Gmail app, turn off <strong>Mobile Signature</strong> (iPhone) or clear the mobile signature text (Android).</li>
+    </ul>
 
     <h2>Paste rich HTML without using the wrong product control</h2>
     <p>In this product, the export button is labelled <strong>Copy HTML</strong>. There is no separate “Copy for Gmail” button. After unlocking export, use Copy HTML, click inside Gmail’s signature editor, and paste normally with <code>Ctrl+V</code> on Windows or <code>Cmd+V</code> on Mac.</p>
@@ -164,12 +197,14 @@
     </ol>
     <p>Use the <a href="/health-check">email signature health check</a> before installation if you already have HTML. For content and accessibility decisions, use the <a href="/blog/email-signature-best-practices">email signature best-practices checklist</a>.</p>
 
-    <div class="cta-inline"><h2>Build a Gmail signature, then test it</h2><p>Choose from 28 templates, preview the result, and use Copy HTML when you are ready to install the signature in Gmail.</p><a href="/generator" class="btn btn-primary">Create Your Gmail Signature</a></div>
+    <div class="cta-inline"><h2>Skip the formatting: start from your website</h2><p>Type your company website and the generator fills in your logo, brand colours and links across 28 templates. Preview free, then use Copy HTML when you are ready to paste it into Gmail.</p><form class="cta-brand-form" action="/generator" method="get"><label for="gmailSite" class="visually-hidden">Your company website</label><input type="text" id="gmailSite" name="site" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourcompany.com" maxlength="300"><button type="submit" class="btn btn-primary">Build my Gmail signature</button></form></div>
 
     <nav aria-label="Related articles" style="margin-top: 48px; border-top: 1px solid var(--border); padding-top: 32px;">
       <h2 style="font-size: 1.1rem;">Related guides</h2>
       <ul style="list-style: none; padding: 0;">
-        <li><a href="/blog/how-to-add-email-signature-in-outlook">How to Add an Email Signature in Outlook</a></li>
+        <li><a href="/blog/how-to-add-email-signature-in-outlook">How to Add or Change Your Signature in Outlook</a></li>
+        <li><a href="/seo/email-signature-generator-for-gmail">Gmail signature setup and fixes</a></li>
+        <li><a href="/email-signature-templates">28 Email Signature Templates</a></li>
         <li><a href="/blog/email-signature-social-media-icons">How to Add Social Media Icons to an Email Signature</a></li>
         <li><a href="/email-signature-examples">Professional Email Signature Examples</a></li>
         <li><a href="/blog/free-vs-paid-email-signature-generators">Free vs Paid Email Signature Generators</a></li>
@@ -181,9 +216,15 @@
     <p style="margin-top: 8px;">
       <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
+      <a href="/email-signature-templates">Templates</a>
+      &nbsp;&middot;&nbsp;
       <a href="/email-signature-examples">Examples</a>
       &nbsp;&middot;&nbsp;
       <a href="/health-check">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/brand-extractor">Brand Extractor</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/seo/best-email-signature-generators">Compare Generators</a>
       &nbsp;&middot;&nbsp;
       <a href="/blog/">Guides</a>
       &nbsp;&middot;&nbsp;

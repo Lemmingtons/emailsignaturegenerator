@@ -739,6 +739,8 @@ const PUBLIC_ROOT_ASSETS = new Set([
   '/generator.html',
   '/health-check.html',
   '/email-signature-examples.html',
+  '/email-signature-templates.html',
+  '/brand-extractor.html',
   '/privacy.html',
   '/favicon.svg',
   '/robots.txt',
@@ -748,6 +750,7 @@ const PUBLIC_ROOT_ASSETS = new Set([
 
 const PUBLIC_CLIENT_SCRIPTS = new Set([
   '/js/app.js',
+  '/js/brand-tool.js',
   '/js/generator-core.js',
   '/js/gif-encoder.js',
   '/js/health-check.js',
@@ -763,7 +766,7 @@ function isPublicStaticAssetPath(pathname) {
   if (/^\/css\/[A-Za-z0-9_-]+\.css$/.test(pathname)) return true;
   if (/^\/assets\/(?:blog\/)?[A-Za-z0-9_-]+\.(?:gif|jpe?g|png|svg|webp)$/.test(pathname)) return true;
   if (pathname === '/datasets/compliance.json') return true;
-  if (/^\/(?:blog|seo)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
+  if (/^\/(?:blog|seo|email-signature-templates)\/[A-Za-z0-9_-]+\.html$/.test(pathname)) return true;
 
   // Clean URLs are public only when their corresponding HTML path is public.
   if (!pathname.endsWith('/') && !/\.[A-Za-z0-9]+$/.test(pathname)) {

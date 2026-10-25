@@ -82,7 +82,7 @@ function checkWorkerBehavior() {
     "  },",
     "};",
     "const assetRequests = [];",
-    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-generator-for-gmail.html', '/robots.txt']);",
+    "const publicAssets = new Set(['/', '/blog', '/blog/', '/index.html', '/generator.html', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/blog/index.html', '/blog/email-signature-best-practices.html', '/seo/email-signature-generator-for-gmail.html', '/robots.txt', '/js/brand-tool.js', '/email-signature-templates.html', '/email-signature-templates/classic.html', '/brand-extractor.html']);",
     "const limiterKeys = [];",
     "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
@@ -386,7 +386,7 @@ function checkWorkerBehavior() {
     "const legacy = await worker.default.fetch(new Request('https://example.com/api/upload', { method: 'POST' }), env);",
     "if (legacy.status !== 410) throw new Error('legacy upload returned ' + legacy.status);",
     // The static binding is reachable only through the explicit public policy.
-    "for (const pathname of ['/', '/blog', '/blog/', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/robots.txt']) {",
+    "for (const pathname of ['/', '/blog', '/blog/', '/css/styles.css', '/js/app.js', '/assets/og-image.png', '/assets/blog/student-signature-anatomy.svg', '/datasets/compliance.json', '/robots.txt', '/js/brand-tool.js', '/email-signature-templates', '/email-signature-templates/classic', '/brand-extractor']) {",
     "  const publicAsset = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
     "  if (publicAsset.status !== 200) throw new Error('public asset was blocked: ' + pathname);",
     "}",
@@ -1093,7 +1093,7 @@ assert(/^bucket_name\s*=\s*["']email-sig-photos-sandbox["']$/m.test(sandboxWrang
 assert(/^SANDBOX_MODE\s*=\s*["']true["']$/m.test(sandboxWrangler),
   'Sandbox Worker must emit noindex headers');
 const assetsIgnore = read('.assetsignore');
-for (const privateAsset of ['datasets/competitors.json', '.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
+for (const privateAsset of ['datasets/competitors.json', 'datasets/templates.json', 'datasets/professions.json', 'datasets/generators.json', '.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
   assert(assetsIgnore.split(/\r?\n/).includes(privateAsset), `.assetsignore must exclude ${privateAsset}`);
 }
 checkWorkerBehavior();
@@ -1108,6 +1108,10 @@ const contentFiles = [
   'health-check.html',
   ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
   ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`),
+  ...fs.readdirSync(fromRoot('email-signature-templates')).filter(f => f.endsWith('.html')).map(f => `email-signature-templates/${f}`),
+  'email-signature-templates.html',
+  'brand-extractor.html',
+  'js/brand-tool.js',
 ];
 
 const stalePatterns = [
@@ -1142,6 +1146,7 @@ const internalLinkFiles = [
   'generate-pages.js',
   ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
   ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`),
+  ...fs.readdirSync(fromRoot('email-signature-templates')).filter(f => f.endsWith('.html')).map(f => `email-signature-templates/${f}`),
 ];
 
 for (const file of internalLinkFiles) {
@@ -1150,6 +1155,41 @@ for (const file of internalLinkFiles) {
     `${file} links to the redirecting generator.html URL instead of /generator`);
   assert(!/href=["'][^"']*how-to-add-email-signature-in-outlook\.html(?:[?#][^"']*)?["']/i.test(text),
     `${file} links to the redirecting Outlook .html URL instead of its canonical path`);
+}
+
+// Every template has a gallery page, every page links back to a real template,
+// and every page on the site carries the same main navigation.
+{
+  const galleryFiles = fs.readdirSync(fromRoot('email-signature-templates')).filter(f => f.endsWith('.html'));
+  assert(galleryFiles.length === facts.templateCount, `email-signature-templates/ has ${galleryFiles.length} pages but site-facts has ${facts.templateCount} templates`);
+  for (const [id] of templates) {
+    assert(galleryFiles.includes(`${id}.html`), `email-signature-templates/${id}.html is missing; run npm run generate`);
+    assert(read(`email-signature-templates/${id}.html`).includes(`href="/generator?template=${id}"`), `email-signature-templates/${id}.html must open its own template`);
+  }
+  const hub = read('email-signature-templates.html');
+  for (const [id] of templates) assert(hub.includes(`href="/email-signature-templates/${id}"`), `Template gallery must link ${id}`);
+
+  const navFiles = [
+    ...fs.readdirSync(root).filter(f => f.endsWith('.html') && !/^(?:test|googlee[0-9a-f]+)\.html$/.test(f)),
+    ...fs.readdirSync(fromRoot('blog')).filter(f => f.endsWith('.html')).map(f => `blog/${f}`),
+    ...fs.readdirSync(fromRoot('seo')).filter(f => f.endsWith('.html')).map(f => `seo/${f}`),
+    ...galleryFiles.map(f => `email-signature-templates/${f}`),
+  ];
+  for (const file of navFiles) {
+    const text = read(file);
+    assert(text.includes('<a href="/email-signature-templates">Templates</a>'), `${file} main navigation must link Templates to /email-signature-templates`);
+    assert(!/href="\/?#templates">Templates</.test(text), `${file} still links Templates to the homepage carousel`);
+  }
+}
+
+// AI crawlers must be able to read the site: no blanket Disallow for the
+// answer-engine and training crawlers we rely on for visibility.
+{
+  const robots = read('robots.txt');
+  for (const agent of ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-SearchBot', 'PerplexityBot', 'Google-Extended']) {
+    const group = robots.split(/\n(?=User-agent:)/).find(block => new RegExp(`^User-agent: ${agent}\\s*$`, 'm').test(block));
+    assert(group && /^Allow: \/$/m.test(group) && !/^Disallow: \/\s*$/m.test(group), `robots.txt must allow ${agent}`);
+  }
 }
 
 if (!process.exitCode) {

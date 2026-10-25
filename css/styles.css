@@ -1213,6 +1213,30 @@ label:has(+ .file-input-accessible:focus-visible) {
   text-decoration: none;
 }
 
+/* How it works: the steps are explanation, not links, so they do not lift. */
+.how-steps .showcase-card {
+  cursor: default;
+}
+
+.how-steps .showcase-card:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+}
+
+.how-it-works-proof {
+  max-width: 720px;
+  margin: 24px auto 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.how-it-works-proof a {
+  color: var(--primary-hover);
+  font-weight: 600;
+}
+
 .showcase-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);

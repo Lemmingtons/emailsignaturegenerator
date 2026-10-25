@@ -4,8 +4,24 @@
     {
       "name": "static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8788"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8788"
+      ],
       "port": 8788
+    },
+    {
+      "name": "worker",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--local",
+        "--port",
+        "8787"
+      ],
+      "port": 8787
     }
   ]
 }

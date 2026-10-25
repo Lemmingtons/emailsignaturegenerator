@@ -27,7 +27,7 @@
     "@type": "CollectionPage",
     "name": "Email Signature Examples",
     "url": "https://emailsignaturegenerator.ai/email-signature-examples",
-    "dateModified": "2026-10-11",
+    "dateModified": "2026-10-25",
     "inLanguage": "en",
     "author": { "@type": "Organization", "name": "Email Signature Generator", "url": "https://emailsignaturegenerator.ai/" },
     "description": "A practical library of professional email signature examples for Gmail, Outlook, business roles, industries, freelancers, and small teams.",
@@ -42,6 +42,19 @@
         { "@type": "ListItem", "position": 5, "name": "Legal disclaimer signature" }
       ]
     }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "What is a good example of a professional email signature?", "acceptedAnswer": { "@type": "Answer", "text": "A good professional signature gives your full name, job title, organisation and one or two ways to reach you, such as a phone number and website. For example: Jane Morrison, Operations Manager, Northline Studio, then her email, phone and website on one line. Add a photo, logo or booking link only when it helps the reader." } },
+      { "@type": "Question", "name": "What should you not put in an email signature?", "acceptedAnswer": { "@type": "Answer", "text": "Leave out quotes, long lists of awards, several phone numbers, large images, animated banners that never change, and more than three or four social icons. Each extra item competes with the one next step you want the reader to take." } },
+      { "@type": "Question", "name": "How long should an email signature be?", "acceptedAnswer": { "@type": "Answer", "text": "Aim for three to five lines of text, plus an optional photo or logo. Use a shorter version, or none, on replies so long threads stay readable. Gmail limits a signature to 10,000 characters including its HTML." } },
+      { "@type": "Question", "name": "Should I put a photo in my email signature?", "acceptedAnswer": { "@type": "Answer", "text": "A headshot helps when people have not met you, for example in sales, recruiting or real estate. It is less useful on internal email and long reply threads. Use a small, hosted image and keep your details as real text so the signature still works when images are blocked." } }
+    ]
   }
   </script>
 
@@ -60,6 +73,11 @@
     .quick-answer h2 { font-family: var(--font-heading); font-size: 1.25rem; margin-bottom: 8px; }
     .quick-answer p { color: var(--text-secondary); line-height: 1.75; margin: 0; }
     .framework-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .job-guides { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .job-guides a.framework-card { color: inherit; text-decoration: none; }
+    .job-guides a.framework-card:hover strong { text-decoration: underline; }
+    .examples-jump { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 28px 0 0; font-size: 0.9rem; }
+    .examples-jump a { color: var(--text-secondary); }
     .framework-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
     .framework-card strong { display: block; margin-bottom: 7px; color: var(--primary-hover); }
     .framework-card p { color: var(--text-secondary); font-size: .92rem; line-height: 1.55; margin: 0; }
@@ -123,7 +141,7 @@
       Email Signature Generator
     </a>
     <nav class="site-nav" aria-label="Main navigation">
-      <a href="/#templates">Templates</a>
+      <a href="/email-signature-templates">Templates</a>
       <a href="/email-signature-examples" aria-current="page">Examples</a>
       <a href="/health-check">Health Check</a>
       <a href="/blog/">Guides</a>
@@ -136,7 +154,7 @@
     <section class="examples-hero" aria-label="Email signature examples introduction">
       <h1>52 Email Signature Examples and Samples</h1>
       <p>Compare professional email signature examples for Gmail, Outlook, Apple Mail, sales, regulated roles, creative work, long reply threads, and small teams. The 52 examples below are role and use-case ideas; the generator has 28 customisable templates.</p>
-      <p class="examples-meta">Updated 11 October 2026 · Examples and recommendations reviewed against the current generator and official Gmail, Outlook, and Apple Mail guidance.</p>
+      <p class="examples-meta">Updated 25 October 2026 · Examples and recommendations reviewed against the current generator and official Gmail, Outlook, and Apple Mail guidance.</p>
       <div class="examples-actions">
         <a href="/generator" class="btn btn-primary">Create a signature</a>
         <a href="/health-check" class="btn btn-secondary">Check an existing signature</a>
@@ -147,6 +165,16 @@
       <h2 id="quick-answer-title">What should a professional email signature include?</h2>
       <p>Start with your name, role, organisation, and one reliable way to continue the conversation. Add a phone number, website, photo, logo, social link, disclaimer, or call to action only when it serves the recipient. A signature is navigation at the end of an email, not a second advertisement.</p>
     </aside>
+
+    <nav class="examples-jump" aria-label="On this page">
+      <strong>On this page:</strong>
+      <a href="#rendered">Rendered examples</a>
+      <a href="#by-role">52 examples by role</a>
+      <a href="#by-job">Detailed job guides</a>
+      <a href="#starters">HTML starters</a>
+      <a href="#clients">Gmail, Outlook and Apple Mail</a>
+      <a href="#faq">FAQ</a>
+    </nav>
 
     <section class="examples-section" aria-label="Email signature selection framework">
       <h2>Choose with four checks: identity, context, route, restraint</h2>
@@ -160,7 +188,7 @@
     </section>
 
     <section class="examples-section" aria-label="Rendered signature previews">
-      <h2>Rendered examples</h2>
+      <h2 id="rendered">Rendered examples</h2>
       <p class="section-intro">These previews show common layouts before you build your own. Keep the structure simple, then change the name, role, phone, links, colours, and optional photo inside the generator.</p>
       <div class="preview-grid">
         <article class="signature-preview-card">
@@ -208,7 +236,7 @@
     </section>
 
     <section class="examples-section" aria-label="52 email signature example ideas">
-      <h2>52 email signature examples by role and use case</h2>
+      <h2 id="by-role">52 email signature examples by role and use case</h2>
       <p class="section-intro">The best signature is not the longest one. Pick the layout that matches the job your email needs to do: trust, reply clarity, booked calls, compliance, portfolio clicks, or simple contact access. Each example opens the generator with a suitable template and your job title filled in; add your website there to bring in your logo and colours.</p>
       <div class="example-directory">
         <div class="example-list">
@@ -286,6 +314,19 @@
       </div>
     </section>
 
+    <section class="examples-section" aria-labelledby="by-job">
+      <h2 id="by-job">Detailed examples for specific jobs</h2>
+      <p class="section-intro">Some jobs come with rules: licence numbers, credentials in a set order, or a confidentiality notice. These guides show finished signatures for each, rendered with the real templates.</p>
+      <div class="framework-grid job-guides">
+        <a class="framework-card" href="/seo/real-estate-agent-email-signature"><strong>Real estate agents</strong><p>Licence number, brokerage, a booking button and Equal Housing wording.</p></a>
+        <a class="framework-card" href="/seo/nurse-email-signature"><strong>Nurses</strong><p>Credentials in the recommended order, unit and facility, and a confidentiality notice.</p></a>
+        <a class="framework-card" href="/seo/lawyer-email-signature"><strong>Lawyers</strong><p>Firm details, bar admission and a short confidentiality notice.</p></a>
+        <a class="framework-card" href="/blog/teacher-email-signature-examples"><strong>Teachers</strong><p>School, subject, office hours and what to leave out for parents.</p></a>
+        <a class="framework-card" href="/blog/student-email-signature-examples"><strong>Students</strong><p>College, internship, graduate research and portfolio signatures.</p></a>
+        <a class="framework-card" href="/email-signature-templates"><strong>All 28 templates</strong><p>Every layout the generator can build, rendered with sample details.</p></a>
+      </div>
+    </section>
+
     <section class="examples-section" aria-label="Email signature use case comparison">
       <h2>Which example fits your email?</h2>
       <p class="section-intro">Choose the smallest layout that does the job. The same person may need a fuller signature for first-contact messages and a compact version for replies.</p>
@@ -305,7 +346,7 @@
     </section>
 
     <section class="examples-section" aria-label="Copyable HTML starter examples">
-      <h2>Copyable HTML starter examples</h2>
+      <h2 id="starters">Copyable HTML starter examples</h2>
       <p class="section-intro">These are intentionally plain. Use them when you need a lightweight starting point, or open the generator for hosted photos, icons, colours, CTA buttons, and the full template set.</p>
       <div class="copy-grid">
         <article class="copy-card">
@@ -383,7 +424,7 @@
     </section>
 
     <section class="examples-section" aria-label="Email client signature guidance">
-      <h2>What changes between Gmail, Outlook, and Apple Mail?</h2>
+      <h2 id="clients">What changes between Gmail, Outlook, and Apple Mail?</h2>
       <p class="section-intro">The content can stay consistent, but setup screens and rendering details differ. Use the client you actually send from as the final test.</p>
       <div class="client-notes">
         <article class="client-note">
@@ -415,6 +456,26 @@
       </div>
     </section>
 
+    <section class="examples-section" aria-labelledby="faq">
+      <h2 id="faq">Email signature example questions</h2>
+      <details class="instructions">
+        <summary>What is a good example of a professional email signature?</summary>
+        <p>A good professional signature gives your full name, job title, organisation and one or two ways to reach you, such as a phone number and website. For example: Jane Morrison, Operations Manager, Northline Studio, then her email, phone and website on one line. Add a photo, logo or booking link only when it helps the reader.</p>
+      </details>
+      <details class="instructions">
+        <summary>What should you not put in an email signature?</summary>
+        <p>Leave out quotes, long lists of awards, several phone numbers, large images, animated banners that never change, and more than three or four social icons. Each extra item competes with the one next step you want the reader to take.</p>
+      </details>
+      <details class="instructions">
+        <summary>How long should an email signature be?</summary>
+        <p>Aim for three to five lines of text, plus an optional photo or logo. Use a shorter version, or none, on replies so long threads stay readable. Gmail limits a signature to 10,000 characters including its HTML.</p>
+      </details>
+      <details class="instructions">
+        <summary>Should I put a photo in my email signature?</summary>
+        <p>A headshot helps when people have not met you, for example in sales, recruiting or real estate. It is less useful on internal email and long reply threads. Use a small, hosted image and keep your details as real text so the signature still works when images are blocked.</p>
+      </details>
+    </section>
+
     <section class="examples-section" aria-label="Methodology and limitations">
       <h2>How these examples were built</h2>
       <p class="method-note">The examples use the same practical constraints as the generator: important details remain real text, layouts stay simple, and the copyable starters use table-based HTML with inline styles. The selection advice is editorial guidance derived from those product constraints. It is not a measured conversion study or a guarantee that every client will render every detail identically. Send a test to the desktop and mobile inboxes that matter before rolling a signature out to a team.</p>
@@ -426,9 +487,15 @@
     <p style="margin-top: 8px;">
       <a href="/generator">Generator</a>
       &nbsp;&middot;&nbsp;
+      <a href="/email-signature-templates">Templates</a>
+      &nbsp;&middot;&nbsp;
       <a href="/email-signature-examples" aria-current="page">Examples</a>
       &nbsp;&middot;&nbsp;
       <a href="/health-check">Health Check</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/brand-extractor">Brand Extractor</a>
+      &nbsp;&middot;&nbsp;
+      <a href="/seo/best-email-signature-generators">Compare Generators</a>
       &nbsp;&middot;&nbsp;
       <a href="/blog/">Guides</a>
       &nbsp;&middot;&nbsp;

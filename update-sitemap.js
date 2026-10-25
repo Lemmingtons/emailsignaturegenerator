@@ -3,7 +3,7 @@
  * Sitemap Auto-Updater
  * emailsignaturegenerator.ai
  *
- * Scans the seo/ directory and blog/ directory for HTML files,
+ * Scans the seo/, email-signature-templates/ and blog/ directories for HTML files,
  * regenerates sitemap.xml with all pages and today's lastmod date.
  * Run: node update-sitemap.js
  */
@@ -58,7 +58,9 @@ function collectUrls() {
   urls.push({ loc: `${SITE_URL}/`, priority: '1.0', changefreq: 'monthly', file: path.join(__dirname, 'index.html') });
   urls.push({ loc: `${SITE_URL}/generator`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'generator.html') });
   urls.push({ loc: `${SITE_URL}/email-signature-examples`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'email-signature-examples.html') });
+  urls.push({ loc: `${SITE_URL}/email-signature-templates`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'email-signature-templates.html') });
   urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
+  urls.push({ loc: `${SITE_URL}/brand-extractor`, priority: '0.8', changefreq: 'monthly', file: path.join(__dirname, 'brand-extractor.html') });
   urls.push({ loc: `${SITE_URL}/privacy`, priority: '0.6', changefreq: 'yearly', file: path.join(__dirname, 'privacy.html') });
 
   const seoDir = path.join(__dirname, 'seo');
@@ -74,6 +76,20 @@ function collectUrls() {
       });
     }
     console.log(`  Found ${seoFiles.length} SEO pages`);
+  }
+
+  const templateDir = path.join(__dirname, 'email-signature-templates');
+  if (fs.existsSync(templateDir)) {
+    const templateFiles = fs.readdirSync(templateDir).filter(f => f.endsWith('.html')).sort();
+    for (const file of templateFiles) {
+      urls.push({
+        loc: `${SITE_URL}/email-signature-templates/${file.replace('.html', '')}`,
+        priority: '0.6',
+        changefreq: 'monthly',
+        file: path.join(templateDir, file)
+      });
+    }
+    console.log(`  Found ${templateFiles.length} template pages`);
   }
 
   const blogDir = path.join(__dirname, 'blog');
