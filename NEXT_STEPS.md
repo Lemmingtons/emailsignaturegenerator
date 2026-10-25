@@ -106,7 +106,7 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 - `/email-signature-templates` and `/email-signature-templates/<id>`: one page per template. The copy for each lives in `datasets/templates.json` and must cover every template in `js/templates.js`. Adding a template without an entry fails the build, and `npm run check` fails if the gallery is out of step with `templateCount`.
 - `/seo/<job>-email-signature`: real estate agent, nurse and lawyer guides from `datasets/professions.json`. Compliance examples pull their fields and disclaimer from `datasets/compliance.json`.
-- `/seo/best-email-signature-generators`: the nine-tool comparison from `datasets/generators.json`, checked 25 October 2026 against each vendor's own pages. The monthly audit should re-check it alongside `competitors.json` and update `checkedOn`. Gimmio was left out because its pricing pages returned 404.
+- `/seo/best-email-signature-generators`: the ten-tool comparison (nine competitors plus ours) from `datasets/generators.json`, checked 25 October 2026 against each vendor's own pages. The monthly audit should re-check it alongside `competitors.json` and update `checkedOn`. Gimmio was left out because its pricing pages returned 404.
 - `/brand-extractor`: a free front end for `/api/brand` (`js/brand-tool.js`).
 
 The lookup figures on the homepage, the extractor page and in llms.txt come from a timed run on 25 October 2026: 12 public sites, all answered within 2.6 s (median 0.45 s), logo found on 10 and colours on 9. Re-measure before changing them. They live in `BRAND_TEST` in `generate-pages.js` and in the homepage "How it works" section.

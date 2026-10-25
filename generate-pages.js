@@ -614,6 +614,9 @@ const SAMPLE_PERSON = Object.freeze({
   facebook: 'https://facebook.com/harbourco',
 });
 
+// Shown in the Branded template, which is built around a company logo.
+const SAMPLE_LOGO = '/assets/sample-logo.svg';
+
 const SECOND_PERSON = Object.freeze({
   fullName: 'Daniel Brooks',
   title: 'Operations Director',
@@ -758,7 +761,7 @@ function templateHubHTML(templates) {
       <h2 id="cat-${category.id}">${escapeHtml(category.name)} templates (${inCategory.length})</h2>
       <div class="gallery-grid">
 ${inCategory.map(template => `        <article class="gallery-card">
-          <div class="sig-specimen">${renderSpecimen(template.id, SAMPLE_PERSON, { primaryColor: '#0E5A8A', secondaryColor: '#F2A93B', ctaText: 'Book a meeting', ctaUrl: 'https://example.com' })}</div>
+          <div class="sig-specimen">${renderSpecimen(template.id, template.id === 'branded' ? { ...SAMPLE_PERSON, logoUrl: SAMPLE_LOGO } : SAMPLE_PERSON, { primaryColor: '#0E5A8A', secondaryColor: '#F2A93B', ctaText: 'Book a meeting', ctaUrl: 'https://example.com' })}</div>
           <div class="gallery-card-body">
             <h3><a href="${TEMPLATE_HUB_PATH}/${template.id}">${escapeHtml(template.name)}</a></h3>
             <p>${escapeHtml(template.summary)}</p>
@@ -867,8 +870,8 @@ function templatePageHTML(template, templates) {
 
     <div class="specimen-pair">
       <figure>
-        <div class="sig-specimen">${renderSpecimen(template.id, SAMPLE_PERSON, brandStyle)}</div>
-        <figcaption class="specimen-caption">With a headshot and three social profiles.</figcaption>
+        <div class="sig-specimen">${renderSpecimen(template.id, template.id === 'branded' ? { ...SAMPLE_PERSON, logoUrl: SAMPLE_LOGO } : SAMPLE_PERSON, brandStyle)}</div>
+        <figcaption class="specimen-caption">${template.id === 'branded' ? 'With a company logo, a headshot and three social profiles.' : 'With a headshot and three social profiles.'}</figcaption>
       </figure>
       <figure>
         <div class="sig-specimen">${renderSpecimen(template.id, SECOND_PERSON, altStyle)}</div>
@@ -957,7 +960,7 @@ function professionPageHTML(entry) {
         <h3>${escapeHtml(example.title)}</h3>
         <div class="sig-specimen">${renderSpecimen(example.template, example.data, style, compliance)}</div>
         <figcaption class="specimen-caption">${escapeHtml(example.why)} Template: <a href="${TEMPLATE_HUB_PATH}/${example.template}">${escapeHtml(TEMPLATES[example.template].name)}</a>${compliance ? ', with the compliance fields turned on' : ''}.</figcaption>
-        <p><a href="/generator?template=${example.template}">Start from this example</a></p>
+        <p><a href="/generator?template=${example.template}&amp;role=${encodeURIComponent(example.data.title).replace(/%20/g, '+')}">Start with this layout and title</a></p>
       </figure>`;
   }).join('\n');
 
@@ -1167,6 +1170,12 @@ function readGeneratorComparison() {
   const entry = fillFacts(JSON.parse(fs.readFileSync(path.join(__dirname, 'datasets', 'generators.json'), 'utf8')));
   for (const field of ['slug', 'seoTitle', 'metaDescription', 'heading', 'shortAnswer', 'intro', 'checkedOn', 'method', 'columns', 'tools', 'chooser', 'faqs']) {
     if (!entry[field] || (Array.isArray(entry[field]) && !entry[field].length)) throw new Error(`generators.json missing ${field}`);
+  }
+  // Counts in the title and description must match the table, which lists every tool.
+  for (const field of ['seoTitle', 'metaDescription']) {
+    for (const match of entry[field].matchAll(/\b(\d+) (?:tools|email signature generators)\b/gi)) {
+      if (Number(match[1]) !== entry.tools.length) throw new Error(`generators.json ${field} says ${match[0]} but lists ${entry.tools.length} tools`);
+    }
   }
   for (const tool of entry.tools) {
     if (tool.cells.length !== entry.columns.length) throw new Error(`generators.json ${tool.name} needs ${entry.columns.length} cells`);
