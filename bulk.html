@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bulk Email Signature Generator | Email Signature Generator</title>
+  <meta name="description" content="Upload a staff spreadsheet, preview a shared signature design for everyone, and export individual HTML signatures in one ZIP with bulk API access.">
+  <link rel="canonical" href="https://emailsignaturegenerator.ai/bulk">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/bulk.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <a href="/" class="site-logo">Email Signature Generator</a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/#templates">Templates</a>
+      <a href="/bulk" aria-current="page">Bulk signatures</a>
+      <a href="/generator" class="nav-cta">Create Signature</a>
+    </nav>
+  </header>
+  <main id="main-content" class="bulk-page">
+    <section class="bulk-intro">
+      <p class="bulk-eyebrow">FOR YOUR WHOLE TEAM</p>
+      <h1>One design.<br>Everyone’s signature.</h1>
+      <p>Bring your staff list, choose a shared design, and check every signature before downloading them together.</p>
+      <div class="bulk-steps" aria-label="How it works"><span>01 &nbsp; Upload your list</span><span>02 &nbsp; Preview the team</span><span>03 &nbsp; Download a ZIP</span></div>
+    </section>
+    <noscript><p class="bulk-notice">Enable JavaScript to upload a spreadsheet and preview signatures.</p></noscript>
+    <form id="bulk-form">
+      <fieldset id="bulk-editor" class="bulk-editor">
+        <legend class="sr-only">Bulk signature builder</legend>
+        <div class="bulk-workspace">
+          <div class="bulk-settings">
+            <section class="bulk-panel" aria-labelledby="upload-heading">
+              <div class="bulk-section-title"><span class="bulk-step-number">1</span><h2 id="upload-heading">Your staff list</h2></div>
+              <label class="bulk-upload" for="staff-file">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></svg>
+                <strong>Choose a spreadsheet</strong>
+                <span>CSV, TSV or Excel (.xlsx) · under 500 KB</span>
+                <input id="staff-file" type="file" accept=".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-describedby="file-help">
+              </label>
+              <p id="file-help" class="bulk-help">Up to <span data-bulk-limit>250</span> people. Excel uses the first sheet. Start with a <strong>Full Name</strong> column; add Email, Job Title, Phone and other contact details as needed. Format phone numbers as text to preserve leading zeros.</p>
+              <button type="button" id="sample-file" class="bulk-text-button">Download sample CSV <span aria-hidden="true">↗</span></button>
+              <p class="bulk-help bulk-privacy">Previews stay in this tab. Before checkout, a temporary draft keeps your list safe while you pay. Generating a ZIP sends the list to our server without saving it there.</p>
+              <p id="import-status" role="status" class="bulk-status"></p>
+              <p id="file-error" role="alert" class="bulk-error" hidden></p>
+              <p id="import-warning" class="bulk-notice" hidden></p>
+            </section>
+            <section class="bulk-panel" aria-labelledby="design-heading">
+              <div class="bulk-section-title"><span class="bulk-step-number">2</span><h2 id="design-heading">Shared design</h2></div>
+              <div class="bulk-field"><label for="bulk-template">Template</label><select id="bulk-template" name="template"></select></div>
+              <div class="bulk-field"><label for="bulk-company">Company <span>(optional)</span></label><input id="bulk-company" maxlength="300" placeholder="Acme Studio" autocomplete="off"><small>Shared details fill blank cells in your spreadsheet.</small></div>
+              <div class="bulk-field"><label for="bulk-website">Company website <span>(optional)</span></label><input id="bulk-website" type="url" maxlength="2048" placeholder="https://example.com" autocomplete="off"></div>
+              <div class="bulk-field"><label for="bulk-logo">Public logo URL <span>(optional)</span></label><input id="bulk-logo" type="url" maxlength="2048" placeholder="https://example.com/logo.png" autocomplete="off"><small>Use a public PNG, JPG, WebP or GIF. Keep this image hosted after exporting.</small></div>
+              <div class="bulk-color-grid">
+                <div class="bulk-field"><label for="bulk-primary">Brand colour</label><input id="bulk-primary" type="color" value="#0891b2"></div>
+                <div class="bulk-field"><label for="bulk-secondary">Accent colour</label><input id="bulk-secondary" type="color" value="#7c3aed"></div>
+              </div>
+              <div class="bulk-field"><label for="bulk-font">Font</label><select id="bulk-font"></select></div>
+              <p id="design-error" role="alert" class="bulk-error" hidden></p>
+            </section>
+          </div>
+          <div class="bulk-results">
+            <section class="bulk-panel bulk-preview-panel" aria-labelledby="preview-heading">
+              <div class="bulk-preview-heading"><div><p class="bulk-eyebrow">LIVE PREVIEW</p><h2 id="preview-heading">Your team, in sync.</h2></div><span id="batch-count" class="bulk-count">No list yet</span></div>
+              <div id="preview-empty" class="bulk-empty"><div aria-hidden="true" class="bulk-empty-icon">Aa</div><h3>Start with your staff list</h3><p>Your signatures will appear here.<br>Try the sample CSV to see how it works.</p></div>
+              <div id="preview-content" hidden>
+                <div class="bulk-field bulk-person-picker"><label for="preview-person">Preview employee</label><select id="preview-person"></select></div>
+                <div class="bulk-email"><div class="bulk-email-header"><span class="bulk-email-dot" aria-hidden="true"></span>Signature preview</div><div class="bulk-signature-scroll"><div id="signature-preview" aria-label="Rendered employee signature"></div><p id="preview-error" class="bulk-error" hidden></p></div></div>
+                <p class="bulk-help">The same signature markup is used for your preview and download. Appearance can vary by email client.</p>
+              </div>
+              <div id="validation-summary" class="bulk-validation" role="status" hidden></div>
+              <details id="row-errors" class="bulk-row-errors" hidden><summary id="row-error-heading">Rows to correct</summary><ul id="row-error-list"></ul></details>
+            </section>
+            <section class="bulk-panel bulk-export" aria-labelledby="export-heading">
+              <div class="bulk-section-title"><span class="bulk-step-number">3</span><h2 id="export-heading">Download the team</h2></div>
+              <p>Get an HTML signature and plain-text fallback for each person, plus installation instructions and a report of any excluded rows.</p>
+              <div id="bulk-purchase" class="bulk-purchase">
+                <div class="bulk-price-options">
+                  <a id="buy-individual" class="bulk-price-option" href="/generator"><strong><span data-pro-price>$9</span> lifetime</strong><span>Individual use · up to <span data-individual-limit>19</span> signatures per batch</span></a>
+                  <a id="buy-team" class="bulk-price-option" href="/#pricing"><strong><span data-team-price>$29</span> lifetime</strong><span>Teams or 20+ signatures · up to <span data-bulk-limit>250</span> per batch</span></a>
+                </div>
+                <p class="bulk-help">Both include downloads, API and MCP access. Team includes <span data-team-seats>10</span> individual editing seats. Prices are in USD; applicable tax is added at checkout. No subscription. Preview your list before paying.</p>
+              </div>
+              <p id="paid-status" role="status" class="bulk-status"></p>
+              <p id="purchase-error" role="alert" class="bulk-error" hidden></p>
+              <details class="bulk-existing-key"><summary>Already have an API key?</summary><div class="bulk-field"><label for="bulk-key">Your API key</label><input id="bulk-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key" aria-describedby="key-help"><small id="key-help">Your key stays in this tab and is never included in the ZIP. <a id="bulk-contact" href="#">Get help</a>.</small></div></details>
+              <label id="partial-label" class="bulk-checkbox" hidden><input id="allow-partial" type="checkbox"><span id="partial-copy">Download valid signatures only; exclude rows with errors.</span></label>
+              <button id="download-zip" type="submit" class="btn btn-primary bulk-download" disabled>Download signatures (.zip) <span aria-hidden="true">↓</span></button>
+              <p id="download-status" role="status" class="bulk-status"></p>
+              <p id="download-error" role="alert" class="bulk-error" hidden></p>
+              <p class="bulk-help">This generates files for installation. It does not change anyone’s mailbox settings.</p>
+            </section>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+    <section class="bulk-api-section" aria-labelledby="api-heading">
+      <div><p class="bulk-eyebrow">FOR YOUR WORKFLOWS</p><h2 id="api-heading">Let your agent handle it.</h2><p>Both lifetime plans include API and MCP access. Give your agent a separate key to create signatures from your staff list. The same batch limits apply. It generates files for you; mailbox installation is a separate step.</p>
+        <div class="bulk-agent-panel"><p id="agent-status" role="status">Buy a lifetime plan to create your API and MCP key.</p><div class="bulk-agent-actions"><button type="button" id="create-api-key" class="btn btn-secondary" disabled>Show my API key</button><button type="button" id="rotate-api-key" class="bulk-text-button" disabled>Replace key</button><button type="button" id="revoke-api-key" class="bulk-text-button" disabled>Revoke key</button></div><div id="agent-key-result" hidden><label for="agent-key">Your API and MCP key</label><input id="agent-key" type="password" readonly autocomplete="off"><button type="button" id="copy-api-key" class="bulk-text-button">Copy key</button><p class="bulk-help">Keep this key private. Replacing or revoking it disconnects agents using the old key. Your purchase access is separate.</p></div><p id="agent-error" class="bulk-error" role="alert" hidden></p></div>
+        <details class="bulk-agent-setup"><summary>Connect your agent</summary><p>For MCP clients that support a bearer key, use <code id="mcp-url"></code> and send <code>Authorization: Bearer YOUR_API_KEY</code>. Available tools: <code>list_templates</code> and <code>generate_signatures</code>.</p><p>Claude Code connection:</p><pre><code id="mcp-command"></code></pre><p>Keep the key in your agent’s private configuration. This connection supports Streamable HTTP and API-key authentication. Clients that require an OAuth sign-in flow need a separate integration.</p><p>Or give your agent the API instructions on this page and ask it to generate HTML signature files from your spreadsheet. Your agent provider’s own usage charges are separate.</p></details>
+      </div>
+      <details class="bulk-api-docs"><summary>View API quick start</summary>
+        <p><strong>POST /api/v1/signatures/batch</strong><br>Headers: <code>Authorization: Bearer YOUR_BULK_KEY</code> and <code>Content-Type: application/json</code>.</p>
+        <pre><code>{
+  "template": "classic",
+  "defaults": { "company": "Acme Studio" },
+  "style": { "primaryColor": "#0891b2" },
+  "employees": [
+    { "fullName": "Alex Morgan", "email": "alex@example.com" },
+    { "fullName": "Sam Lee", "title": "Designer" }
+  ]
+}</code></pre>
+        <p>JSON responses contain <code>total</code>, <code>valid</code>, <code>invalid</code> and <code>results</code>. Each result has its employee row number, HTML, plain text and field errors. Add <code>?format=zip</code> for a ZIP of valid rows, with a manifest and error report. Row numbers start at 1 in the employee list.</p>
+        <p><strong>GET /api/v1/templates</strong> lists template IDs, names and your batch limit using the same access key. Individual: up to <span data-individual-limit>19</span> employees per batch. Team: up to <span data-bulk-limit>250</span>. Requests allow 1 MB of JSON. Rate limit: 25 requests per minute per purchase, shared by API and MCP, including replacement keys.</p>
+        <p>Supported employee fields: <code>fullName</code> (required), <code>title</code>, <code>company</code>, <code>phone</code>, <code>email</code>, <code>website</code>, <code>photoUrl</code>, <code>logoUrl</code>, <code>linkedin</code>, <code>instagram</code>, <code>facebook</code>, <code>google</code>, <code>ctaText</code>, <code>ctaUrl</code>, <code>nameLinkUrl</code>. Use text values and full HTTP(S) URLs. Defaults accept shared fields, excluding names, email addresses, photos and name links.</p>
+        <p>Duplicate email addresses and invalid rows are reported, not overwritten. A ZIP with no valid rows returns 422. Invalid input returns 400, oversized requests 413, missing or invalid access 401, rate limits 429, and unavailable access configuration 503. Staff data is processed in memory and is not retained.</p>
+      </details>
+    </section>
+  </main>
+  <footer class="bulk-footer"><a href="/">Email Signature Generator</a><a href="/privacy">Privacy</a><a href="/generator">Create a single signature</a></footer>
+  <script src="/js/site-facts.js"></script>
+  <script src="/js/generator-core.js"></script>
+  <script src="/js/templates.js"></script>
+  <script src="/js/bulk-core.js"></script>
+  <script src="/js/bulk.js"></script>
+</body>
+</html>
