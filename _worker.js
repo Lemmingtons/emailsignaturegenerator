@@ -9,6 +9,7 @@ import { extractBrand, pickStylesheet, rankColors, normalizeHex } from './js/bra
 import { bulkApiResponse, authorizeBulkRequest } from './js/bulk-api.js';
 import { createBulkAccess } from './js/bulk-access.js';
 import { bulkMcpResponse } from './js/bulk-mcp.js';
+import { agentDiscoveryResponse, agentDiscoveryLinks } from './js/agent-discovery.js';
 
 const FACTS = globalThis.SiteFacts;
 const BULK_ACCESS = createBulkAccess({ verifyProAccess, verifyJwt, signJwt, readJsonObject, isEntitlementRevoked, uploadBucket });
@@ -1053,6 +1054,13 @@ async function healthResponse(env) {
 async function handleRequest(request, env) {
     const url = new URL(request.url);
 
+    const discovery = await agentDiscoveryResponse(request);
+    if (discovery) {
+      const headers = addSecurityHeaders(discovery);
+      if (env.SANDBOX_MODE === 'true') headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      return new Response(discovery.body, { status: discovery.status, headers });
+    }
+
     if (url.pathname === '/api/health') {
       if (request.method !== 'GET' && request.method !== 'HEAD') return apiError(405, 'method_not_allowed');
       return healthResponse(env);
@@ -1666,6 +1674,13 @@ async function handleRequest(request, env) {
 
     // Add security headers to all responses
     const newHeaders = addSecurityHeaders(response, ['/bulk', '/bulk.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname));
+    if (response.status === 200 && (response.headers.get('Content-Type') || '').includes('text/html')) {
+      newHeaders.append('Link', agentDiscoveryLinks());
+      if (url.pathname === '/') {
+        const vary = newHeaders.get('Vary');
+        newHeaders.set('Vary', vary ? `${vary}, Accept` : 'Accept');
+      }
+    }
     if (env.SANDBOX_MODE === 'true') {
       newHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }

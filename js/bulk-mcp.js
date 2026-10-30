@@ -32,7 +32,7 @@ function acceptedTypes(header) {
     .map((part) => part.split(';')[0].trim()));
 }
 
-function definitions(maxRows) {
+export function bulkToolDefinitions(maxRows) {
   const core = globalThis.SignatureGeneratorCore;
   const employeeProperties = Object.fromEntries(globalThis.SignatureBulk.fields.map((field) => [field, { type: 'string' }]));
   const sharedProperties = Object.fromEntries(Object.entries(employeeProperties).filter(([field]) => !['fullName', 'email', 'photoUrl', 'nameLinkUrl'].includes(field)));
@@ -144,7 +144,7 @@ export async function bulkMcpResponse(request, env, options = {}) {
   if (method === 'ping') return paramsHaveOnly(params, []) ? json({ jsonrpc: '2.0', id, result: {} }) : rpcError(id, -32602, 'Ping takes no parameters');
   if (method === 'tools/list') {
     if (!paramsHaveOnly(params, ['cursor']) || (params.cursor !== undefined && params.cursor !== '')) return rpcError(id, -32602, 'Invalid tools cursor or parameters');
-    return json({ jsonrpc: '2.0', id, result: { tools: definitions(maxRows) } });
+    return json({ jsonrpc: '2.0', id, result: { tools: bulkToolDefinitions(maxRows) } });
   }
   if (method !== 'tools/call') return rpcError(id, -32601, 'Method not found');
   if (!paramsHaveOnly(params, ['name', 'arguments']) || typeof params.name !== 'string' ||
