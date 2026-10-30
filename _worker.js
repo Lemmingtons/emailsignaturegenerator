@@ -6,8 +6,13 @@ import PngEncoder from './js/png-encoder.js';
 import { ICON_MASK_SIZE, decodeMask } from './js/icon-masks.js';
 import './js/site-facts.js';
 import { extractBrand, pickStylesheet, rankColors, normalizeHex } from './js/brand-extract.js';
+import { bulkApiResponse, authorizeBulkRequest } from './js/bulk-api.js';
+import { createBulkAccess } from './js/bulk-access.js';
+import { bulkMcpResponse } from './js/bulk-mcp.js';
+import { agentDiscoveryResponse, agentDiscoveryLinks } from './js/agent-discovery.js';
 
 const FACTS = globalThis.SiteFacts;
+const BULK_ACCESS = createBulkAccess({ verifyProAccess, verifyJwt, signJwt, readJsonObject, isEntitlementRevoked, uploadBucket });
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
@@ -254,6 +259,7 @@ async function storeActiveEntitlement(env, stripeResult, source) {
     paymentIntent: stripeResult.paymentIntent,
     paymentLink: stripeResult.paymentLink,
     status: revoked ? 'revoked' : 'active',
+    returnTo: stripeResult.returnTo === 'bulk' ? 'bulk' : '',
     recordedAt: Date.now(),
   }), {
     httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
@@ -335,7 +341,7 @@ function stripeResultFromSession(session, env) {
   ) {
     return { paid: false, reason: 'payment_not_eligible' };
   }
-  return { paid: true, sessionId, paymentIntent, paymentLink, plan };
+  return { paid: true, sessionId, paymentIntent, paymentLink, plan, returnTo: session.client_reference_id === 'bulk' ? 'bulk' : '' };
 }
 
 // The team pack is a second Stripe Payment Link. Until STRIPE_TEAM_PAYMENT_LINK_ID
@@ -373,7 +379,7 @@ async function redeemCheckoutSession(sessionId, env) {
   if (!entitlement || entitlement.status !== 'active') {
     return { active: false, reason: 'confirmation_pending' };
   }
-  return { active: true, id: redemption.entitlementId };
+  return { active: true, id: redemption.entitlementId, returnTo: redemption.returnTo === 'bulk' ? 'bulk' : '' };
 }
 
 function paymentConfirmationPendingResponse(url) {
@@ -698,15 +704,15 @@ function proAuthError(result) {
 
 // ── Security Headers ─────────────────────────────────────────────────────────
 
-function addSecurityHeaders(response) {
+function addSecurityHeaders(response, bulk = false) {
   const newHeaders = new Headers(response.headers);
   newHeaders.set('X-Frame-Options', 'DENY');
   newHeaders.set('X-Content-Type-Options', 'nosniff');
-  newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  newHeaders.set('Referrer-Policy', bulk ? 'no-referrer' : 'strict-origin-when-cross-origin');
   newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   newHeaders.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; img-src 'self' data: blob: https:; connect-src 'self'"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; img-src 'self' data: blob: https:; connect-src 'self'" + (bulk ? "; worker-src 'self' blob:" : '')
   );
   return newHeaders;
 }
@@ -741,6 +747,7 @@ const PUBLIC_ROOT_ASSETS = new Set([
   '/email-signature-examples.html',
   '/email-signature-templates.html',
   '/brand-extractor.html',
+  '/bulk.html',
   '/privacy.html',
   '/favicon.svg',
   '/robots.txt',
@@ -751,6 +758,11 @@ const PUBLIC_ROOT_ASSETS = new Set([
 const PUBLIC_CLIENT_SCRIPTS = new Set([
   '/js/app.js',
   '/js/brand-tool.js',
+  '/js/bulk.js',
+  '/js/bulk-core.js',
+  '/js/bulk-spreadsheet-worker.js',
+  '/js/vendor/read-excel-file.min.js',
+  '/js/vendor/read-excel-file.LICENSE.txt',
   '/js/generator-core.js',
   '/js/gif-encoder.js',
   '/js/health-check.js',
@@ -1042,6 +1054,13 @@ async function healthResponse(env) {
 async function handleRequest(request, env) {
     const url = new URL(request.url);
 
+    const discovery = await agentDiscoveryResponse(request);
+    if (discovery) {
+      const headers = addSecurityHeaders(discovery);
+      if (env.SANDBOX_MODE === 'true') headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      return new Response(discovery.body, { status: discovery.status, headers });
+    }
+
     if (url.pathname === '/api/health') {
       if (request.method !== 'GET' && request.method !== 'HEAD') return apiError(405, 'method_not_allowed');
       return healthResponse(env);
@@ -1059,6 +1078,11 @@ async function handleRequest(request, env) {
     if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
 
     if (url.pathname === '/api/brand') return brandResponse(request, env, url);
+    if (url.pathname === '/api/v1/access-key') return BULK_ACCESS.manage(request, env);
+    if (url.pathname === '/api/v1/signatures/batch' || url.pathname === '/api/v1/templates') return bulkApiResponse(request, env, url, BULK_ACCESS.authorize);
+    if (url.pathname === '/mcp') return bulkMcpResponse(request, env, {
+      authorize: (req, bindings) => authorizeBulkRequest(req, bindings, BULK_ACCESS.authorize),
+    });
     if (url.pathname === '/api/team' || url.pathname.startsWith('/api/team/')) return teamResponse(request, env, url);
 
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
@@ -1101,7 +1125,7 @@ async function handleRequest(request, env) {
       );
 
       // Redirect to generator with the token
-      const redirectUrl = new URL('/generator', url.origin);
+      const redirectUrl = new URL(entitlement.returnTo === 'bulk' ? '/bulk' : '/generator', url.origin);
       redirectUrl.searchParams.set('token', token);
       return Response.redirect(redirectUrl.toString(), 302);
     }
@@ -1649,7 +1673,14 @@ async function handleRequest(request, env) {
     if (response.status === 404) response = notFoundResponse();
 
     // Add security headers to all responses
-    const newHeaders = addSecurityHeaders(response);
+    const newHeaders = addSecurityHeaders(response, ['/bulk', '/bulk.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname));
+    if (response.status === 200 && (response.headers.get('Content-Type') || '').includes('text/html')) {
+      newHeaders.append('Link', agentDiscoveryLinks());
+      if (url.pathname === '/') {
+        const vary = newHeaders.get('Vary');
+        newHeaders.set('Vary', vary ? `${vary}, Accept` : 'Accept');
+      }
+    }
     if (env.SANDBOX_MODE === 'true') {
       newHeaders.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
     }

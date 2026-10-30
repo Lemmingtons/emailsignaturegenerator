@@ -436,8 +436,8 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const cta = ctaText || 'Book a Meeting';
-      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const cta = data.ctaText || ctaText || 'Book a Meeting';
+      const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
       const ctaSafe = this.escapeAttr(cta);
       const nameSafe = this.escapeAttr(data.fullName);
       const titleSafe = this.escapeAttr(data.title || '');
@@ -456,9 +456,9 @@ const TEMPLATES = {
         <tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily}; padding-bottom: 10px;">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
-        <tr><td>
+        ${ctaLink ? `<tr><td>
           ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 8px 20px; border-radius: 5px; font-size: 13px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};`)}
-        </td></tr>
+        </td></tr>` : ''}
         ${this._socialRow(data, iconStyle, primaryColor, 10)}
       </table>
     </td>
@@ -475,8 +475,8 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const cta = ctaText || 'Learn More';
-      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const cta = data.ctaText || ctaText || 'Learn More';
+      const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
@@ -496,13 +496,13 @@ const TEMPLATES = {
       </table>
     </td>
   </tr>
-  <tr><td colspan="2" style="padding-top: 12px;">
+  ${ctaLink ? `<tr><td colspan="2" style="padding-top: 12px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: ${primaryColor}; border-radius: 6px;">
       <tr><td bgcolor="${primaryColor}" style="padding: 12px 18px; color: #fff; font-size: 13px; font-family: ${fontFamily}; background-color: ${primaryColor}; border-radius: 6px;">
         <a href="${ctaLink}" target="_blank" style="color: #fff; text-decoration: none; font-weight: 700; font-size: 13px; font-family: ${fontFamily};">${this.escapeAttr(cta)} &rarr;</a>
       </td></tr>
     </table>
-  </td></tr>
+  </td></tr>` : ''}
 </table>`;
     }
   },
@@ -516,8 +516,8 @@ const TEMPLATES = {
       const { primaryColor, textColor, fontFamily, dividerStyle, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
       const divider = this._divider(dividerStyle, primaryColor, data);
-      const cta = ctaText || 'Schedule a call';
-      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const cta = data.ctaText || ctaText || 'Schedule a call';
+      const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
@@ -534,9 +534,9 @@ const TEMPLATES = {
         <tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
           ${this._contactLine(data, fontFamily)}
         </td></tr>
-        <tr><td style="padding-top: 8px;">
+        ${ctaLink ? `<tr><td style="padding-top: 8px;">
           <a href="${ctaLink}" target="_blank" style="color: ${primaryColor}; font-size: 13px; font-weight: 700; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(cta)} &rarr;</a>
-        </td></tr>
+        </td></tr>` : ''}
         ${this._socialRow(data, iconStyle, primaryColor)}
       </table>
     </td>
@@ -557,8 +557,8 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle, ctaText, ctaUrl } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
-      const cta = ctaText || 'View My Listings';
-      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const cta = data.ctaText || ctaText || 'View My Listings';
+      const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
@@ -579,9 +579,9 @@ const TEMPLATES = {
         <tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
           ${this._contactLineStacked(data, fontFamily)}
         </td></tr>
-        <tr><td style="padding-top: 10px;">
+        ${ctaLink ? `<tr><td style="padding-top: 10px;">
           ${this._ctaButton(data, ctaLink, cta, `display: inline-block; background: ${primaryColor}; color: #fff; padding: 7px 16px; border-radius: 4px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 0.5px;`)}
-        </td></tr>
+        </td></tr>` : ''}
         ${this._socialRow(data, iconStyle, primaryColor)}
       </table>
     </td>
@@ -1006,8 +1006,8 @@ const TEMPLATES = {
       const brand = this._safeColor(primaryColor);
       const ink = this._safeColor(textColor);
       const tint = this._tint(brand, 0.08);
-      const cta = ctaText || 'Book a meeting';
-      const ctaLink = this.escapeUrl(ctaUrl || '#', 'href') || '#';
+      const cta = data.ctaText || ctaText || 'Book a meeting';
+      const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
       const photo = this._photoTile(data, photoRadius, 64);
       const logo = this._logoImg(data, 28, 120);
       const sep = '<span style="color: #8e8e93;">&nbsp;&nbsp;&middot;&nbsp;</span> ';
@@ -1026,14 +1026,14 @@ const TEMPLATES = {
     </tr></table>
     ${items.length ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 12px; font-size: 13px; line-height: 1.7; font-family: ${fontFamily};">${items.slice(0, 2).join(sep)}${items[2] ? '<br/>' + items[2] : ''}</td></tr></table>` : ''}
   </td></tr>
-  <tr><td bgcolor="${tint}" style="background-color: ${tint}; padding: 10px 20px; border-radius: 0 0 11px 11px;">
+  ${ctaLink || socials ? `<tr><td bgcolor="${tint}" style="background-color: ${tint}; padding: 10px 20px; border-radius: 0 0 11px 11px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-      <td style="vertical-align: middle;">
+      ${ctaLink ? `<td style="vertical-align: middle;">
         ${this._ctaButton(data, ctaLink, `${cta} →`, `display: inline-block; background-color: ${brand}; color: #ffffff; padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};`)}
-      </td>
+      </td>` : ''}
       ${socials ? `<td align="right" style="vertical-align: middle; text-align: right;">${socials}</td>` : ''}
     </tr></table>
-  </td></tr>
+  </td></tr>` : ''}
 </table>`;
     }
   },
@@ -1437,6 +1437,8 @@ const CATEGORIES = [
   { id: 'sales', name: 'Sales / CTA' },
   { id: 'industry', name: 'Industry' },
 ];
+
+globalThis.SignatureTemplates = { TEMPLATES, CATEGORIES };
 
 if (typeof module === 'object' && module.exports) {
   module.exports = { TEMPLATES, CATEGORIES };

@@ -19,6 +19,7 @@
     origin,
     homeUrl: origin + '/',
     generatorUrl: origin + '/generator',
+    socialImageUrl: origin + '/assets/og-image.png?v=website-brand-20261025',
     contactEmail,
     supportEmail: contactEmail,
     reportEmail: contactEmail,
@@ -44,7 +45,13 @@
     },
     teamSeats: 10,
     templateCount: 28,
+    bulkMaxRows: 250,
+    bulkIndividualMaxRows: 19,
+    bulkCheckoutDraftStorageKey: 'sig_bulk_checkout_draft',
+    bulkMaxInputBytes: 1_000_000,
+    bulkMaxSpreadsheetBytes: 500_000,
     proTokenStorageKey: 'sig_pro_token',
+    checkoutDraftStorageKey: 'sig_checkout_draft',
     maxCardsPerBuyer: 10,
   };
 });

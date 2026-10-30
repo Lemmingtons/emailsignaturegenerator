@@ -11,7 +11,9 @@
     "test:frontend": "node tests/frontend-accessibility.test.js",
     "test:monitor": "node tests/monitor-site.test.js",
     "test:brand": "node tests/brand-import.test.mjs",
+    "test:agents": "node tests/agent-discovery.test.mjs",
     "test:team": "node tests/team-pack.test.mjs",
+    "test:bulk": "node tests/bulk-core.test.js && node tests/bulk-api.test.mjs && node tests/paid-bulk.test.mjs && node tests/bulk-mcp.test.mjs",
     "monitor": "node scripts/monitor-site.js"
   }
 }
