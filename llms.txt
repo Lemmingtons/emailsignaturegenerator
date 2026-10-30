@@ -102,6 +102,7 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 - [Email Signature With Credentials](https://emailsignaturegenerator.ai/blog/email-signature-credentials) — Which degrees, licences and certifications to list, in what order, and how to show one in progress
 - [Email Signature Size](https://emailsignaturegenerator.ai/blog/email-signature-size) — Width, height, logo, headshot, icon and file sizes for Gmail, Outlook and mobile, and how to stop Outlook resizing images
 - [How to Add a Logo to Your Email Signature](https://emailsignaturegenerator.ai/blog/email-signature-with-logo) — File type, sizing, hosting and dark mode, with steps for Gmail, Outlook and Apple Mail
+- [Email Signature HTML Code](https://emailsignaturegenerator.ai/blog/email-signature-html-code-guide) — Copy-paste HTML template with tables, inline styles and hosted images, plus how to install and test it in Gmail and Outlook
 - [Teacher Email Signature Examples](https://emailsignaturegenerator.ai/blog/teacher-email-signature-examples) — Eight examples for classroom teachers, department heads, substitutes, tutors and early educators
 - [Free vs Paid Email Signature Generators](https://emailsignaturegenerator.ai/blog/free-vs-paid-email-signature-generators) — Free, one-time, subscription, and managed tools compared by export, hosting, privacy, and cost
 
