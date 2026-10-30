@@ -47,3 +47,7 @@ node_modules
 node_modules/**
 .github
 .github/**
+js/bulk-api.js
+js/bulk-access.js
+js/bulk-mcp.js
+js/agent-discovery.js
