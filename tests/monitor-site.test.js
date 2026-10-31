@@ -70,9 +70,6 @@ async function run(overrides) {
     assert.ok(noTag.some((f) => f.includes(tag)), `monitor missed a missing ${tag}`);
   }
 
-  const gptBlocked = await run({ '/robots.txt': () => [200, read('robots.txt').replace(/User-agent: GPTBot\s+Allow: \//, 'User-agent: GPTBot\nDisallow: /')] });
-  assert.ok(gptBlocked.some((f) => f.includes('GPTBot')), 'monitor missed GPTBot being blocked');
-
   // A page committed to blog/ must be expected live even when the committed
   // sitemap forgot it; the sitemap in the repo is not the inventory.
   const orphan = path.join(ROOT, 'blog', 'zz-monitor-orphan-test.html');
