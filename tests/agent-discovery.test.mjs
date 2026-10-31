@@ -10,7 +10,7 @@ const env = {
   UPLOADS: new Proxy({}, { get() { throw new Error('Discovery and rejected requests must not touch customer storage'); } }),
 };
 const call = (path, init = {}, bindings = env) => worker.fetch(new Request(origin + path, init), bindings);
-const metadataPaths = ['/.well-known/api-catalog', '/openapi.json', '/agents.md', '/.well-known/mcp/server-card.json', '/.well-known/agent-skills/index.json', '/.well-known/agent-skills/generate-signatures/SKILL.md'];
+const metadataPaths = ['/.well-known/api-catalog', '/openapi.json', '/agents.md', '/auth.md', '/.well-known/agent-card.json', '/.well-known/mcp/server-card.json', '/.well-known/agent-skills/index.json', '/.well-known/agent-skills/generate-signatures/SKILL.md'];
 
 // Public discovery is independent of bindings, credentials and customer state.
 const noBindings = new Proxy({}, { get(_target, name) {
@@ -50,6 +50,14 @@ assert.equal(card.transport.endpoint, origin + '/mcp');
 assert.equal(card.transport.type, 'streamable-http');
 assert.equal(card.authentication.required, true);
 assert.deepEqual(card.tools.map((tool) => tool.name), ['list_templates', 'generate_signatures']);
+const a2aCard = await (await call('/.well-known/agent-card.json')).json();
+assert.equal(a2aCard.supportedInterfaces[0].url, origin + '/a2a');
+assert.equal(a2aCard.supportedInterfaces[0].protocolVersion, '1.0');
+const authMd = await (await call('/auth.md')).text();
+assert.match(authMd, /^# auth.md/);
+assert.match(authMd, /\/api\/v1\/agent\/register/);
+assert.match(authMd, /\/api\/v1\/agent\/token/);
+assert.match(authMd, /one-time/);
 
 const skills = await (await call('/.well-known/agent-skills/index.json')).json();
 const skillPath = new URL(skills.skills[0].url).pathname;
@@ -103,7 +111,7 @@ for (const path of ['/', '/openapi.json', '/agents.md']) {
 
 // The new server module is not a new public asset route. Unknown metadata and
 // private sources cannot fall through to a permissive static binding.
-for (const path of ['/js/agent-discovery.js', '/js/bulk-mcp.js', '/docs/mcp.md', '/.well-known/missing', '/openapi.json/extra', '/auth.md']) {
+for (const path of ['/js/agent-discovery.js', '/js/bulk-mcp.js', '/js/bulk-a2a.js', '/js/agent-registration.js', '/docs/mcp.md', '/.well-known/missing', '/openapi.json/extra']) {
   const response = await call(path, { headers: { Accept: 'text/markdown' } });
   assert.equal(response.status, 404, path);
 }

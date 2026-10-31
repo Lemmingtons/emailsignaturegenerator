@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Connect your assistant | Email Signature Generator</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/connect-agent.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header"><a class="site-logo" href="/">Email Signature Generator</a><nav class="site-nav" aria-label="Main navigation"><a href="/email-signature-templates">Templates</a><a href="/bulk">Bulk signatures</a><a href="/generator" class="nav-cta">Create Signature</a></nav></header>
+  <main id="main-content" class="agent-connect">
+    <p class="agent-eyebrow">YOUR ASSISTANT, YOUR PERMISSION</p>
+    <h1>Connect your assistant.</h1>
+    <p class="agent-intro">Let your assistant generate signatures with your paid plan. Your purchase access stays in this browser.</p>
+    <noscript><p class="agent-alert">Enable JavaScript to review and approve this connection.</p></noscript>
+    <p id="connection-status" class="agent-status" role="status">Checking this request…</p>
+    <p id="connection-error" class="agent-alert" role="alert" hidden></p>
+    <section id="connection-details" class="agent-card" aria-labelledby="request-heading" hidden>
+      <p class="agent-eyebrow">CONNECTION REQUEST</p>
+      <h2 id="request-heading"><span id="agent-name"></span></h2>
+      <p class="agent-muted">This name is supplied by the assistant and has not been verified. Only approve a connection you just requested.</p>
+      <div class="agent-permissions"><h3>You’re allowing it to</h3><ul><li>Read the available signature templates.</li><li>Generate signatures within your plan’s batch limit.</li></ul><p>Access expires after 24 hours. It cannot read saved signatures, manage your purchase, upload images or send email.</p></div>
+      <p id="purchase-status" class="agent-muted" role="status">Checking your purchase…</p>
+      <p id="purchase-help" class="agent-alert" hidden>Open this link in the browser where you purchased access. If needed, restore your purchase on <a href="/bulk" target="_blank" rel="noopener">Bulk signatures</a>, then reopen your assistant’s connection link.</p>
+      <form id="approve-agent">
+        <label for="agent-code">Code shown by your assistant</label>
+        <input id="agent-code" name="code" placeholder="ABCD-1234" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" required aria-describedby="code-help">
+        <p id="code-help" class="agent-muted">Type the eight-character code from the assistant you’re connecting.</p>
+        <button id="approve-connection" class="btn btn-primary" type="submit" disabled>Allow access for 24 hours</button>
+      </form>
+      <p class="agent-muted agent-revoke">You can stop access sooner by revoking your agent key on <a href="/bulk#api-heading">Bulk signatures</a>. This disconnects all assistants using that key.</p>
+    </section>
+    <p id="connection-complete" class="agent-success" role="status" hidden>Connection approved. Return to your assistant to finish connecting. You can close this tab.</p>
+    <p class="agent-back"><a href="/bulk">Back to bulk signatures</a></p>
+  </main>
+  <script src="/js/site-facts.js"></script>
+  <script src="/js/connect-agent.js"></script>
+</body>
+</html>
