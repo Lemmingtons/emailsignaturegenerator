@@ -27,3 +27,7 @@ jobs:
         run: npm run test:brand
       - name: Team pack
         run: npm run test:team
+      - name: Paid bulk and agent connections
+        run: |
+          npm run test:bulk
+          npm run test:agents
