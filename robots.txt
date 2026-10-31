@@ -15,45 +15,56 @@ Sitemap: https://emailsignaturegenerator.ai/sitemap.xml
 # build time, because the set changes whenever a customer publishes one.
 Sitemap: https://emailsignaturegenerator.ai/sitemap-cards.xml
 
-# ── Default: allow search indexing, block AI training ──────────────────────────
+# ── Default: allow search, AI answers and AI training ─────────────────────────
+# A new brand is invisible to AI assistants until it is in their training data
+# and their search indexes, so both are allowed. Card pages under /c/ are
+# customer-published and carry their own noindex where they are thin.
 User-agent: *
-Content-Signal: search=yes,ai-input=yes,ai-train=no
+Content-Signal: search=yes,ai-input=yes,ai-train=yes
 Allow: /
 
-# ── AI inference crawlers: explicitly allowed for AI search answers ────────────
-# Perplexity AI search
-User-agent: PerplexityBot
+# ── AI search and answer crawlers: explicitly allowed ───────────────────────────
+User-agent: OAI-SearchBot
 Allow: /
 
-# ChatGPT real-time browsing (NOT training — training uses GPTBot)
 User-agent: ChatGPT-User
 Allow: /
 
-# Amazon (Alexa, Rufus and Amazon search answers)
-User-agent: Amazonbot
-Content-Signal: search=yes,ai-input=yes,ai-train=no
+User-agent: GPTBot
 Allow: /
 
-# ── AI training crawlers: blocked (EU Directive 2019/790 Article 4 reservation) ─
-User-agent: GPTBot
-Disallow: /
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
 
 User-agent: ClaudeBot
-Disallow: /
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
 
 User-agent: Google-Extended
-Disallow: /
+Allow: /
 
 User-agent: Applebot-Extended
-Disallow: /
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
 
 User-agent: meta-externalagent
-Disallow: /
-
-User-agent: Bytespider
-Disallow: /
+Allow: /
 
 User-agent: CCBot
+Allow: /
+
+# ── Blocked: high-volume crawlers with no search or answer product we target ───
+User-agent: Bytespider
 Disallow: /
 
 User-agent: CloudflareBrowserRenderingCrawler

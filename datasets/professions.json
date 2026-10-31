@@ -1,0 +1,181 @@
+[
+  {
+    "slug": "real-estate-agent-email-signature",
+    "label": "Real estate agent",
+    "seoTitle": "Real Estate Agent Email Signature: Examples and What to Include",
+    "metaDescription": "Real estate agent and realtor email signature examples with licence number, brokerage, booking button and disclaimer. Build yours from your brokerage website.",
+    "heading": "Real Estate Agent Email Signature Examples",
+    "shortAnswer": "A real estate agent's email signature should show your name, your licence number and brokerage where your state or brokerage requires them, one phone number, and a single booking or listings link. Add a short Equal Housing Opportunity line in the US, and leave out quotes, awards lists and more than three social icons.",
+    "description": "Buyers and sellers read agent emails on their phones, often between viewings. A good signature makes the next step obvious, which is usually to call you or book a time, and carries the details your licence rules ask for without turning into a wall of small print.",
+    "datePublished": "2026-10-25",
+    "dateModified": "2026-10-25",
+    "keywords": "real estate agent email signature, realtor email signature, real estate email signature",
+    "complianceRole": "real-estate-agents",
+    "include": [
+      "Your full name and a title buyers understand, such as Sales Agent or Associate Broker.",
+      "Your licence number and state, if your state or brokerage requires it in advertising. Many do, and email can count as advertising.",
+      "Your brokerage name. Most brokerages require it on anything you send to clients.",
+      "One mobile number, written in full international format if you work with overseas buyers.",
+      "One call to action: book a viewing, see current listings, or get a free appraisal.",
+      "A short Equal Housing Opportunity line or logo in the US."
+    ],
+    "avoid": [
+      "Use REALTOR® only if you are a member of the National Association of Realtors. It is a registered membership mark, not a job title.",
+      "Do not list every award, designation and sales figure. Pick the one a buyer will recognise.",
+      "Skip large listing photos in the signature. They get clipped in replies and blocked by many inboxes.",
+      "Do not use three different phone numbers. Clients will call the wrong one."
+    ],
+    "examples": [
+      {
+        "title": "Agent with a booking button",
+        "why": "The filled button gives clients one obvious next step, and the licence details sit underneath in small print.",
+        "template": "realestate",
+        "compliance": true,
+        "style": { "primaryColor": "#0F5C4D" },
+        "data": { "fullName": "Maria Delgado", "title": "Sales Agent", "company": "Harbourside Realty", "phone": "+1 555 014 2290", "email": "maria@harboursiderealty.com", "website": "https://harboursiderealty.com", "instagram": "https://instagram.com/harboursiderealty", "facebook": "https://facebook.com/harboursiderealty" },
+        "complianceValues": { "Real Estate License #": "01234567", "State": "CA", "Brokerage": "Harbourside Realty Inc." },
+        "cta": { "text": "Book a viewing", "url": "https://harboursiderealty.com/book" }
+      },
+      {
+        "title": "Brokerage-branded signature",
+        "why": "When your brokerage has a strong logo and colour, lead with it. Clients often remember the brokerage before they remember you.",
+        "template": "corporate",
+        "compliance": false,
+        "style": { "primaryColor": "#1D3A6E" },
+        "data": { "fullName": "James Okafor", "title": "Associate Broker", "company": "Northline Property Group", "phone": "+1 555 013 7781", "email": "james@northlineproperty.com", "website": "https://northlineproperty.com", "linkedin": "https://linkedin.com/in/jamesokafor" }
+      },
+      {
+        "title": "Phone-first for open homes",
+        "why": "Buyers at an open home want to call, not click. The phone number comes first and is labelled, so it is one tap on a phone.",
+        "template": "trades",
+        "compliance": false,
+        "style": { "primaryColor": "#9A3412" },
+        "data": { "fullName": "Priya Shah", "title": "Listing Agent", "company": "Shah & Co Real Estate", "phone": "+1 555 019 4402", "email": "priya@shahcorealestate.com", "website": "https://shahcorealestate.com" }
+      }
+    ],
+    "faqs": [
+      { "q": "Do real estate agents have to put their licence number in their email signature?", "a": "It depends on your state and your brokerage. Many US states require a licence number or brokerage name in advertising, and some treat email to the public as advertising. Check your state real estate commission's rules and your brokerage's policy. The generator's compliance fields add the licence number, state and brokerage under your signature." },
+      { "q": "Can I call myself a REALTOR® in my signature?", "a": "Only if you are a member of the National Association of Realtors. REALTOR® is a registered membership mark. If you are not a member, use a plain title such as Sales Agent, Real Estate Agent or Associate Broker." },
+      { "q": "Should I put listing photos in my email signature?", "a": "No. Large images are often blocked, clipped in replies or flagged as promotional. Link to your current listings with a button instead, and keep the signature to your headshot or brokerage logo." },
+      { "q": "What is the best call to action for a real estate signature?", "a": "Use one. Book a viewing, see my listings or get a free appraisal all work. More than one link competes for attention and none of them get clicked." }
+    ]
+  },
+  {
+    "slug": "nurse-email-signature",
+    "label": "Nurse",
+    "seoTitle": "Nurse Email Signature: Credentials Order and Examples",
+    "metaDescription": "Nurse email signature examples with credentials in the right order, unit and contact details, and a confidentiality notice. Build yours free to preview.",
+    "heading": "Nurse Email Signature Examples and Credentials Order",
+    "shortAnswer": "A nurse's email signature should give your name, then credentials in the order the American Nurses Credentialing Center recommends (highest degree, licensure, state designations, national certifications, awards, other), your role and unit, your facility and a work phone. Never put patient information in email, and do not rely on a disclaimer to make email secure.",
+    "description": "Nurses email managers, colleagues on other shifts, educators and sometimes patients' families. The signature has two jobs: show your credentials correctly, and tell people the fastest way to reach your unit. Most of the mistakes are in the order of letters after your name.",
+    "datePublished": "2026-10-25",
+    "dateModified": "2026-10-25",
+    "keywords": "nurse email signature, nursing email signature, rn email signature, nurse credentials email signature",
+    "complianceRole": "nurses",
+    "include": [
+      "Your name followed by credentials in the recommended order, for example Jane Doe, MSN, RN, CCRN.",
+      "Your role and unit, such as Charge Nurse, Cardiac ICU.",
+      "Your hospital, clinic or health system name.",
+      "A work phone or unit extension. Leave out your personal mobile unless your employer asks for it.",
+      "A short confidentiality notice if your employer requires one.",
+      "Pronouns, if you want to include them."
+    ],
+    "avoid": [
+      "Do not list every course certificate. Keep national certifications and leave internal training off.",
+      "Never include patient names, dates or other health details in email, signature or not.",
+      "Do not use a decorative font for credentials. Letters like RN and CNL must be easy to read.",
+      "Avoid inspirational quotes. They look out of place in clinical email."
+    ],
+    "examples": [
+      {
+        "title": "Hospital nurse with credentials",
+        "why": "Credentials follow the recommended order and the unit is named, so colleagues know exactly who they are emailing.",
+        "template": "classic",
+        "compliance": true,
+        "style": { "primaryColor": "#0E6BA8" },
+        "data": { "fullName": "Jane Doe, MSN, RN, CCRN", "title": "Charge Nurse, Cardiac ICU", "company": "Riverside General Hospital", "phone": "+1 555 010 4471", "email": "jane.doe@riversidegeneral.org", "website": "https://riversidegeneral.org" },
+        "complianceValues": { "State RN / NP Licence": "CA RN 123456" }
+      },
+      {
+        "title": "Nurse practitioner in a clinic",
+        "why": "A clean, photo-free layout suits clinical email, and the plain contact line keeps it short in long reply chains.",
+        "template": "minimal",
+        "compliance": false,
+        "style": { "primaryColor": "#047857" },
+        "data": { "fullName": "Daniel Reyes, DNP, APRN, FNP-BC", "title": "Family Nurse Practitioner", "company": "Eastside Family Clinic", "phone": "+1 555 012 8890", "email": "dreyes@eastsideclinic.org", "website": "https://eastsideclinic.org" }
+      },
+      {
+        "title": "Nurse educator",
+        "why": "Educators often email students and new graduates, so a friendly headshot and a clear title help people put a face to the name.",
+        "template": "executive",
+        "compliance": false,
+        "style": { "primaryColor": "#6D28D9" },
+        "data": { "fullName": "Aisha Bello, PhD, RN, CNE", "title": "Clinical Nurse Educator", "company": "Lakeview School of Nursing", "phone": "+1 555 017 3305", "email": "abello@lakeviewnursing.edu", "website": "https://lakeviewnursing.edu" }
+      }
+    ],
+    "faqs": [
+      { "q": "What order should nursing credentials go in an email signature?", "a": "The American Nurses Credentialing Center recommends: highest earned degree, then licensure (such as RN or APRN), state designations, national certifications (such as CCRN), awards and honours, and other recognitions. For example: Jane Doe, MSN, RN, CCRN." },
+      { "q": "Should a nurse include a HIPAA notice in their email signature?", "a": "Include one if your employer requires it. A notice does not make email secure or compliant on its own, so never send patient information in ordinary email. The generator can add a short confidentiality notice under your signature." },
+      { "q": "Can I put my RN licence number in my signature?", "a": "You can, and some employers or roles ask for it, but most nurses do not need to. If you add it, the generator's compliance fields place it in small print under your contact details." }
+    ]
+  },
+  {
+    "slug": "lawyer-email-signature",
+    "label": "Lawyer",
+    "seoTitle": "Lawyer Email Signature: Examples, Disclaimers and Bar Details",
+    "metaDescription": "Lawyer and attorney email signature examples with firm details, bar admission and a confidentiality notice. See what to include and build yours from your firm's website.",
+    "heading": "Lawyer Email Signature Examples",
+    "shortAnswer": "A lawyer's email signature should show your name, title, firm, direct phone and office address, and your bar admissions if your jurisdiction expects them. A short confidentiality notice is common, but keep it under three lines and check your state's advertising rules, since some require extra wording on marketing emails.",
+    "description": "Clients judge a firm by small details, and the signature is one of the few things they see on every email. A good lawyer's signature is formal, easy to read on a phone and short enough that the confidentiality notice does not outweigh the message.",
+    "datePublished": "2026-10-25",
+    "dateModified": "2026-10-25",
+    "keywords": "lawyer email signature, attorney email signature, law firm email signature, legal email disclaimer",
+    "complianceRole": "lawyers",
+    "include": [
+      "Your full name and title, such as Partner, Associate or Of Counsel.",
+      "Your firm name and office address, which many state bars expect on lawyer communications.",
+      "A direct phone line and your email.",
+      "Bar admissions or your bar number, where your jurisdiction or firm requires it.",
+      "A short confidentiality notice if your firm uses one.",
+      "Attorney Advertising wording on marketing emails, if your state requires it."
+    ],
+    "avoid": [
+      "Do not use a ten-line disclaimer. Courts give boilerplate little weight, and clients stop reading.",
+      "Avoid inspirational quotes, emojis and bright colours. Formality is part of the message.",
+      "Do not claim to be a specialist or expert unless your state bar certifies you as one.",
+      "Leave out personal social accounts. Link to the firm's LinkedIn page if anything."
+    ],
+    "examples": [
+      {
+        "title": "Partner with bar details and notice",
+        "why": "A formal layout with a vertical rule, bar admission and a short confidentiality notice under the contact details.",
+        "template": "executive",
+        "compliance": true,
+        "style": { "primaryColor": "#1F2937" },
+        "data": { "fullName": "Eleanor Hartley", "title": "Partner", "company": "Hartley & Moss LLP", "phone": "+1 555 016 2200", "email": "ehartley@hartleymoss.com", "website": "https://hartleymoss.com", "linkedin": "https://linkedin.com/company/hartleymoss" },
+        "complianceValues": { "Bar Number": "123456", "State of Bar": "NY" }
+      },
+      {
+        "title": "Associate at a small firm",
+        "why": "The letterhead layout echoes printed firm stationery and highlights the firm name in its brand colour.",
+        "template": "letterhead",
+        "compliance": false,
+        "style": { "primaryColor": "#7F1D1D" },
+        "data": { "fullName": "Marcus Lee", "title": "Associate", "company": "Lee Whitfield Law", "phone": "+1 555 018 6610", "email": "marcus@leewhitfieldlaw.com", "website": "https://leewhitfieldlaw.com" }
+      },
+      {
+        "title": "Solo practitioner, plain text",
+        "why": "A text-only signature never breaks, never gets blocked and reads the same in every client, which suits court and government correspondence.",
+        "template": "textonly",
+        "compliance": false,
+        "style": { "primaryColor": "#1F2937" },
+        "data": { "fullName": "Rachel Nguyen", "title": "Attorney at Law", "company": "Nguyen Legal", "phone": "+1 555 011 9043", "email": "rachel@nguyenlegal.com", "website": "https://nguyenlegal.com" }
+      }
+    ],
+    "faqs": [
+      { "q": "Do lawyers need a disclaimer in their email signature?", "a": "Usually it is firm policy rather than a legal requirement. A short confidentiality notice is common practice, but courts give boilerplate little weight, so it does not replace care about who you email. Some states require Attorney Advertising wording on marketing emails, so check your state bar's rules." },
+      { "q": "Should I put my bar number in my email signature?", "a": "Some jurisdictions and firms expect bar admissions or a bar number on lawyer communications, and many lawyers list their admitted states. The generator's compliance fields add a bar number and state in small print under your details." },
+      { "q": "What is the best email signature format for a law firm?", "a": "A formal layout with name, title, firm, direct line, office address and one link to the firm's website. Use the firm's colour sparingly, avoid images other than the logo, and keep any notice to two or three lines." }
+    ]
+  }
+]

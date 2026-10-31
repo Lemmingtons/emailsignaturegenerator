@@ -6,6 +6,8 @@
 
 Email Signature Generator (emailsignaturegenerator.ai) lets professionals create HTML email signatures in under 2 minutes. Users pick a template, enter their contact details, customise colours and fonts, and copy the finished signature into Gmail, Outlook, Apple Mail, or any other email client.
 
+**How fast the website lookup is:** in a test of 12 public websites on 25 October 2026, every lookup answered within 2.6 seconds (median under half a second). It found a logo on 10 of the 12 sites and brand colours on 9. The same lookup is available on its own as a free **Brand Extractor** at /brand-extractor.
+
 A companion **Email Signature Health Check** at /health-check audits any pasted signature HTML for contrast, Gmail dark-mode safety, Outlook compatibility, tracker pixels, accessibility, and size. It runs entirely in the browser and is free.
 
 The **Email Signature Examples** hub at /email-signature-examples provides 52 role, industry, platform, and use-case examples plus copyable HTML starter signatures. Its selection framework checks four things: identity, message context, the recipient's next route, and restraint.
@@ -75,8 +77,10 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 
 - [Homepage](https://emailsignaturegenerator.ai/) — Product overview, templates, pricing, FAQ
 - [Generator](https://emailsignaturegenerator.ai/generator) — Interactive email signature builder
+- [Email Signature Templates](https://emailsignaturegenerator.ai/email-signature-templates) — All 28 templates rendered live, grouped by category, with who each suits
 - [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
 - [Health Check](https://emailsignaturegenerator.ai/health-check) — Free email signature checker: paste any HTML to test dark-mode, contrast, Outlook compatibility, trackers, and accessibility
+- [Brand Extractor](https://emailsignaturegenerator.ai/brand-extractor) — Free tool: type any website and get its logo, brand colours as hex codes, company name, phone and social links
 - [Privacy & Terms](https://emailsignaturegenerator.ai/privacy) — What is stored, where, and why
 
 ### Email client setup guides
@@ -87,15 +91,53 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 
 ### Comparisons
 
+- [Best Email Signature Generators (2026)](https://emailsignaturegenerator.ai/seo/best-email-signature-generators) — Ten tools, ours included, compared on free option, cheapest paid plan, subscription, sign-up and website brand import, with sources, checked 25 October 2026
 - [WiseStamp Alternative](https://emailsignaturegenerator.ai/seo/wisestamp-alternative) — Side-by-side price and feature comparison with WiseStamp (US$9 once vs US$108 a year for Pro+)
 - [HubSpot Email Signature Generator Alternative](https://emailsignaturegenerator.ai/seo/hubspot-email-signature-generator-alternative) — Comparison with HubSpot's free generator: website branding import, hosted images, 28 vs 12 templates
+
+### Signature examples by job
+
+- [Real Estate Agent Email Signature](https://emailsignaturegenerator.ai/seo/real-estate-agent-email-signature) — Examples with licence number, brokerage, booking button and Equal Housing wording
+- [Nurse Email Signature](https://emailsignaturegenerator.ai/seo/nurse-email-signature) — Credentials in the ANCC-recommended order, unit, facility and confidentiality notice
+- [Lawyer Email Signature](https://emailsignaturegenerator.ai/seo/lawyer-email-signature) — Firm details, bar admission and a short confidentiality notice
+
+### Template pages
+
+- [Classic template](https://emailsignaturegenerator.ai/email-signature-templates/classic) — Professional. A headshot on the left, then your name, title and company, a thin rule in your brand colour, one contact line and social icons.
+- [Executive template](https://emailsignaturegenerator.ai/email-signature-templates/executive) — Professional. Your name in capitals beside a vertical bar in your brand colour, with title, company and contact details stacked underneath.
+- [Corporate template](https://emailsignaturegenerator.ai/email-signature-templates/corporate) — Professional. A thick brand-colour bar across the top, then your details with P, E and W labels in your brand colour.
+- [Boardroom template](https://emailsignaturegenerator.ai/email-signature-templates/boardroom) — Professional. A small headshot beside your name and title, with the company and contact details below, divided by fine horizontal rules.
+- [Branded template](https://emailsignaturegenerator.ai/email-signature-templates/branded) — Professional. Built around your company logo: logo, name and title, a brand-colour rule, one contact line and social icons.
+- [Gradient template](https://emailsignaturegenerator.ai/email-signature-templates/gradient) — Creative. Your name in your primary colour, your title in your secondary colour, and a two-colour gradient rule underneath.
+- [Bold template](https://emailsignaturegenerator.ai/email-signature-templates/bold) — Creative. A brand-colour ring around your headshot and your job title set in a filled brand-colour pill.
+- [Modern template](https://emailsignaturegenerator.ai/email-signature-templates/modern) — Creative. Headshot, name and company in small capitals, with the contact details in a tinted strip along the bottom.
+- [Clean template](https://emailsignaturegenerator.ai/email-signature-templates/clean) — Minimal. No photo: name and title on one line, contact details on the next, then small social icons.
+- [Text Only template](https://emailsignaturegenerator.ai/email-signature-templates/textonly) — Minimal. Plain text only: your name, title, company and contact details stacked line by line, with social links written as words.
+- [Dash template](https://emailsignaturegenerator.ai/email-signature-templates/dash) — Minimal. A thin vertical line in your brand colour beside stacked text details, with no photo.
+- [Social Star template](https://emailsignaturegenerator.ai/email-signature-templates/socialstar) — Social. A headshot and your details with larger social icons, so your profiles get more attention than in a standard layout.
+- [Creator template](https://emailsignaturegenerator.ai/email-signature-templates/creator) — Social. A centred layout with the headshot on top, your name and role below, and a row of large social icons.
+- [CTA Box template](https://emailsignaturegenerator.ai/email-signature-templates/ctabox) — Sales / CTA. A compact signature with a filled call-to-action button, such as Book a meeting, under your contact details.
+- [Banner template](https://emailsignaturegenerator.ai/email-signature-templates/banner) — Sales / CTA. Your details with a full-width call-to-action banner underneath, wider and more prominent than a button.
+- [Meeting template](https://emailsignaturegenerator.ai/email-signature-templates/meetinglink) — Sales / CTA. A standard signature with a text link to your calendar under a brand-colour rule, rather than a button.
+- [Real Estate template](https://emailsignaturegenerator.ai/email-signature-templates/realestate) — Industry. Headshot, stacked contact details and a filled button for a booking or listing link, with room for licence details below.
+- [Trades template](https://emailsignaturegenerator.ai/email-signature-templates/trades) — Industry. A brand-colour bar beside your details, with labelled Call, Email and Web rows and the phone number first.
+- [Consultant template](https://emailsignaturegenerator.ai/email-signature-templates/consultant) — Industry. Your title in spaced capitals in your brand colour, an accent rule and a clean contact block.
+- [Atelier template](https://emailsignaturegenerator.ai/email-signature-templates/atelier) — Professional. Name, then title and company in small spaced capitals, an accent rule and stacked contact details.
+- [Card template](https://emailsignaturegenerator.ai/email-signature-templates/cardstock) — Professional. A bordered card with your details on the left, a call-to-action link on the right and social icons along the bottom.
+- [Portrait template](https://emailsignaturegenerator.ai/email-signature-templates/portrait) — Creative. A taller rectangular headshot beside a serif name and a spaced-capital title.
+- [Monogram template](https://emailsignaturegenerator.ai/email-signature-templates/monogram) — Minimal. Your initials in a brand-colour circle instead of a photo, with your details beside it.
+- [Stacked template](https://emailsignaturegenerator.ai/email-signature-templates/stacked) — Minimal. A headshot with your details listed under small capital labels: phone, email and web.
+- [Signature template](https://emailsignaturegenerator.ai/email-signature-templates/signature) — Professional. A headshot, a brand-colour accent and contact rows marked M, E and W in your brand colour.
+- [Letterhead template](https://emailsignaturegenerator.ai/email-signature-templates/letterhead) — Professional. A headshot, your name, your title with the company in your brand colour, then your contact lines.
+- [Minimal template](https://emailsignaturegenerator.ai/email-signature-templates/minimal) — Minimal. No photo: your name, title and company, a short rule, one contact line and small social icons.
+- [Showcase template](https://emailsignaturegenerator.ai/email-signature-templates/showcase) — Sales / CTA. A tinted panel holding your headshot, details, a call-to-action button and social icons together.
 
 ### Blog
 
 - [Blog index](https://emailsignaturegenerator.ai/blog/) — All guides
 - [Email Signature Best Practices](https://emailsignaturegenerator.ai/blog/email-signature-best-practices) — Practical checklist: what to include, resilient HTML, common mistakes, testing
-- [How to Add an Email Signature in Gmail](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail) — Desktop and mobile steps, defaults, and fixes
-- [How to Add an Email Signature in Outlook](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook) — New Outlook, classic Outlook, Outlook on the web, and Outlook for Mac
+- [How to Add or Change Your Signature in Gmail](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-gmail) — Add, change or remove a signature on desktop and mobile, set reply defaults, and fix common problems
+- [How to Add or Change Your Signature in Outlook](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-in-outlook) — Add, change or remove a signature in new Outlook, classic Outlook, Outlook on the web, Outlook for Mac and the Outlook phone app
 - [Social Media Icons for Email Signatures](https://emailsignaturegenerator.ai/blog/email-signature-social-media-icons) — How to choose, link, size, and test social icons across Gmail, Outlook, and mobile inboxes
 - [Student Email Signature Examples](https://emailsignaturegenerator.ai/blog/student-email-signature-examples) — Seven examples for college, internships, graduate research, and portfolios
 - [How to Add an Email Signature on iPhone and Android](https://emailsignaturegenerator.ai/blog/how-to-add-email-signature-on-iphone-and-android) — iPhone Mail, Gmail, Outlook mobile and Samsung Email setup, plus what belongs in a mobile signature
@@ -107,4 +149,4 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 
 ## Competitor comparison
 
-Unlike subscription-based signature tools, which charge monthly or per user, Email Signature Generator charges a single $9 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature.
+Unlike subscription-based signature tools, which charge monthly or per user, Email Signature Generator charges a single $9 one-time fee. It is positioned as a lightweight, privacy-respecting alternative to enterprise tools like Exclaimer, WiseStamp, or MySignature. In a check of nine other generators' own pricing and product pages on 25 October 2026 (HubSpot, WiseStamp, MySignature, SignatureForEmail, Blinq, Exclaimer, CodeTwo, Canva and Newoldstamp), none documented filling in a logo and brand colours from a typed website address; they ask for a logo upload or image URL and colours chosen by hand. The full comparison, with sources, is at /seo/best-email-signature-generators.

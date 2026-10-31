@@ -100,6 +100,19 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 - The generator fills only empty fields, but always applies the colours. `/generator?site=acme.com` runs the import on load, for landing pages to link to.
 - Sites that block bots or render their branding entirely in JavaScript return little. The UI says so and the visitor fills in the fields by hand.
 
+## Template gallery, job guides and brand extractor
+
+`npm run generate` also writes these from datasets, using the real templates to render every signature shown:
+
+- `/email-signature-templates` and `/email-signature-templates/<id>`: one page per template. The copy for each lives in `datasets/templates.json` and must cover every template in `js/templates.js`. Adding a template without an entry fails the build, and `npm run check` fails if the gallery is out of step with `templateCount`.
+- `/seo/<job>-email-signature`: real estate agent, nurse and lawyer guides from `datasets/professions.json`. Compliance examples pull their fields and disclaimer from `datasets/compliance.json`.
+- `/seo/best-email-signature-generators`: the ten-tool comparison (nine competitors plus ours) from `datasets/generators.json`, checked 25 October 2026 against each vendor's own pages. The monthly audit should re-check it alongside `competitors.json` and update `checkedOn`. Gimmio was left out because its pricing pages returned 404.
+- `/brand-extractor`: a free front end for `/api/brand` (`js/brand-tool.js`).
+
+The lookup figures on the homepage, the extractor page and in llms.txt come from a timed run on 25 October 2026: 12 public sites, all answered within 2.6 s (median 0.45 s), logo found on 10 and colours on 9. Re-measure before changing them. They live in `BRAND_TEST` in `generate-pages.js` and in the homepage "How it works" section.
+
+`robots.txt` now allows AI training and answer crawlers (GPTBot, ClaudeBot, Google-Extended, CCBot and others) so the brand can enter AI answers. Only Bytespider and Cloudflare's rendering crawler stay blocked. `npm run check` fails if the main answer-engine crawlers are disallowed.
+
 ## Competitor comparison pages
 
 `datasets/competitors.json` owns the `/seo/*-alternative` pages that `generate-pages.js` writes. Each entry has a `checkedOn` date and source links shown on the page. Competitor prices are literal text, while our own price and template count come from `{{price}}` and `{{templates}}` placeholders filled from `js/site-facts.js`. The monthly SEO audit should re-check each competitor's pricing page, update the entry and `checkedOn`, then run `npm run generate`. The homepage banner, paywall and llms.txt quote the WiseStamp Pro+ yearly figure; `npm run check` fails until they match `entryPlanAnnualUsd` in the dataset. Do not advertise a money-back guarantee anywhere.

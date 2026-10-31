@@ -1,0 +1,116 @@
+{
+  "slug": "best-email-signature-generators",
+  "seoTitle": "Best Email Signature Generators (2026): 10 Tools Compared",
+  "metaDescription": "An honest comparison of 10 email signature generators, ours included: HubSpot, WiseStamp, MySignature, Exclaimer, Canva and more. Prices, free options, sign-up and brand import, checked October 2026.",
+  "heading": "The Best Email Signature Generators in 2026",
+  "datePublished": "2026-10-25",
+  "dateModified": "2026-10-25",
+  "checkedOn": "2026-10-25",
+  "shortAnswer": "For one free signature with no account, HubSpot's generator is the simplest. For company-wide signatures managed by IT, Exclaimer or CodeTwo. For banner campaigns and analytics, WiseStamp or Newoldstamp. If you want your logo and brand colours filled in from your website and would rather pay once than subscribe, our generator does that for {{price}} once. We built it, so weigh that accordingly.",
+  "intro": "Most email signature generators look alike from the outside: pick a template, type your details, copy. The differences are in what is free, whether you need an account, whether you are signing up to a subscription, and how much work it takes to get your own logo and colours in. We checked each tool's own pricing and product pages on the date below.",
+  "method": [
+    "Every price, plan and feature comes from the vendor's own pricing or product page, linked in the sources column, on the check date shown.",
+    "We list the cheapest plan that lets you use a signature, in the currency the page shows.",
+    "Brand import means filling in your logo and colours from a website address. We looked for it on every tool's product and pricing pages. No other tool documented it; that is absence of evidence, not proof it does not exist.",
+    "We make one of these tools. It is listed with the same columns as everyone else and its limits are stated."
+  ],
+  "columns": ["Free option", "Cheapest paid plan", "Subscription", "Account to use it", "Logo and colours from your website"],
+  "tools": [
+    {
+      "name": "Email Signature Generator (us)",
+      "url": "https://emailsignaturegenerator.ai/",
+      "self": true,
+      "cells": ["Build and preview every template free; copying needs Pro", "{{price}} once, all {{templates}} templates", "No", "No", "Yes, from a typed web address"],
+      "bestFor": "Individuals and small teams who want their brand filled in from their website and would rather pay once.",
+      "limits": "No central admin console, no banner campaigns and no click analytics. Sites that block automated requests or draw their branding with JavaScript need manual entry.",
+      "sources": []
+    },
+    {
+      "name": "HubSpot Email Signature Generator",
+      "url": "https://www.hubspot.com/email-signature-generator",
+      "cells": ["Fully free", "No paid plan for this tool", "No", "No", "No. Paste a logo image URL and pick colours by hand"],
+      "bestFor": "A plain, free signature when your logo is already hosted somewhere.",
+      "limits": "Around a dozen templates, and your logo must already be hosted at a public image URL.",
+      "sources": [{ "label": "HubSpot generator", "url": "https://www.hubspot.com/email-signature-generator" }]
+    },
+    {
+      "name": "WiseStamp",
+      "url": "https://www.wisestamp.com/",
+      "cells": ["14-day free trial; no free tier on the pricing page", "Pro+ $9/month billed annually ($108 a year)", "Yes", "Yes", "No. Upload a logo; colours can be suggested from an uploaded image"],
+      "bestFor": "Teams that want central management, banner campaigns and click analytics.",
+      "limits": "A yearly subscription, and the Pro+ plan has 3 templates.",
+      "sources": [{ "label": "WiseStamp pricing", "url": "https://www.wisestamp.com/pricing/" }]
+    },
+    {
+      "name": "MySignature",
+      "url": "https://www.mysignature.io/",
+      "cells": ["Free tier with basic signatures; paid plans remove MySignature branding", "Core $6 per user/month, billed yearly", "Yes", "To save a Pro signature", "No"],
+      "bestFor": "Individuals and small teams who want email tracking and a digital business card.",
+      "limits": "Per-user yearly pricing, and the free tier is limited to one basic signature.",
+      "sources": [{ "label": "MySignature pricing", "url": "https://www.mysignature.io/pricing" }]
+    },
+    {
+      "name": "SignatureForEmail",
+      "url": "https://signatureforemail.com/",
+      "cells": ["Free for simple signatures, with a SignatureForEmail link", "Personal $30 a year or $5/month", "Yes", "To save signatures online", "No"],
+      "bestFor": "Freelancers who want cheap hosted images and basic analytics.",
+      "limits": "Removing the branding link and hosting images both need a paid plan.",
+      "sources": [{ "label": "SignatureForEmail pricing", "url": "https://signatureforemail.com/site/pricing" }]
+    },
+    {
+      "name": "Blinq",
+      "url": "https://blinq.me/",
+      "cells": ["Free tier includes a personal email signature", "Business $4.99 per user/month billed annually, minimum five", "Yes", "Yes", "No. Admins set logo and colours by hand"],
+      "bestFor": "People who mainly want a digital business card with a signature bundled in.",
+      "limits": "The signature is a secondary feature of a business-card product.",
+      "sources": [{ "label": "Blinq pricing", "url": "https://blinq.me/pricing" }]
+    },
+    {
+      "name": "Exclaimer",
+      "url": "https://www.exclaimer.com/",
+      "cells": ["14-day trial; a separate free generator page", "Starter US$0.90 per user/month billed annually, minimum 10 users", "Yes", "Yes", "No. Brand kits are manual"],
+      "bestFor": "Organisations on Microsoft 365 or Google Workspace that need signatures applied centrally.",
+      "limits": "Built for IT-managed rollouts; the 10-user minimum makes it poor value for one person.",
+      "sources": [{ "label": "Exclaimer pricing", "url": "https://www.exclaimer.com/pricing" }]
+    },
+    {
+      "name": "CodeTwo Email Signatures 365",
+      "url": "https://www.codetwo.com/email-signatures/",
+      "cells": ["14-day trial, no free tier", "Per user, billed monthly or yearly, minimum 10 licences", "Yes", "Yes", "No"],
+      "bestFor": "Microsoft 365 administrators who want one all-features plan and 24/7 support.",
+      "limits": "Microsoft 365 only, and priced for organisations rather than individuals.",
+      "sources": [{ "label": "CodeTwo pricing", "url": "https://www.codetwo.com/email-signatures/pricing/" }]
+    },
+    {
+      "name": "Canva",
+      "url": "https://www.canva.com/create/email-signatures/",
+      "cells": ["Free templates and editor", "Canva Pro, billed per person monthly or yearly", "Yes, for Pro", "Yes", "No. Brand kit colours are entered by hand"],
+      "bestFor": "People who already design in Canva and are happy with an image-based signature.",
+      "limits": "Canva exports the signature as an image, so the text is not selectable and links need extra work. Image-only signatures are often blocked or shown as attachments.",
+      "sources": [{ "label": "Canva email signatures", "url": "https://www.canva.com/create/email-signatures/" }, { "label": "Canva pricing", "url": "https://www.canva.com/pricing/" }]
+    },
+    {
+      "name": "Newoldstamp",
+      "url": "https://newoldstamp.com/",
+      "cells": ["7-day trial; signatures stop working after it unless you upgrade", "Priced per signature, billed annually", "Yes", "Yes", "No"],
+      "bestFor": "Marketing teams running banner campaigns with Google Workspace or Microsoft 365 sync.",
+      "limits": "Signatures stop working when the trial or subscription ends.",
+      "sources": [{ "label": "Newoldstamp pricing", "url": "https://newoldstamp.com/pricing/" }]
+    }
+  ],
+  "chooser": [
+    { "need": "One free signature, no account, logo already hosted", "pick": "HubSpot" },
+    { "need": "Your logo and colours filled in from your website, paid once", "pick": "Email Signature Generator" },
+    { "need": "Signatures pushed to every mailbox in Microsoft 365", "pick": "Exclaimer or CodeTwo" },
+    { "need": "Banner campaigns and click analytics for a marketing team", "pick": "WiseStamp or Newoldstamp" },
+    { "need": "A digital business card first, signature second", "pick": "Blinq" },
+    { "need": "An image you design freely and already use Canva", "pick": "Canva" }
+  ],
+  "faqs": [
+    { "q": "What is the best free email signature generator?", "a": "HubSpot's generator is the best fully free option: no account, no paid plan and HTML you can copy. Its limits are a small template set and no way to pull in your logo from your website, so you need your logo hosted at a public image URL first." },
+    { "q": "Is there an email signature generator without a subscription?", "a": "Yes. HubSpot's generator is free with no plan at all. Our generator is a one-time payment of {{price}} with no renewal. Most other tools, including WiseStamp, MySignature, Newoldstamp, Exclaimer and CodeTwo, are subscriptions, and some stop your signature working when the subscription ends." },
+    { "q": "Which email signature generator can use my company website?", "a": "Our generator is the only one we found that documents filling in your logo, brand colours, company name, phone and social links from a typed website address. Other tools ask you to upload a logo or paste an image URL and choose colours by hand. Sites that block automated requests may still need manual entry." },
+    { "q": "Do I need a signature management platform or just a generator?", "a": "A generator is enough for individuals and small teams who install their own signatures. Choose a management platform such as Exclaimer or CodeTwo when IT needs to apply and update signatures for every mailbox centrally, or when legal wording must be enforced." },
+    { "q": "Are image-based email signatures a good idea?", "a": "Usually not. Many email clients block images until the recipient allows them, so an image-only signature can arrive blank or as an attachment, and the text cannot be selected or tapped. HTML signatures with real text and a small logo are more reliable." }
+  ]
+}

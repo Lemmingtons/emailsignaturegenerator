@@ -15,6 +15,9 @@ datasets/competitors.json
 datasets/industries.json
 datasets/platforms.json
 datasets/roles.json
+datasets/templates.json
+datasets/professions.json
+datasets/generators.json
 assets/icon-masks
 assets/icon-masks/**
 automation
