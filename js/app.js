@@ -164,6 +164,15 @@
       if (el) el.addEventListener('input', renderPreview);
     });
 
+    // A logo address the visitor types is theirs, so a later website import keeps it.
+    const logoUrlInput = document.getElementById('logoUrl');
+    if (logoUrlInput) {
+      logoUrlInput.addEventListener('input', function() {
+        const thumb = document.getElementById('logoPreviewThumb');
+        if (thumb) delete thumb.dataset.fromSite;
+      });
+    }
+
     // Photo upload
     const photoFile = document.getElementById('photoFile');
     if (photoFile) {
