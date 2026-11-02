@@ -125,8 +125,9 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   } else {
     if (!robots.body.includes(`Sitemap: ${canonicalOrigin}/sitemap.xml`)) fail('robots.txt is missing its Sitemap directive');
     if (!/User-agent: PerplexityBot\s+Allow: \//.test(robots.body)) fail('robots.txt no longer allows PerplexityBot');
-    // AI crawlers are allowed so the brand can appear in AI answers (see NEXT_STEPS.md).
-    if (/User-agent: GPTBot\s+Disallow: \//.test(robots.body)) fail('robots.txt blocks GPTBot');
+    // TODO: restore a check that GPTBot is not disallowed once Cloudflare's managed
+    // robots.txt and Block AI bots settings are off. Cloudflare prepends its own
+    // Disallow, so the check would alert every hour on a setting the repo cannot change.
   }
 
   const llms = await get(`${base}/llms.txt`);
