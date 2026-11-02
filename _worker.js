@@ -10,9 +10,12 @@ import { bulkApiResponse, authorizeBulkRequest } from './js/bulk-api.js';
 import { createBulkAccess } from './js/bulk-access.js';
 import { bulkMcpResponse } from './js/bulk-mcp.js';
 import { agentDiscoveryResponse, agentDiscoveryLinks } from './js/agent-discovery.js';
+import { createAgentRegistration } from './js/agent-registration.js';
+import { bulkA2aResponse } from './js/bulk-a2a.js';
 
 const FACTS = globalThis.SiteFacts;
 const BULK_ACCESS = createBulkAccess({ verifyProAccess, verifyJwt, signJwt, readJsonObject, isEntitlementRevoked, uploadBucket });
+const AGENT_REGISTRATION = createAgentRegistration({ signJwt, verifyJwt, bulkAccess: BULK_ACCESS, uploadBucket });
 
 const GOOGLE_SITE_VERIFICATION_FILE = '/googlee8f6af86faea90b4.html';
 const GOOGLE_SITE_VERIFICATION_BODY = 'google-site-verification: googlee8f6af86faea90b4.html';
@@ -748,6 +751,7 @@ const PUBLIC_ROOT_ASSETS = new Set([
   '/email-signature-templates.html',
   '/brand-extractor.html',
   '/bulk.html',
+  '/connect-agent.html',
   '/privacy.html',
   '/favicon.svg',
   '/robots.txt',
@@ -759,6 +763,7 @@ const PUBLIC_CLIENT_SCRIPTS = new Set([
   '/js/app.js',
   '/js/brand-tool.js',
   '/js/bulk.js',
+  '/js/connect-agent.js',
   '/js/bulk-core.js',
   '/js/bulk-spreadsheet-worker.js',
   '/js/vendor/read-excel-file.min.js',
@@ -1078,6 +1083,10 @@ async function handleRequest(request, env) {
     if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
 
     if (url.pathname === '/api/brand') return brandResponse(request, env, url);
+    if (url.pathname.startsWith('/api/v1/agent/')) return AGENT_REGISTRATION(request, env);
+    if (url.pathname === '/a2a' || url.pathname.startsWith('/a2a/')) return bulkA2aResponse(request, env, {
+      authorize: (req, bindings) => authorizeBulkRequest(req, bindings, BULK_ACCESS.authorize),
+    });
     if (url.pathname === '/api/v1/access-key') return BULK_ACCESS.manage(request, env);
     if (url.pathname === '/api/v1/signatures/batch' || url.pathname === '/api/v1/templates') return bulkApiResponse(request, env, url, BULK_ACCESS.authorize);
     if (url.pathname === '/mcp') return bulkMcpResponse(request, env, {
@@ -1673,7 +1682,12 @@ async function handleRequest(request, env) {
     if (response.status === 404) response = notFoundResponse();
 
     // Add security headers to all responses
-    const newHeaders = addSecurityHeaders(response, ['/bulk', '/bulk.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname));
+    const newHeaders = addSecurityHeaders(response, ['/bulk', '/bulk.html', '/connect-agent', '/connect-agent.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname));
+    if (['/connect-agent', '/connect-agent.html'].includes(url.pathname)) {
+      newHeaders.set('Cache-Control', 'no-store, private');
+      newHeaders.set('X-Robots-Tag', 'noindex, nofollow');
+      newHeaders.set('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+    }
     if (response.status === 200 && (response.headers.get('Content-Type') || '').includes('text/html')) {
       newHeaders.append('Link', agentDiscoveryLinks());
       if (url.pathname === '/') {

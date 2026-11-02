@@ -164,6 +164,15 @@
       if (el) el.addEventListener('input', renderPreview);
     });
 
+    // A logo address the visitor types is theirs, so a later website import keeps it.
+    const logoUrlInput = document.getElementById('logoUrl');
+    if (logoUrlInput) {
+      logoUrlInput.addEventListener('input', function() {
+        const thumb = document.getElementById('logoPreviewThumb');
+        if (thumb) delete thumb.dataset.fromSite;
+      });
+    }
+
     // Photo upload
     const photoFile = document.getElementById('photoFile');
     if (photoFile) {
@@ -709,6 +718,7 @@
     preview.alt = 'Logo';
     thumb.replaceChildren(preview);
     thumb.classList.add('has-logo');
+    delete thumb.dataset.fromSite;
 
     const removeBtn = document.getElementById('logoRemoveBtn');
     if (removeBtn) removeBtn.style.display = '';
@@ -788,6 +798,7 @@
     thumb.innerHTML = '<span class="logo-placeholder">No logo</span>';
     thumb.classList.remove('has-logo');
     delete thumb.dataset.previewOnly;
+    delete thumb.dataset.fromSite;
 
     const removeBtn = document.getElementById('logoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
@@ -799,7 +810,11 @@
   // ── Brand from website ──
   // Reads the visitor's homepage through /api/brand and fills the form: empty
   // text fields only (never overwriting what they typed), the brand colours, and
-  // the logo when none is set yet.
+  // the logo when none is set yet. Importing another site first clears what the
+  // last import filled, unless the visitor has since changed it.
+
+  // Field id or colour key -> the value the last import set.
+  let brandFilled = {};
 
   const BRAND_ERRORS = {
     invalid_url: 'That doesn\'t look like a website address. Try something like acme.com.',
@@ -875,8 +890,30 @@
     const el = document.getElementById(id);
     if (!el || !value || el.value.trim()) return false;
     el.value = value;
+    brandFilled[id] = el.value;
     clearFieldError(id);
     return true;
+  }
+
+  function setBrandColor(key, hex) {
+    if (!setStyleColor(key, hex)) return false;
+    brandFilled[key] = style[key];
+    return true;
+  }
+
+  function clearLastBrand() {
+    const defaults = CORE.createStyle();
+    Object.keys(brandFilled).forEach(function(key) {
+      if (Object.prototype.hasOwnProperty.call(defaults, key)) {
+        if (style[key] === brandFilled[key]) setStyleColor(key, defaults[key]);
+        return;
+      }
+      const el = document.getElementById(key);
+      if (el && el.value === brandFilled[key]) el.value = '';
+    });
+    brandFilled = {};
+    const thumb = document.getElementById('logoPreviewThumb');
+    if (thumb && thumb.dataset.fromSite) removeLogo();
   }
 
   function setStyleColor(key, hex) {
@@ -896,6 +933,7 @@
   }
 
   async function applyBrand(data) {
+    clearLastBrand();
     const added = [];
     if (fillIfEmpty('company', data.company)) added.push('your company name');
     if (fillIfEmpty('phone', data.phone)) added.push('phone');
@@ -910,8 +948,8 @@
     }
 
     const colors = data.colors || {};
-    let colorAdded = setStyleColor('primaryColor', colors.primary);
-    if (setStyleColor('secondaryColor', colors.secondary)) colorAdded = true;
+    let colorAdded = setBrandColor('primaryColor', colors.primary);
+    if (setBrandColor('secondaryColor', colors.secondary)) colorAdded = true;
 
     const thumb = document.getElementById('logoPreviewThumb');
     const hasLogo = document.getElementById('logoUrl').value.trim() || (thumb && thumb.dataset.previewOnly);
@@ -919,10 +957,11 @@
       const img = await loadBrandLogo(data.logo);
       if (img) {
         const canvas = applyLogoImage(img);
+        if (canvas) thumb.dataset.fromSite = 'true';
         openOptionalSection('logo');
         added.unshift('your logo');
         // No colours on the site itself: borrow the logo's strongest colour.
-        if (!colorAdded && canvas) colorAdded = setStyleColor('primaryColor', dominantColor(canvas));
+        if (!colorAdded && canvas) colorAdded = setBrandColor('primaryColor', dominantColor(canvas));
       }
     }
     if (colorAdded) added.push('brand colours');
@@ -2565,6 +2604,7 @@
         const thumb = document.getElementById(slot + 'PreviewThumb');
         if (!thumb) return;
         delete thumb.dataset.previewOnly;
+        delete thumb.dataset.fromSite;
         if (url) {
           thumb.innerHTML = `<img src="${escapeAttr(url)}" alt="${slot} preview">`;
           thumb.classList.add('has-' + slot);

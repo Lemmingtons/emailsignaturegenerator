@@ -122,5 +122,5 @@ export function createBulkAccess({ verifyProAccess, verifyJwt, signJwt, readJson
     }
     return failure(409, 'key_busy');
   }
-  return { authorize, manage };
+  return { authorize, manage, purchase };
 }

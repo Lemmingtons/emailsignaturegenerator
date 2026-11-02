@@ -54,3 +54,5 @@ js/bulk-api.js
 js/bulk-access.js
 js/bulk-mcp.js
 js/agent-discovery.js
+js/agent-registration.js
+js/bulk-a2a.js
