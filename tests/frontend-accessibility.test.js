@@ -33,6 +33,22 @@ for (const id of ['photoStatusHint', 'logoStatusHint', 'cardStatusHint', 'export
 assert.match(app, /function updateLiveStatus/);
 assert.match(app, /kind === 'error' \? 'assertive' : 'polite'/);
 
+// Paywall: a native modal dialog, labelled, opened from the export buttons,
+// closed by Escape (native cancel) and the secondary button, returning focus.
+assert.match(generator, /<dialog id="paywallDialog"[^>]+aria-labelledby="paywallTitle"[^>]+aria-describedby="paywallLead"/);
+assert.match(generator, /id="paywallTitle"[^>]+tabindex="-1"/);
+assert.match(generator, /id="paywallPreview"[^>]*\binert\b/);
+assert.match(generator, /id="paywallCloseBtn"[^>]*>Keep editing</);
+assert.match(generator, /id="paywallStatus"[^>]+role="status"[^>]+aria-live="polite"/);
+assert.ok(!/paywallDialog[\s\S]*\$\d/.test(generator.slice(generator.indexOf('<dialog id="paywallDialog"'), generator.indexOf('</dialog>'))), 'paywall prices come from site facts');
+assert.match(app, /dialog\.showModal\(\)/);
+assert.match(app, /dialog\.addEventListener\('close', restorePaywallFocus\)/);
+assert.match(app, /paywallReturnFocus = trigger/);
+assert.match(app, /requireProForExport\(btn\)/);
+// The Install step mirrors export feedback visually only; one live region.
+assert.match(generator, /id="installStatusHint"[^>]+aria-hidden="true"/);
+assert.match(generator, /id="accessLinkHint"[^>]+role="status"[^>]+aria-live="polite"/);
+
 assert.match(landing, /id="sigCarouselToggle"[^>]+aria-pressed="false"[^>]*>Pause carousel</);
 assert.match(landing, /prefers-reduced-motion: reduce/);
 assert.match(landing, /if \(timer !== null\) clearInterval\(timer\)/);

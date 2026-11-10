@@ -194,6 +194,32 @@
     return [d.fullName, d.title, d.company, d.phone, d.email, d.website].filter(Boolean).join('\n');
   }
 
+  // Checkout recovery belongs only to the current tab, never to a public saved
+  // signature or an entitlement. Bound it before touching browser storage.
+  const CHECKOUT_DRAFT_MAX = 4_000_000;
+  const CHECKOUT_DRAFT_TTL = 24 * 60 * 60 * 1000;
+
+  function encodeCheckoutDraft(signature, recovery, now = Date.now()) {
+    const encoded = JSON.stringify({ version: 1, createdAt: now, signature, recovery });
+    if (encoded.length > CHECKOUT_DRAFT_MAX) throw new Error('draft_too_large');
+    return encoded;
+  }
+
+  function decodeCheckoutDraft(encoded, now = Date.now()) {
+    if (typeof encoded !== 'string' || encoded.length > CHECKOUT_DRAFT_MAX) return null;
+    try {
+      const draft = JSON.parse(encoded);
+      if (!draft || draft.version !== 1 || !Number.isFinite(draft.createdAt) ||
+          draft.createdAt > now || now - draft.createdAt > CHECKOUT_DRAFT_TTL ||
+          !draft.signature || draft.signature.version !== 1 ||
+          !draft.signature.data || typeof draft.signature.data !== 'object' ||
+          !draft.recovery || typeof draft.recovery !== 'object') return null;
+      return draft;
+    } catch {
+      return null;
+    }
+  }
+
   function describeUploadError(code) {
     switch (code) {
       case 'not_pro': return 'Pro is required to host images for Gmail and Outlook.';
@@ -201,7 +227,7 @@
       case 'rate_limited': return 'Too many requests in a row. Wait a minute and try again.';
       case 'too_large': return 'Image too large. Use a smaller JPG, PNG, or WebP.';
       case 'unsupported_format': return 'JPG, PNG, or WebP only.';
-      case 'invalid_token': return 'Pro session expired. Refresh Pro access and try again.';
+      case 'invalid_token': return 'We could not confirm your Pro access. Reload the page and try again.';
       case 'storage_not_configured': return 'Hosting is offline right now. Try again shortly.';
       case 'empty_body': return 'Image upload was empty. Try another file.';
       default: return 'Upload failed. Try again.';
@@ -222,6 +248,8 @@
     previewOnlyImageSlots,
     withoutPreviewOnlyImages,
     plainTextFromData,
+    encodeCheckoutDraft,
+    decodeCheckoutDraft,
     describeUploadError,
   });
 });
