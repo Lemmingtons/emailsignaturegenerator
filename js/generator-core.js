@@ -86,9 +86,38 @@
       .replace(/>/g, '&gt;');
   }
 
+  // Link fields accept what the signature templates turn into a working link:
+  // a full http(s) address, `//host/path`, or a bare host such as `acme.com`
+  // or `linkedin.com/in/jane` (linked as https://). Anything the templates
+  // would drop is refused here, so it never silently vanishes from a signature.
+  const URL_FIELD_MESSAGE = 'Enter a web address like acme.com.';
+
+  function publicHostOk(candidate) {
+    try {
+      const parsed = new URL(candidate);
+      return parsed.hostname.includes('.') && !parsed.username && !parsed.password;
+    } catch {
+      return false;
+    }
+  }
+
   function urlValidator(val) {
-    if (!String(val || '').trim()) return '';
-    return /^https?:\/\//.test(val) ? '' : 'URL must start with http:// or https://';
+    const raw = String(val || '').trim();
+    if (!raw) return '';
+    // Browsers ignore control characters and spaces inside a scheme.
+    const compact = raw.replace(/[\u0000-\u0020]/g, '');
+    const scheme = /^([a-z][a-z0-9+-]*):/i.exec(compact);
+    if (scheme) {
+      if (!/^https?$/i.test(scheme[1])) return URL_FIELD_MESSAGE;
+      try {
+        return new URL(raw).hostname ? '' : URL_FIELD_MESSAGE;
+      } catch {
+        return URL_FIELD_MESSAGE;
+      }
+    }
+    if (raw.startsWith('//')) return publicHostOk('https:' + raw) ? '' : URL_FIELD_MESSAGE;
+    if (/^[/?#.\\@]/.test(raw)) return URL_FIELD_MESSAGE;
+    return publicHostOk('https://' + raw) ? '' : URL_FIELD_MESSAGE;
   }
 
   function validateFieldValue(id, value) {

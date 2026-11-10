@@ -112,7 +112,7 @@ async function main() {
   assert.equal(invalid.copied.length, 2, 'both export formats work after correction');
   assert.match(await invalid.copied[0][0].items['text/html'].text(), /mailto:alex@example.com/);
   assert.match(invalid.copied[1], /alex@example.com/);
-  invalid.get('website').value = 'example.com';
+  invalid.get('website').value = 'example';
   invalid.runSignatureCheck();
   await invalid.copyHTML(invalid.get('copyHtmlBtn'));
   assert.equal(invalid.get('sigCheckScore').textContent, '–');
@@ -126,6 +126,42 @@ async function main() {
   await invalid.copyPlainText(invalid.get('copyTextBtn'));
   assert.equal(invalid.copied.length, 2, 'both export formats still require a name');
   assert.equal(invalid.get('fullName').focused, true);
+
+  // ── Link fields accept what the templates link, refuse what they drop ──
+  const accepted = ['acme.com', 'www.acme.com/team?x=1', 'linkedin.com/in/jane', 'https://acme.com', 'http://acme.com/a', '//acme.com/path', 'HTTPS://Acme.com'];
+  const refused = ['acme', 'not a url', 'javascript:alert(1)', 'java\tscript:alert(1)', 'vbscript:x', 'file:///etc/passwd', 'data:text/html,x',
+    'mailto:jane@acme.com', 'user:pw@acme.com', 'https://user:pw@', '/relative', '?q=1', '#top', '.acme.com', '\\\\acme', '@acme.com', '//acme'];
+  for (const field of ['website', 'linkedin', 'instagram', 'facebook', 'google']) {
+    for (const value of accepted) assert.equal(core.validateFieldValue(field, value), '', `${field} accepts ${value}`);
+    for (const value of refused) assert.match(core.validateFieldValue(field, value), /web address like acme\.com/, `${field} refuses ${value}`);
+  }
+  // Works with both the current escapeUrl and the stricter one that links
+  // bare hosts as https:// and drops what it cannot link.
+  // escapeUrl is a shared helper attached to every template.
+  const linkHelper = typeof TEMPLATES.escapeUrl === 'function' ? TEMPLATES : TEMPLATES.classic;
+  for (const value of accepted) assert.ok(linkHelper.escapeUrl(value, 'href'), `templates keep a link for ${value}`);
+  for (const value of ['acme.com', 'www.acme.com/team?x=1', 'linkedin.com/in/jane', 'https://acme.com']) {
+    const bare = builder();
+    bare.paidFixture();
+    bare.get('fullName').value = 'Alex';
+    bare.get('website').value = value;
+    await bare.copyHTML(bare.get('copyHtmlBtn'));
+    assert.equal(bare.copied.length, 1, `${value} does not block copy`);
+    const unpaidBare = builder();
+    unpaidBare.get('fullName').value = 'Alex';
+    unpaidBare.get('website').value = value;
+    await unpaidBare.copyHTML(unpaidBare.get('copyHtmlBtn'));
+    assert.equal(unpaidBare.get('paywallDialog').hasAttribute('open'), true, `${value} reaches the paywall`);
+  }
+  for (const value of ['acme', 'not a url', 'javascript:alert(1)', 'user:pw@acme.com', '/relative']) {
+    const bad = builder();
+    bad.paidFixture();
+    bad.get('fullName').value = 'Alex';
+    bad.get('website').value = value;
+    await bad.copyHTML(bad.get('copyHtmlBtn'));
+    assert.equal(bad.copied.length, 0, `${value} blocks copy`);
+    assert.equal(bad.get('website').focused, true);
+  }
 
   // ── Paywall dialog ──
   const unpaid = builder();

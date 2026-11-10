@@ -3019,8 +3019,9 @@ label:has(+ .file-input-accessible:focus-visible) {
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
-.paywall-title:focus { outline: none; }
-.paywall-title:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 4px; }
+/* The heading takes focus only so screen readers start at it when the dialog
+   opens. It is not interactive, so it draws no ring; buttons and links keep theirs. */
+#paywallTitle:focus, #paywallTitle:focus-visible { outline: none; }
 .paywall-lead { color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
 .paywall-preview {
   background: var(--surface);
