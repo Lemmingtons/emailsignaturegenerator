@@ -82,10 +82,12 @@
                   <a id="buy-individual" class="bulk-price-option" href="/generator"><strong><span data-pro-price>$9</span> lifetime</strong><span>Individual use · up to <span data-individual-limit>19</span> signatures per batch</span></a>
                   <a id="buy-team" class="bulk-price-option" href="/#pricing"><strong><span data-team-price>$29</span> lifetime</strong><span>Teams or 20+ signatures · up to <span data-bulk-limit>250</span> per batch</span></a>
                 </div>
-                <p class="bulk-help">Both include downloads, API and MCP access. Team includes <span data-team-seats>10</span> individual editing seats. Prices are in USD; applicable tax is added at checkout. No subscription. Preview your list before paying.</p>
+                <p id="checkout-note" class="bulk-checkout-note" hidden></p>
+                <p class="bulk-help">Both include downloads, API and MCP access. Team includes <span data-team-seats>10</span> individual editing seats. Prices are in USD, tax included. Preview your list before paying.</p>
               </div>
               <p id="paid-status" role="status" class="bulk-status"></p>
               <p id="purchase-error" role="alert" class="bulk-error" hidden></p>
+              <button type="button" id="retry-access" class="bulk-text-button" hidden>Check my purchase again</button>
               <details class="bulk-existing-key"><summary>Already have an API key?</summary><div class="bulk-field"><label for="bulk-key">Your API key</label><input id="bulk-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your API key" aria-describedby="key-help"><small id="key-help">Your key stays in this tab and is never included in the ZIP. <a id="bulk-contact" href="#">Get help</a>.</small></div></details>
               <label id="partial-label" class="bulk-checkbox" hidden><input id="allow-partial" type="checkbox"><span id="partial-copy">Download valid signatures only; exclude rows with errors.</span></label>
               <button id="download-zip" type="submit" class="btn btn-primary bulk-download" disabled>Download signatures (.zip) <span aria-hidden="true">↓</span></button>

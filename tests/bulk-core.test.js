@@ -102,4 +102,40 @@ assert.equal(bulk.decodeBulkCheckoutDraft(draft, draftNow - 1), null);
 assert.equal(bulk.decodeBulkCheckoutDraft('{broken'), null);
 assert.equal(bulk.decodeBulkCheckoutDraft(JSON.stringify({ version: 1, createdAt: draftNow, payload: draftPayload, rowNumbers: [2] }), draftNow), null);
 assert.ok(!draft.includes('token') && !draft.includes('key'));
+// Post-checkout token return: fragment (current) and query (older links) are
+// both read and stripped, and unrelated parts of the address survive.
+const ret = (href) => bulk.takeReturnedToken(href);
+assert.deepEqual(ret('https://e.ai/bulk#token=abc.def.ghi'), { token: 'abc.def.ghi', changed: true, cleaned: '/bulk' });
+assert.deepEqual(ret('https://e.ai/bulk?token=abc.def'), { token: 'abc.def', changed: true, cleaned: '/bulk' });
+assert.deepEqual(ret('https://e.ai/bulk?x=1&token=q#token=f&y=2'), { token: 'f', changed: true, cleaned: '/bulk?x=1#y=2' });
+assert.deepEqual(ret('https://e.ai/bulk#api-heading'), { token: '', changed: false, cleaned: '/bulk#api-heading' });
+assert.deepEqual(ret('https://e.ai/bulk'), { token: '', changed: false, cleaned: '/bulk' });
+assert.equal(ret('https://e.ai/bulk#token=').token, '');
+assert.equal(ret('https://e.ai/bulk#token=' + 'a'.repeat(4097)).token, '', 'oversized tokens are ignored');
+assert.equal(ret('https://e.ai/bulk#token=' + 'a'.repeat(4097)).cleaned, '/bulk', 'but still stripped');
+assert.equal(ret('https://e.ai/bulk?token=a%20b').token, '', 'tokens with spaces are ignored');
+
+// Only a 401 discards a token; transient failures keep it for a retry.
+assert.equal(bulk.accessOutcome(200, ''), 'active');
+assert.equal(bulk.accessOutcome(401, 'invalid_token'), 'rejected');
+assert.equal(bulk.accessOutcome(403, 'purchase_owner_required'), 'not_owner');
+assert.equal(bulk.accessOutcome(429, 'rate_limited'), 'busy');
+for (const [status, code] of [[0, ''], [500, ''], [502, ''], [503, 'rate_limit_unavailable'], [403, 'invalid_origin'], [404, '']]) {
+  assert.equal(bulk.accessOutcome(status, code), 'unavailable', `${status} ${code} is retryable`);
+}
+
+// Storage helpers never throw, including when the storage getter itself throws.
+const memory = new Map();
+const working = bulk.safeStorage(() => ({ getItem: (k) => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v), removeItem: (k) => memory.delete(k) }));
+assert.equal(working.set('k', 'v'), true);
+assert.equal(working.get('k'), 'v');
+assert.equal(working.remove('k'), true);
+assert.equal(working.get('k'), null);
+const blocked = bulk.safeStorage(() => { throw new Error('SecurityError'); });
+assert.equal(blocked.get('k'), null);
+assert.equal(blocked.set('k', 'v'), false);
+assert.equal(blocked.remove('k'), false);
+const full = bulk.safeStorage(() => ({ getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); }, removeItem: () => {} }));
+assert.equal(full.set('k', 'v'), false);
+
 console.log(`Bulk core tests passed (${Object.keys(TEMPLATES).length} templates, CSV/TSV, validation and hostile inputs).`);

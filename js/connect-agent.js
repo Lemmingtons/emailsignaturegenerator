@@ -6,6 +6,9 @@
   // Remove the approval material before loading or navigating anywhere else.
   history.replaceState(null, '', url.pathname);
   let purchaseToken = '';
+  const support = $('purchase-support');
+  support.textContent = window.SiteFacts.supportEmail;
+  support.href = `mailto:${window.SiteFacts.supportEmail}`;
   const showError = (message) => { $('connection-error').textContent = message; $('connection-error').hidden = false; };
   async function api(action, value, token = '') {
     return fetch('/api/v1/agent/' + action, {
@@ -28,6 +31,12 @@
     $('connection-status').textContent = 'Review the permissions below before continuing.';
     try { purchaseToken = localStorage.getItem(window.SiteFacts.proTokenStorageKey) || ''; } catch { /* Show the purchase recovery path below. */ }
     const purchase = purchaseToken ? await fetch('/api/v1/access-key', { headers: { Authorization: 'Bearer ' + purchaseToken }, credentials: 'omit', cache: 'no-store' }) : null;
+    // Only a missing or refused purchase needs the recovery steps; a busy or
+    // unavailable server says so instead of implying the purchase is gone.
+    if (purchase && !purchase.ok && ![401, 403].includes(purchase.status)) {
+      $('purchase-status').textContent = 'Could not check your purchase just now. Reload this page in a minute to try again.';
+      return;
+    }
     if (!purchase?.ok) {
       $('purchase-status').textContent = 'Your original purchase access is needed.';
       $('purchase-help').hidden = false;
