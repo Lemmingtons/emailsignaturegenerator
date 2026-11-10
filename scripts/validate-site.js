@@ -296,6 +296,14 @@ function checkWorkerBehavior() {
     // Card pages: Pro-gated publish, public server-rendered page, owner-only replace.
     // These are deliberately public and indexable, which is why the ownership and
     // escaping checks below matter more here than anywhere else in the Worker.
+    "const cardSitemapUrl = 'https://example.com/sitemap-cards.xml';",
+    "const generatorSitemapEntry = '<url><loc>https://example.com/generator</loc></url>';",
+    "const emptyCardSitemap = await worker.default.fetch(new Request(cardSitemapUrl), env);",
+    "if (emptyCardSitemap.status !== 200 || !(await emptyCardSitemap.text()).includes(generatorSitemapEntry)) throw new Error('empty cards sitemap omitted the generator entry');",
+    "stored.set('cards/only-thin-card.json', { customMetadata: { indexable: '0' } });",
+    "const onlyThinSitemap = await (await worker.default.fetch(new Request(cardSitemapUrl), env)).text();",
+    "if (!onlyThinSitemap.includes(generatorSitemapEntry) || onlyThinSitemap.includes('/c/only-thin-card')) throw new Error('cards sitemap with only thin cards did not use the generator entry');",
+    "stored.delete('cards/only-thin-card.json');",
     "const cardBody = JSON.stringify({ fullName: 'Jane Smith', title: 'Marketing Manager', company: 'Acme Corp', phone: '0400 000 000', email: 'jane@acme.com', website: 'https://acme.com', linkedin: 'https://linkedin.com/in/janesmith' });",
     "const cardPub = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: cardBody }), env);",
     "if (cardPub.status !== 200) throw new Error('card publish returned ' + cardPub.status + ': ' + await cardPub.text());",
@@ -331,10 +339,11 @@ function checkWorkerBehavior() {
     "if (evilHtml.includes('javascript:')) throw new Error('card page rendered a javascript: URL');",
     "const cardMissing = await worker.default.fetch(new Request('https://example.com/c/does-not-exist'), env);",
     "if (cardMissing.status !== 404) throw new Error('unknown card returned ' + cardMissing.status);",
-    "const cardSitemap = await worker.default.fetch(new Request('https://example.com/sitemap-cards.xml'), env);",
+    "const cardSitemap = await worker.default.fetch(new Request(cardSitemapUrl), env);",
     "if (cardSitemap.status !== 200) throw new Error('cards sitemap returned ' + cardSitemap.status);",
     "const sitemapXml = await cardSitemap.text();",
     "if (!sitemapXml.includes('https://example.com/c/' + card.slug)) throw new Error('cards sitemap omitted a published card');",
+    "if (sitemapXml.includes(generatorSitemapEntry)) throw new Error('cards sitemap used the generator entry despite having an indexable card');",
     "if (/name=\"robots\"/.test(cardHtml) || cardPage.headers.get('X-Robots-Tag')) throw new Error('a full card page was marked noindex');",
     // Thin cards (no role, or no website/profile link) still render but stay out of search.
     "const thinPub = await worker.default.fetch(new Request('https://example.com/api/card', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: 'Thin Person', title: 'Engineer', email: 'thin@example.com' }) }), env);",

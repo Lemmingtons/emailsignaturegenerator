@@ -1902,10 +1902,16 @@ async function handleRequest(request, env) {
         cursor = listed.truncated ? listed.cursor : undefined;
       } while (cursor && slugs.length < SITEMAP_URL_LIMIT);
 
-      const urls = slugs
+      let urls = slugs
         .slice(0, SITEMAP_URL_LIMIT)
         .map((slug) => `  <url><loc>${url.origin}/c/${slug}</loc><changefreq>monthly</changefreq></url>`)
         .join('\n');
+
+      // Google rejects an empty urlset. List the card publishing page until an indexable card exists.
+      if (!urls) {
+        const generatorPath = new URL(FACTS.generatorUrl).pathname;
+        urls = `  <url><loc>${url.origin}${generatorPath}</loc></url>`;
+      }
 
       return new Response(
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
