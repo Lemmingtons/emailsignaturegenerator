@@ -61,6 +61,7 @@ function collectUrls() {
   urls.push({ loc: `${SITE_URL}/email-signature-templates`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'email-signature-templates.html') });
   urls.push({ loc: `${SITE_URL}/health-check`, priority: '0.9', changefreq: 'monthly', file: path.join(__dirname, 'health-check.html') });
   urls.push({ loc: `${SITE_URL}/brand-extractor`, priority: '0.8', changefreq: 'monthly', file: path.join(__dirname, 'brand-extractor.html') });
+  urls.push({ loc: `${SITE_URL}/bulk`, priority: '0.8', changefreq: 'monthly', file: path.join(__dirname, 'bulk.html') });
   urls.push({ loc: `${SITE_URL}/privacy`, priority: '0.6', changefreq: 'yearly', file: path.join(__dirname, 'privacy.html') });
 
   const seoDir = path.join(__dirname, 'seo');

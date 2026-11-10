@@ -459,6 +459,7 @@ const NAV_LINKS = [
   { href: '/email-signature-examples', label: 'Examples' },
   { href: '/health-check', label: 'Health Check' },
   { href: '/blog/', label: 'Guides' },
+  { href: '/bulk', label: 'Teams' },
   { href: '/#pricing', label: 'Pricing' },
 ];
 
@@ -470,6 +471,7 @@ const FOOTER_LINKS = [
   { href: '/brand-extractor', label: 'Brand Extractor' },
   { href: '/seo/best-email-signature-generators', label: 'Compare Generators' },
   { href: '/blog/', label: 'Guides' },
+  { href: '/bulk', label: 'Teams &amp; Bulk' },
   { href: '/#pricing', label: 'Pricing' },
   { href: '/privacy', label: 'Privacy &amp; Terms' },
   { href: `mailto:${SITE_FACTS.contactEmail}`, label: 'Contact' },
