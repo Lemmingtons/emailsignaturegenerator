@@ -1180,7 +1180,40 @@ for (const file of internalLinkFiles) {
     const text = read(file);
     assert(text.includes('<a href="/email-signature-templates">Templates</a>'), `${file} main navigation must link Templates to /email-signature-templates`);
     assert(!/href="\/?#templates">Templates</.test(text), `${file} still links Templates to the homepage carousel`);
+    // The team and bulk offer must be reachable from every page's header and footer.
+    const nav = text.match(/<nav class="site-nav"[\s\S]*?<\/nav>/)?.[0] || '';
+    assert(/<a href="\/bulk"[^>]*>/.test(nav), `${file} main navigation must link /bulk`);
+    const footer = text.match(/<footer class="site-footer"[\s\S]*?<\/footer>/)?.[0];
+    if (footer) assert(footer.includes('<a href="/bulk">'), `${file} footer must link /bulk`);
+    // Prices are tax-inclusive in Stripe; nothing may say tax is added on top.
+    assert(!/tax (?:is |will be )?added|applicable tax|plus tax|excl(?:uding|\.)? tax/i.test(text), `${file} implies tax is added at checkout; prices are tax included`);
   }
+}
+
+// /bulk is a public landing page: it belongs in the sitemap.
+assert(read('sitemap.xml').includes(`<loc>${facts.origin}/bulk</loc>`), 'sitemap.xml must list /bulk; run npm run sitemap');
+
+// Every homepage buy point carries the same reassurance, and the FAQ answers
+// the tax and other-device questions in both the visible list and FAQPage data.
+{
+  assert(landingHtml.includes('Secure checkout by Stripe. One-time payment, no subscription. Prices in USD, tax included.'), 'Homepage pricing must carry the Stripe/one-time/tax-included reassurance line');
+  assert(landingHtml.includes(`within 14 days of purchase.</p>`) && landingHtml.includes('Refunds are handled case by case: email <a href="mailto:' + facts.contactEmail + '"'), 'Homepage pricing must carry the refund line with the canonical contact email');
+  assert(/<summary>Is tax included\?<\/summary>/.test(landingHtml) && landingHtml.includes('"name": "Is tax included?"'), 'Homepage FAQ and FAQPage data must both answer "Is tax included?"');
+  assert(landingHtml.includes('id="teamOffer" hidden') && landingHtml.includes('window.SiteFacts.teamPaymentLink'), 'Homepage team card must stay hidden until SiteFacts.teamPaymentLink is set');
+  assert((landingHtml.match(/copy your access link in the builder/g) || []).length >= 2, 'Homepage account FAQ must explain the access link in both the visible list and FAQPage data');
+  assert(!/purchase (?:confirmation )?email|we(?:'ll| will) email you/i.test(landingHtml + llmsText), 'Do not promise a purchase email until it is switched on');
+}
+
+// llms.txt quotes the team pack in plain text; keep it on the canonical facts.
+for (const claim of [
+  `${facts.teamPrice.displayWithCurrency}, one-time`,
+  `${facts.teamSeats} editing seats`,
+  `up to ${facts.bulkMaxRows} signatures per batch`,
+  `up to ${facts.bulkIndividualMaxRows} signatures per batch`,
+  `${facts.bulkIndividualMaxRows + 1} or more signatures`,
+  'Prices are in USD, tax included.',
+]) {
+  assert(llmsText.includes(claim), `llms.txt must say "${claim}" (from js/site-facts.js)`);
 }
 
 // AI crawlers must be able to read the site: no blanket Disallow for the
