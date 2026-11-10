@@ -292,5 +292,53 @@
     } catch { return null; }
   }
 
-  return Object.freeze({ fields, generateBatch, createZip, parseDelimited, employeesFromGrid, checkXlsxArchive, encodeBulkCheckoutDraft, decodeBulkCheckoutDraft });
+  // Checkout returns the signed purchase token as `#token=` (kept out of server
+  // logs) or, from older links, `?token=`. Both are read and stripped; any other
+  // fragment, such as `#api-heading`, is left exactly as it was.
+  function takeReturnedToken(href) {
+    const url = new URL(href);
+    let token = '';
+    let changed = false;
+    if (url.searchParams.has('token')) {
+      token = url.searchParams.get('token') || '';
+      url.searchParams.delete('token');
+      changed = true;
+    }
+    const fragment = url.hash.slice(1);
+    if (/(^|&)token=/.test(fragment)) {
+      const params = new URLSearchParams(fragment);
+      token = params.get('token') || token;
+      params.delete('token');
+      const rest = params.toString();
+      url.hash = rest ? `#${rest}` : '';
+      changed = true;
+    }
+    token = token.trim();
+    if (!/^\S{1,4096}$/.test(token)) token = '';
+    return { token, changed, cleaned: url.pathname + url.search + url.hash };
+  }
+
+  // What a GET /api/v1/access-key response means for a purchase token.
+  // Only a 401 is a definitive rejection; a 403 is a valid purchase that cannot
+  // manage keys (a team seat or an older Pro token, still needed by the
+  // signature builder). Everything else may succeed on a later attempt.
+  function accessOutcome(status, code) {
+    if (status >= 200 && status < 300) return 'active';
+    if (status === 401) return 'rejected';
+    if (status === 403 && code === 'purchase_owner_required') return 'not_owner';
+    if (status === 429 || code === 'rate_limited') return 'busy';
+    return 'unavailable';
+  }
+
+  // Storage that never throws: private modes, blocked site data and quota
+  // errors make even reading `window.localStorage` fail in some browsers.
+  function safeStorage(getStorage) {
+    return Object.freeze({
+      get(key) { try { return getStorage().getItem(key); } catch { return null; } },
+      set(key, value) { try { getStorage().setItem(key, value); return true; } catch { return false; } },
+      remove(key) { try { getStorage().removeItem(key); return true; } catch { return false; } },
+    });
+  }
+
+  return Object.freeze({ fields, generateBatch, createZip, parseDelimited, employeesFromGrid, checkXlsxArchive, encodeBulkCheckoutDraft, decodeBulkCheckoutDraft, takeReturnedToken, accessOutcome, safeStorage });
 });
