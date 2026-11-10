@@ -5,6 +5,41 @@
 
   const FACTS = window.SiteFacts;
   const CORE = window.SignatureGeneratorCore;
+  const VALIDATED_FIELDS = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook', 'google'];
+  const CONTACT_ERROR_MESSAGE = 'Fix the highlighted contact details before copying your signature.';
+  const CHECKING_ACCESS_MESSAGE = 'Checking your access\u2026';
+
+  // ── Browser storage ──
+  // Private browsing, blocked cookies and full quotas all make storage throw.
+  // None of that may stop the builder from starting, so every read and write
+  // goes through these and simply reports failure.
+  function storageArea(name) {
+    return name === 'session' ? sessionStorage : localStorage;
+  }
+  function storageGet(name, key) {
+    try { return storageArea(name).getItem(key); } catch { return null; }
+  }
+  function storageSet(name, key, value) {
+    try { storageArea(name).setItem(key, value); return true; } catch { return false; }
+  }
+  function storageRemove(name, key) {
+    try { storageArea(name).removeItem(key); } catch {}
+  }
+
+  // The Pro token also lives in memory, so a buyer whose browser refuses
+  // storage still gets Pro for the page they returned to from checkout.
+  let proToken = '';
+  function getProToken() {
+    return proToken || storageGet('local', FACTS.proTokenStorageKey) || '';
+  }
+  function setProToken(token) {
+    proToken = token;
+    storageSet('local', FACTS.proTokenStorageKey, token);
+  }
+  function clearProToken() {
+    proToken = '';
+    storageRemove('local', FACTS.proTokenStorageKey);
+  }
 
   // ── State ──
   let currentTemplate = 'classic';
@@ -13,6 +48,33 @@
   // Set when this page was opened from a team pack link.
   let teamId = '';
   let style = CORE.createStyle();
+  // Colours the visitor picked by hand. A website import never overwrites them.
+  const editedColors = new Set();
+  let restoringCheckout = false;
+  // Set while /api/verify-token is answering, so an early Copy waits for it
+  // instead of showing a returning buyer the paywall.
+  let proCheck = null;
+  // True when this page load carried a token in its address (checkout return
+  // or an access link), which is the only time the welcome is shown.
+  let tokenFromAddress = false;
+
+  // Back from checkout can restore the live page without DOMContentLoaded.
+  // Keep that form and discard the older snapshot before a later reload.
+  window.addEventListener('pageshow', function(event) {
+    if (!event.persisted) return;
+    storageRemove('session', FACTS.checkoutDraftStorageKey);
+  });
+
+  // An access link opened in a tab already on /generator only changes the
+  // fragment, so there is no page load to pick the token up.
+  window.addEventListener('hashchange', function() {
+    if (!/(?:^#|&)token=/.test(window.location.hash)) return;
+    const token = takeTokenFromAddress(new URLSearchParams(window.location.search));
+    if (!token || (isPro && token === getProToken())) return;
+    setProToken(token);
+    tokenFromAddress = true;
+    checkProStatus();
+  });
 
   function updateLiveStatus(el, text, kind) {
     if (!el) return;
@@ -33,7 +95,7 @@
   };
 
   // ── Init ──
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
     renderCategoryTabs();
     renderTemplateGrid();
     bindFormInputs();
@@ -45,6 +107,8 @@
     bindDividerAnimation();
     bindCardControls();
     bindBrandImport();
+    bindPaywall();
+    bindAccessLink();
     initPreviewDock();
     initPreviewModes();
     initBuilderSteps();
@@ -54,28 +118,30 @@
     // Read every URL param up front: handling the Pro token rewrites the query
     // string, which would otherwise discard a saved-signature id in the same link.
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
+    const token = takeTokenFromAddress(params);
     const savedSignatureId = params.get('s');
     const brandSite = params.get('site');
     const teamParam = params.get('team');
 
     if (token) {
-      localStorage.setItem(FACTS.proTokenStorageKey, token);
-      const kept = new URLSearchParams();
-      if (savedSignatureId) kept.set('s', savedSignatureId);
-      if (teamParam) kept.set('team', teamParam);
-      const query = kept.toString();
-      window.history.replaceState({}, '', window.location.pathname + (query ? '?' + query : ''));
+      setProToken(token);
+      tokenFromAddress = true;
     }
 
-    // Verify Pro status from the server-backed signed token.
-    checkProStatus();
+    // Restore the draft before verification can start hosting its images. The
+    // token check starts at once, so an early Copy waits instead of paywalling.
+    const restoring = restoreCheckoutDraft(params, !!token);
+    const checking = checkProStatus(restoring);
+    const restoredCheckout = await restoring;
+    // Back from a paid checkout with the draft: land where Copy is one click away.
+    if (restoredCheckout && tokenFromAddress) checking.then(function() { if (isPro) showUnlockedReturn(); });
 
     // Reopening a saved signature is independent of Pro status — the link itself
     // is the credential.
-    restoreSignatureFromLink(savedSignatureId);
+    if (!restoredCheckout) restoreSignatureFromLink(savedSignatureId);
 
     showTeamOffer();
+    if (restoredCheckout) return;
 
     // A team link carries the whole design, so it takes the place of starters
     // and the website import.
@@ -91,6 +157,23 @@
     // Landing pages link here as /generator?site=acme.com to start from a brand.
     if (brandSite && !savedSignatureId) runBrandImport(brandSite.slice(0, 300));
   });
+
+  // Stripe returns with ?token=, and the Worker may move it to #token= so it
+  // stays out of server logs. Either way it is taken out of the address bar and
+  // this history entry, so it is not shared by copying the URL.
+  function takeTokenFromAddress(params) {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const found = params.get('token') || hash.get('token') || '';
+    if (!params.has('token') && !hash.has('token')) return '';
+    params.delete('token');
+    hash.delete('token');
+    const query = params.toString();
+    const fragment = hash.toString();
+    try {
+      window.history.replaceState(window.history.state, '', window.location.pathname + (query ? '?' + query : '') + (fragment ? '#' + fragment : ''));
+    } catch {}
+    return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(found) && found.length < 4096 ? found : '';
+  }
 
   // Starter links only pick a template and fill an empty job title; anything the
   // visitor has typed wins.
@@ -234,6 +317,7 @@
     if (!picker) return;
 
     picker.addEventListener('input', function() {
+      editedColors.add(pickerId);
       style[pickerId] = this.value;
       if (hex) hex.value = this.value;
       renderPreview();
@@ -242,6 +326,7 @@
 
     if (hex) {
       hex.addEventListener('input', function() {
+        editedColors.add(pickerId);
         const val = this.value.startsWith('#') ? this.value : '#' + this.value;
         if (/^#[0-9a-fA-F]{6}$/.test(val)) {
           style[pickerId] = val;
@@ -310,7 +395,7 @@
 
     const saveLinkBtn = document.getElementById('saveLinkBtn');
     if (saveLinkBtn) saveLinkBtn.addEventListener('click', function() { saveSignatureLink(this); });
-    if (buyProBtn) buyProBtn.addEventListener('click', handleProPurchase);
+    if (buyProBtn) buyProBtn.addEventListener('click', () => handleProPurchase(FACTS.paymentLink));
 
     const teamJoinBtn = document.getElementById('teamJoinBtn');
     if (teamJoinBtn) teamJoinBtn.addEventListener('click', joinTeam);
@@ -408,8 +493,286 @@
     updateDock();
   }
 
-  function handleProPurchase() {
-    window.location.href = FACTS.paymentLink;
+  // ── Checkout ──
+  //
+  // Stripe returns the buyer to a fresh page load, so the signature they built
+  // is kept in this tab's sessionStorage on the way out and put back on return.
+  // The draft holds form data and preview images only, never a token or any
+  // payment id, and it expires after a day.
+
+  function checkoutEntry(params) {
+    const entry = new URLSearchParams();
+    ['site', 'template', 'role', 's', 'team'].forEach(key => {
+      if (params.has(key)) entry.set(key, params.get(key));
+    });
+    return entry.toString();
+  }
+
+  // Set when the draft could not be saved, so a second press continues to
+  // checkout without one instead of trapping a buyer whose browser has no storage.
+  let checkoutWithoutDraft = '';
+
+  function setCheckoutStatus(text, kind) {
+    setExportStatus(text, kind);
+    updateLiveStatus(document.getElementById('paywallStatus'), text, kind);
+  }
+
+  function buildCheckoutRecovery(withImages) {
+    const data = getFormData();
+    const thumb = document.getElementById('logoPreviewThumb');
+    const recovery = {
+      entry: checkoutEntry(new URLSearchParams(window.location.search)),
+      brandSite: document.getElementById('brandSite').value,
+      brandFilled: Object.assign({}, brandFilled),
+      logoFromSite: !!(thumb && thumb.dataset.fromSite),
+      step: currentStep,
+      editedColors: [...editedColors],
+      previewImages: {},
+      photoSources: {},
+      imagesDropped: false,
+    };
+    if (withImages) {
+      CORE.previewOnlyImageSlots(data).forEach(slot => { recovery.previewImages[slot] = data[slot + 'Url']; });
+      recovery.photoSources = {
+        primary: photoState.primaryCanvas ? photoState.primaryCanvas.toDataURL('image/png') : '',
+        secondary: photoState.secondaryCanvas ? photoState.secondaryCanvas.toDataURL('image/png') : '',
+      };
+    } else {
+      recovery.imagesDropped = CORE.previewOnlyImageSlots(data).length > 0 || !!photoState.primaryCanvas;
+    }
+    return recovery;
+  }
+
+  function saveCheckoutDraft() {
+    // Images are the bulk of a draft. If the full copy does not fit, keep the
+    // words and colours and ask for the images again on return.
+    for (const withImages of [true, false]) {
+      try {
+        // collectSignatureState contains form data only; no token or payment ids.
+        const encoded = CORE.encodeCheckoutDraft(collectSignatureState(), buildCheckoutRecovery(withImages));
+        if (storageSet('session', FACTS.checkoutDraftStorageKey, encoded)) return true;
+      } catch {}
+    }
+    return false;
+  }
+
+  function handleProPurchase(destination) {
+    if (restoringCheckout || !destination) return;
+    const brandButton = document.getElementById('brandImportBtn');
+    if (brandButton && brandButton.disabled) {
+      setCheckoutStatus('Wait for your website import to finish before continuing to checkout.', 'error');
+      return;
+    }
+    if (checkoutWithoutDraft !== destination && !saveCheckoutDraft()) {
+      checkoutWithoutDraft = destination;
+      setCheckoutStatus('Your browser could not save this draft for checkout, so you may need to enter it again afterwards. Press the button again to continue, or allow site storage first. Your signature is still here.', 'error');
+      return;
+    }
+    window.location.href = destination;
+  }
+
+  function readDraftImage(src) {
+    if (!/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(src || '')) return Promise.resolve(null);
+    return new Promise(resolve => {
+      const img = new Image();
+      const timer = setTimeout(() => resolve(null), 5000);
+      img.onload = () => { clearTimeout(timer); resolve(img); };
+      img.onerror = () => { clearTimeout(timer); resolve(null); };
+      img.src = src;
+    });
+  }
+
+  const BRAND_FILL_KEYS = ['company', 'phone', 'website', 'linkedin', 'instagram', 'facebook', 'google', 'primaryColor', 'secondaryColor'];
+
+  async function restoreCheckoutDraft(params, hasToken) {
+    const encoded = storageGet('session', FACTS.checkoutDraftStorageKey);
+    if (!encoded) return false;
+    const draft = CORE.decodeCheckoutDraft(encoded);
+    const entry = checkoutEntry(params);
+    // A different starter or website link is a new journey, not a return.
+    if (!draft || (!hasToken && !params.has('token') && entry && entry !== draft.recovery.entry)) {
+      storageRemove('session', FACTS.checkoutDraftStorageKey);
+      return false;
+    }
+    restoringCheckout = true;
+    try {
+      applySignatureState(draft.signature);
+      const recovery = draft.recovery;
+      editedColors.clear();
+      (Array.isArray(recovery.editedColors) ? recovery.editedColors : []).forEach(key => {
+        if (['primaryColor', 'secondaryColor', 'textColor'].includes(key)) editedColors.add(key);
+      });
+      brandFilled = {};
+      if (recovery.brandFilled && typeof recovery.brandFilled === 'object') {
+        BRAND_FILL_KEYS.forEach(key => {
+          if (typeof recovery.brandFilled[key] === 'string') brandFilled[key] = recovery.brandFilled[key];
+        });
+      }
+      document.getElementById('brandSite').value = typeof recovery.brandSite === 'string' ? recovery.brandSite.slice(0, 300) : '';
+      for (const slot of ['photo', 'logo']) {
+        const src = recovery.previewImages && recovery.previewImages[slot];
+        if (!src) continue;
+        const img = await readDraftImage(src);
+        if (!img) throw new Error('draft_image_unreadable');
+        if (slot === 'logo') {
+          applyLogoImage(img);
+          if (recovery.logoFromSite === true) document.getElementById('logoPreviewThumb').dataset.fromSite = 'true';
+        } else {
+          showPhotoPreview(src);
+          document.getElementById('photoRemoveBtn').style.display = '';
+        }
+      }
+      for (const slot of ['primary', 'secondary']) {
+        const src = recovery.photoSources && recovery.photoSources[slot];
+        if (!src) continue;
+        const img = await readDraftImage(src);
+        if (!img) throw new Error('draft_image_unreadable');
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        photoState[slot + 'Canvas'] = canvas;
+        if (slot === 'secondary') {
+          const thumb = document.getElementById('photoSecondThumb');
+          thumb.replaceChildren(img);
+          thumb.classList.add('has-photo');
+        }
+      }
+      openOptionalSectionsWithContent();
+      goToStep(recovery.step);
+      renderPreview();
+      storageRemove('session', FACTS.checkoutDraftStorageKey);
+      setSaveLinkStatus(recovery.imagesDropped
+        ? 'Your draft is back. Add your photo and logo again: they were too large to keep during checkout.'
+        : 'Your signature is back where you left it.', recovery.imagesDropped ? 'error' : 'success');
+    } catch {
+      setSaveLinkStatus('Some draft images could not be restored. Your recovery copy is still in this tab; refresh to try again before replacing any images.', 'error');
+    } finally {
+      restoringCheckout = false;
+    }
+    return true;
+  }
+
+  // ── Paywall ──
+  //
+  // Opened when an unpaid visitor asks to take the signature away. It shows
+  // their own signature and what the one-time price buys, and its button runs
+  // the same draft-saving checkout as every other buy button in the builder.
+
+  let paywallReturnFocus = null;
+
+  function paywallIsOpen() {
+    const dialog = document.getElementById('paywallDialog');
+    return !!(dialog && (dialog.open || dialog.hasAttribute && dialog.hasAttribute('open')));
+  }
+
+  function bindPaywall() {
+    const dialog = document.getElementById('paywallDialog');
+    if (!dialog) return;
+    const price = FACTS.proPrice.display;
+    dialog.querySelectorAll('[data-pro-price]').forEach(el => { el.textContent = price; });
+    dialog.querySelectorAll('[data-team-price]').forEach(el => { el.textContent = FACTS.teamPrice.display; });
+    dialog.querySelectorAll('[data-team-seats]').forEach(el => { el.textContent = String(FACTS.teamSeats); });
+    const buy = document.getElementById('paywallBuyBtn');
+    if (buy) {
+      buy.textContent = 'Unlock and copy \u2014 ' + price;
+      buy.addEventListener('click', () => handleProPurchase(FACTS.paymentLink));
+    }
+    const refundEmail = document.getElementById('paywallRefundEmail');
+    if (refundEmail) {
+      refundEmail.textContent = FACTS.contactEmail;
+      refundEmail.href = 'mailto:' + FACTS.contactEmail;
+    }
+    const teamLine = document.getElementById('paywallTeam');
+    const teamLink = document.getElementById('paywallTeamLink');
+    if (teamLine && teamLink && FACTS.teamPaymentLink) {
+      teamLink.href = FACTS.teamPaymentLink;
+      teamLink.addEventListener('click', function(event) {
+        event.preventDefault();
+        handleProPurchase(FACTS.teamPaymentLink);
+      });
+      teamLine.hidden = false;
+    }
+    const close = document.getElementById('paywallCloseBtn');
+    if (close) close.addEventListener('click', closePaywall);
+    // Escape on a native modal dialog fires cancel and then close.
+    dialog.addEventListener('close', restorePaywallFocus);
+    // A click on the backdrop lands on the dialog element itself.
+    dialog.addEventListener('click', function(event) {
+      if (event.target === dialog) closePaywall();
+    });
+  }
+
+  function openPaywall(trigger) {
+    const dialog = document.getElementById('paywallDialog');
+    if (!dialog) return false;
+    const preview = document.getElementById('paywallPreview');
+    if (preview) {
+      // The same escaped markup the live preview shows, made inert so its links
+      // cannot take focus inside the dialog.
+      preview.innerHTML = buildSignatureHtml(TEMPLATES[currentTemplate], getFormData(), style);
+    }
+    updateLiveStatus(document.getElementById('paywallStatus'), '');
+    checkoutWithoutDraft = '';
+    if (paywallIsOpen()) return true;
+    paywallReturnFocus = trigger || (typeof HTMLElement !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+    const title = document.getElementById('paywallTitle');
+    if (title && typeof title.focus === 'function') title.focus();
+    return true;
+  }
+
+  function closePaywall() {
+    const dialog = document.getElementById('paywallDialog');
+    if (!dialog) return;
+    if (typeof dialog.close === 'function' && dialog.open) dialog.close();
+    else {
+      dialog.removeAttribute('open');
+      restorePaywallFocus();
+    }
+  }
+
+  function restorePaywallFocus() {
+    const target = paywallReturnFocus;
+    paywallReturnFocus = null;
+    if (target && typeof target.focus === 'function' && (!document.contains || document.contains(target))) target.focus();
+  }
+
+  // Back from a paid checkout with the draft restored: the Install step, with
+  // its Copy button focused. The copy itself still needs the buyer's click,
+  // because browsers only allow clipboard writes from a user gesture.
+  function showUnlockedReturn() {
+    goToStep('install');
+    const notice = document.getElementById('unlockedNotice');
+    if (notice) notice.hidden = false;
+    setExportStatus('You\u2019re unlocked. Copy your signature whenever you\u2019re ready.', 'success');
+    const copy = document.getElementById('installCopyBtn');
+    if (copy && typeof copy.focus === 'function') {
+      copy.focus();
+      if (typeof copy.scrollIntoView === 'function') copy.scrollIntoView({ block: 'center' });
+    }
+  }
+
+  // ── Access link ──
+  // The token is the purchase. Opening /generator#token=... on another browser
+  // or device restores Pro there; the fragment never reaches the server.
+  function bindAccessLink() {
+    const btn = document.getElementById('accessLinkBtn');
+    if (btn) btn.addEventListener('click', function() { copyAccessLink(this); });
+  }
+
+  async function copyAccessLink(btn) {
+    const hint = document.getElementById('accessLinkHint');
+    const token = getProToken();
+    if (!isPro || !token) return;
+    const link = window.location.origin + '/generator#token=' + token;
+    if (await writeClipboardText(link)) {
+      showCopied(btn);
+      updateLiveStatus(hint, 'Access link copied. Keep it somewhere private, like a password manager.', 'success');
+    } else {
+      updateLiveStatus(hint, 'Could not copy automatically. Your access link: ' + link, 'error');
+    }
   }
 
   // ── Photo Handling ──
@@ -501,7 +864,7 @@
       schedulePhotoRebuild('name');
     });
 
-    const savedSlug = localStorage.getItem(CARD_SLUG_STORAGE_KEY);
+    const savedSlug = storageGet('local', CARD_SLUG_STORAGE_KEY);
     if (savedSlug) {
       cardState.slug = savedSlug;
       cardState.url = `${window.location.origin}/c/${savedSlug}`;
@@ -511,7 +874,7 @@
   }
 
   async function publishCardPage() {
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    const token = getProToken();
     if (!isPro || !token) {
       setCardStatus(`A card page unlocks with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
       showProPrompt();
@@ -568,7 +931,7 @@
         if (code === 'not_found' || code === 'not_your_card') {
           cardState.slug = '';
           cardState.url = '';
-          localStorage.removeItem(CARD_SLUG_STORAGE_KEY);
+          storageRemove('local', CARD_SLUG_STORAGE_KEY);
           syncCardControls();
           setCardStatus('That card page is gone. Press publish again to create a new one.', 'error');
           return;
@@ -579,7 +942,7 @@
       const { slug, url } = await resp.json();
       cardState.slug = slug;
       cardState.url = url;
-      localStorage.setItem(CARD_SLUG_STORAGE_KEY, slug);
+      storageSet('local', CARD_SLUG_STORAGE_KEY, slug);
       syncCardControls();
       setCardStatus('Card page is live.', 'success');
       renderPreview();
@@ -589,7 +952,7 @@
   }
 
   async function unpublishCardPage() {
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    const token = getProToken();
     if (!cardState.slug || !token) return;
 
     setCardStatus('Removing...');
@@ -604,7 +967,7 @@
 
       cardState.slug = '';
       cardState.url = '';
-      localStorage.removeItem(CARD_SLUG_STORAGE_KEY);
+      storageRemove('local', CARD_SLUG_STORAGE_KEY);
       syncCardControls();
       setCardStatus('Card page removed.', 'success');
       renderPreview();
@@ -617,7 +980,7 @@
   // Every image slot (photo, logo) goes through here so hosting rules stay in one place.
   // Throws an Error whose message is an upload error code from CORE.describeUploadError.
   async function uploadImageBlob(blob, slot) {
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    const token = getProToken();
     if (!isPro || !token) throw new Error('not_pro');
 
     const resp = await fetch('/api/upload-image', {
@@ -732,7 +1095,7 @@
     logoDims.height = canvas.height;
     renderPreview();
 
-    if (!isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) {
+    if (!isPro || !getProToken()) {
       setLogoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
       return canvas;
     }
@@ -747,7 +1110,7 @@
   async function hostPreviewLogo() {
     const thumb = document.getElementById('logoPreviewThumb');
     const pending = thumb && thumb.dataset.previewOnly;
-    if (!pending || !isPro || !localStorage.getItem(FACTS.proTokenStorageKey)) return;
+    if (!pending || !isPro || !getProToken()) return;
 
     setLogoStatus('Uploading hosted logo...');
     try {
@@ -917,6 +1280,7 @@
   }
 
   function setStyleColor(key, hex) {
+    if (editedColors.has(key)) return false;
     if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return false;
     style[key] = hex;
     const picker = document.getElementById(key);
@@ -1068,6 +1432,12 @@
       cropState.x = (viewSize - img.naturalWidth * cropState.scale) / 2;
       cropState.y = (viewSize - img.naturalHeight * cropState.scale) / 2;
       updateCropTransform();
+    };
+    // A file the browser cannot decode (HEIC on some browsers, a renamed file)
+    // would otherwise leave an empty crop circle with nothing to apply.
+    img.onerror = function() {
+      closeCropUI();
+      setPhotoStatus('That file could not be read as an image. Try a JPG, PNG or WebP.', 'error');
     };
     img.src = blobUrl;
     const modal = document.getElementById('cropModal');
@@ -1288,7 +1658,8 @@
 
   async function uploadPhotoBlob(blob, successMessage) {
     const thumb = document.getElementById('photoPreviewThumb');
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    const pending = thumb.dataset.previewOnly;
+    const token = getProToken();
 
     if (!isPro || !token) {
       setPhotoStatus('Preview ready. Hosting for Gmail unlocks when you buy.');
@@ -1298,13 +1669,32 @@
     setPhotoStatus('Uploading hosted photo...');
     try {
       const url = await uploadImageBlob(blob, 'photo');
+      // Replaced or removed while uploading: this result is stale.
+      if (thumb.dataset.previewOnly !== pending) return;
       document.getElementById('photoUrl').value = url;
       delete thumb.dataset.previewOnly;
       setPhotoStatus(successMessage, 'success');
       renderPreview();
     } catch (err) {
-      setPhotoStatus(CORE.describeUploadError(err.message), 'error');
+      if (thumb.dataset.previewOnly === pending) setPhotoStatus(CORE.describeUploadError(err.message), 'error');
     }
+  }
+
+  // Hosts a photo added before Pro unlocked, the counterpart of hostPreviewLogo.
+  // With the crop canvas at hand the normal pipeline rebuilds it (animation
+  // included); otherwise the preview image itself is uploaded.
+  async function hostPreviewPhoto() {
+    const thumb = document.getElementById('photoPreviewThumb');
+    const pending = thumb && thumb.dataset.previewOnly;
+    if (!pending || !isPro || !getProToken()) return;
+    if (photoState.primaryCanvas) {
+      await regeneratePhotoAsset();
+      return;
+    }
+    const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(pending);
+    if (!match) return;
+    const bytes = Uint8Array.from(atob(match[2]), c => c.charCodeAt(0));
+    await uploadPhotoBlob(new Blob([bytes], { type: match[1] }), 'Hosted photo ready for Gmail and Outlook.');
   }
 
   async function regeneratePhotoAsset() {
@@ -2082,6 +2472,25 @@
       return;
     }
 
+    // HTML that passes the audit can still carry a broken email or link, so
+    // invalid contact details never get a passing score.
+    const invalidFields = VALIDATED_FIELDS.filter(id => !validateField(id));
+    if (invalidFields.length) {
+      scoreEl.textContent = '\u2013';
+      if (box) box.dataset.grade = 'poor';
+      titleEl.textContent = 'Fix your contact details before you install this signature.';
+      listEl.textContent = '';
+      invalidFields.forEach(id => {
+        const item = document.createElement('li');
+        item.className = 'sig-check-issue critical';
+        item.textContent = CORE.validateFieldValue(id, document.getElementById(id).value);
+        listEl.appendChild(item);
+      });
+      return;
+    }
+
+    const exportStatus = document.getElementById('exportStatusHint');
+    if (exportStatus && exportStatus.textContent === CONTACT_ERROR_MESSAGE) setExportStatus('', 'info');
     const result = checker.runAudit(buildSignatureHtml(TEMPLATES[currentTemplate], data, style));
     if (!result) return;
     const grade = result.score >= 90 ? 'great' : result.score >= 75 ? 'good' : 'poor';
@@ -2142,7 +2551,17 @@
 
   // Building and previewing is open to everyone; taking the signature away is what
   // costs money. Returns false and prompts when the visitor has not paid.
-  function requireProForExport() {
+  // A returning buyer can click Copy before /api/verify-token has answered.
+  // Wait for that answer rather than show them the paywall.
+  async function settleProCheck() {
+    if (isPro || !proCheck) return;
+    setExportStatus(CHECKING_ACCESS_MESSAGE);
+    try { await proCheck; } catch {}
+    const status = document.getElementById('exportStatusHint');
+    if (status && status.textContent === CHECKING_ACCESS_MESSAGE) setExportStatus('');
+  }
+
+  function requireProForExport(trigger) {
     if (isPro) return true;
     if (teamId) {
       setExportStatus('Join your team first. It is already paid for.', 'error');
@@ -2150,16 +2569,23 @@
       if (joinBtn) joinBtn.focus();
       return false;
     }
-    showProPrompt();
-    setExportStatus(
-      `Unlock for ${FACTS.proPrice.displayWithCurrency} to copy your signature, host your photo, and save an edit link.`,
-      'error'
-    );
+    if (!openPaywall(trigger)) {
+      showProPrompt();
+      setExportStatus(`Unlock for ${FACTS.proPrice.displayWithCurrency} to copy your signature, host your photo, and save an edit link.`);
+    }
     return false;
   }
 
+  // The Install step shows a copy of this line beside its own Copy button, so
+  // feedback is visible on phones where the preview column is far below.
+  // The copy is aria-hidden: the original is the one live region.
   function setExportStatus(text, kind) {
     updateLiveStatus(document.getElementById('exportStatusHint'), text, kind);
+    const mirror = document.getElementById('installStatusHint');
+    if (mirror) {
+      mirror.textContent = text;
+      mirror.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    }
   }
 
   function getActiveCompliance() {
@@ -2181,7 +2607,7 @@
         complianceData = data;
         populateComplianceCountries();
         bindComplianceInputs();
-        if (pendingCompliance) applyComplianceSelection(pendingCompliance);
+        if (pendingCompliance) applyComplianceSelection(pendingCompliance.saved, pendingCompliance.includePersonal);
       })
       .catch(err => {
         console.warn('Compliance data unavailable:', err.message);
@@ -2294,10 +2720,12 @@
   // A team design carries the buyer's country, profession and disclaimer
   // choice. Registration numbers are each person's own, so they start empty.
   let pendingCompliance = null;
-  function applyComplianceSelection(saved) {
+  // `includePersonal` restores registration numbers too: only for the
+  // visitor's own saved signature or checkout draft, never a team design.
+  function applyComplianceSelection(saved, includePersonal) {
     if (!saved || typeof saved !== 'object') return;
     if (!complianceData) {
-      pendingCompliance = saved;
+      pendingCompliance = { saved, includePersonal };
       return;
     }
     pendingCompliance = null;
@@ -2308,6 +2736,12 @@
     complianceState.country = country;
     complianceState.role = roleEntry && roleEntry.countries[country] ? role : '';
     complianceState.fieldValues = {};
+    if (includePersonal && saved.fieldValues && typeof saved.fieldValues === 'object') {
+      const fields = roleEntry && roleEntry.countries[country] && roleEntry.countries[country].fields || [];
+      fields.forEach(field => {
+        if (typeof saved.fieldValues[field.id] === 'string') complianceState.fieldValues[field.id] = saved.fieldValues[field.id];
+      });
+    }
     complianceState.includeDisclaimer = saved.includeDisclaimer !== false;
     const countrySel = document.getElementById('complianceCountry');
     const roleSel = document.getElementById('complianceRole');
@@ -2387,8 +2821,7 @@
   }
 
   function bindValidation() {
-    const fields = ['fullName', 'email', 'website', 'linkedin', 'instagram', 'facebook', 'google'];
-    fields.forEach(id => {
+    VALIDATED_FIELDS.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('blur', () => validateField(id));
@@ -2396,17 +2829,66 @@
     });
   }
 
+  // Every export needs a name and valid contact details. Fails by taking the
+  // visitor to the first bad field.
+  function validateForExport() {
+    const invalidFields = VALIDATED_FIELDS.filter(id => !validateField(id));
+    if (!invalidFields.length) return true;
+    goToStep('details');
+    document.getElementById(invalidFields[0]).focus();
+    setExportStatus(CONTACT_ERROR_MESSAGE, 'error');
+    return false;
+  }
+
+  // Copies through a hidden selection. execCommand reports false instead of
+  // throwing when the browser refuses, so the result is checked.
+  function copyWithSelection(node) {
+    node.setAttribute('aria-hidden', 'true');
+    node.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(node);
+    const sel = window.getSelection();
+    let ok = false;
+    try {
+      if (node.select) node.select();
+      else {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      ok = document.execCommand('copy') === true;
+    } catch {
+      ok = false;
+    } finally {
+      if (sel) sel.removeAllRanges();
+      node.remove();
+    }
+    return ok;
+  }
+
+  async function writeClipboardText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+    try {
+      const area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      return copyWithSelection(area);
+    } catch {
+      return false;
+    }
+  }
+
   // ── Copy Functions ──
   async function copyHTML(btn) {
+    if (!validateForExport()) return;
+    await settleProCheck();
+    if (!requireProForExport(btn)) return;
     let data = getFormData();
-    if (!data.fullName) {
-      goToStep('details');
-      validateField('fullName');
-      alert('Please enter your name to generate a signature.');
-      return;
-    }
-    if (!requireProForExport()) return;
-    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
     // Never let a preview-only inline image reach the clipboard — it would paste as a
     // broken image in Gmail and Outlook with no visible warning.
@@ -2432,6 +2914,7 @@
     const plain = CORE.plainTextFromData(data);
 
     try {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard || !navigator.clipboard.write) throw new Error('no_rich_clipboard');
       const blob = new ClipboardItem({
         'text/html': new Blob([html], { type: 'text/html' }),
         'text/plain': new Blob([plain], { type: 'text/plain' }),
@@ -2441,47 +2924,25 @@
     } catch (err) {
       // Fallback: copy from an offscreen node holding the same sanitised HTML.
       // Copying from the live preview instead would reintroduce preview-only images.
+      let copied = false;
       try {
         const staging = document.createElement('div');
         staging.innerHTML = html;
-        staging.setAttribute('aria-hidden', 'true');
-        staging.style.cssText = 'position:fixed;left:-9999px;top:0;';
-        document.body.appendChild(staging);
-
-        const range = document.createRange();
-        range.selectNodeContents(staging);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        document.execCommand('copy');
-        sel.removeAllRanges();
-        staging.remove();
-        showCopied(btn);
-      } catch (e) {
-        setExportStatus('Could not copy the signature. Select the preview and copy it manually.', 'error');
-        alert('Could not copy. Please select the preview manually and press Ctrl+C.');
-      }
+        copied = copyWithSelection(staging);
+      } catch {}
+      if (copied) showCopied(btn);
+      else setExportStatus('Could not copy the signature. Select the preview and copy it manually.', 'error');
     }
   }
 
   async function copyPlainText(btn) {
+    if (!validateForExport()) return;
+    await settleProCheck();
+    if (!requireProForExport(btn)) return;
     const data = getFormData();
-    if (!data.fullName) {
-      goToStep('details');
-      validateField('fullName');
-      alert('Please enter your name.');
-      return;
-    }
-    if (!requireProForExport()) return;
-    ['email', 'website', 'linkedin', 'instagram', 'facebook', 'google'].forEach(validateField);
 
-    try {
-      await navigator.clipboard.writeText(CORE.plainTextFromData(data));
-      showCopied(btn);
-    } catch (e) {
-      setExportStatus('Could not copy the plain-text signature.', 'error');
-      alert('Could not copy to clipboard.');
-    }
+    if (await writeClipboardText(CORE.plainTextFromData(data))) showCopied(btn);
+    else setExportStatus('Could not copy the plain-text signature.', 'error');
   }
 
   function showCopied(btn) {
@@ -2523,10 +2984,15 @@
   }
 
   async function saveSignatureLink(btn) {
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    await settleProCheck();
+    const token = getProToken();
     if (!isPro || !token) {
-      setSaveLinkStatus(`Saving an edit link unlocks with your ${FACTS.proPrice.displayWithCurrency} purchase.`, 'error');
-      showProPrompt();
+      if (teamId) {
+        setSaveLinkStatus('Join your team first. It is already paid for.', 'error');
+        return;
+      }
+      setSaveLinkStatus(`Saving an edit link unlocks with your ${FACTS.proPrice.displayWithCurrency} purchase.`);
+      if (!openPaywall(btn)) showProPrompt();
       return;
     }
 
@@ -2550,11 +3016,10 @@
       }
 
       const { url } = await resp.json();
-      try {
-        await navigator.clipboard.writeText(url);
+      if (await writeClipboardText(url)) {
         showCopied(btn);
         setSaveLinkStatus('Link copied. Open it on any device to keep editing.', 'success');
-      } catch {
+      } else {
         setSaveLinkStatus('Saved. Your link: ' + url, 'success');
       }
     } catch (err) {
@@ -2585,6 +3050,9 @@
       // sanitizeStyle drops anything the builder controls could not produce,
       // and maps the removed 'rounded'/'square' icon styles back onto mono.
       Object.assign(style, CORE.sanitizeStyle(state.style));
+      // Restored colours were chosen by whoever built this signature, so a
+      // later website import must not replace them.
+      ['primaryColor', 'secondaryColor', 'textColor'].forEach(key => editedColors.add(key));
       syncStyleControls();
     }
 
@@ -2621,6 +3089,7 @@
 
     restoreNameLinkState(state);
     restoreAnimationState(state);
+    applyComplianceSelection(state.compliance, true);
     openOptionalSectionsWithContent();
     renderPreview();
   }
@@ -2640,7 +3109,7 @@
     if (saved.cardSlug && /^[a-z0-9-]{1,64}$/.test(saved.cardSlug)) {
       cardState.slug = saved.cardSlug;
       cardState.url = `${window.location.origin}/c/${saved.cardSlug}`;
-      localStorage.setItem(CARD_SLUG_STORAGE_KEY, saved.cardSlug);
+      storageSet('local', CARD_SLUG_STORAGE_KEY, saved.cardSlug);
       const consent = document.getElementById('cardPageConsent');
       if (consent) consent.checked = true;
     }
@@ -2743,14 +3212,24 @@
 
   const PRO_VERIFIED_STORAGE_KEY = FACTS.proTokenStorageKey + ':verified';
 
-  async function checkProStatus() {
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
-    if (!token) return;
+  // `ready` is a promise the unlock waits for (the checkout-draft restore), so
+  // hosting a restored photo or logo starts only once it is back in the form.
+  // The request itself starts at once.
+  function checkProStatus(ready) {
+    const token = getProToken();
+    if (!token) return Promise.resolve();
+    proCheck = runProCheck(token, ready).finally(function() { proCheck = null; });
+    return proCheck;
+  }
 
+  async function runProCheck(token, ready) {
     const result = await verifyToken(token);
+    if (ready) {
+      try { await ready; } catch {}
+    }
     if (result.valid) {
-      localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, token);
-      unlockPro();
+      storageSet('local', PRO_VERIFIED_STORAGE_KEY, token);
+      unlockPro({ welcome: tokenFromAddress });
       if (result.plan === 'team') showTeamOwnerPanel();
       return;
     }
@@ -2758,21 +3237,23 @@
       // The server could not answer. Only a token this browser has already seen
       // verified keeps Pro unlocked, so an outage never unlocks a made-up token.
       // Paid features that touch the server still re-check it there.
-      if (localStorage.getItem(PRO_VERIFIED_STORAGE_KEY) === token) unlockPro();
+      if (storageGet('local', PRO_VERIFIED_STORAGE_KEY) === token) unlockPro();
       return;
     }
-    localStorage.removeItem(PRO_VERIFIED_STORAGE_KEY);
-    if (BROKEN_TOKEN_REASONS.includes(result.reason)) {
-      localStorage.removeItem(FACTS.proTokenStorageKey);
-    }
+    storageRemove('local', PRO_VERIFIED_STORAGE_KEY);
+    if (BROKEN_TOKEN_REASONS.includes(result.reason)) clearProToken();
   }
 
   async function verifyToken(token) {
+    // A hung request would leave an early Copy waiting forever.
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(function() { controller.abort(); }, 8000) : null;
     try {
       const res = await fetch('/api/verify-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token })
+        body: JSON.stringify({ token: token }),
+        signal: controller ? controller.signal : undefined,
       });
       // Only a 200 is the server's verdict on the token; 5xx, gateway pages
       // and rate limits say nothing about it.
@@ -2782,10 +3263,13 @@
       return body;
     } catch (e) {
       return { valid: false, unreachable: true };
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 
-  function unlockPro() {
+  function unlockPro(options) {
+    const opts = options || {};
     isPro = true;
 
     // Hide pro banner
@@ -2793,14 +3277,20 @@
     if (banner) banner.style.display = 'none';
     const teamPanel = document.getElementById('teamMemberPanel');
     if (teamPanel) teamPanel.hidden = true;
+    const accessPanel = document.getElementById('accessLinkPanel');
+    if (accessPanel) accessPanel.hidden = false;
+    // Paid while the paywall was open in another tab, or a slow check landed.
+    if (paywallIsOpen()) closePaywall();
 
-    // Show success toast
-    showProSuccessToast();
+    // Only when this page load carried the token: a checkout return or an
+    // access link. A returning buyer's ordinary visit gets no toast.
+    if (opts.welcome) showProSuccessToast();
 
     // Refresh upload hint copy now that hosting is unlocked
     defaultPhotoStatus();
     defaultLogoStatus();
     hostPreviewLogo();
+    hostPreviewPhoto();
     setCardStatus('Tick the box above, then publish whenever you\'re ready.');
     syncCardControls();
 
@@ -2811,8 +3301,9 @@
 
   function showProSuccessToast() {
     var toast = document.createElement('div');
-    toast.textContent = 'Welcome to Pro! You now have access to all ' + FACTS.templateCount + ' templates.';
-    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
+    toast.setAttribute('role', 'status');
+    toast.textContent = 'Pro unlocked on this browser. You can copy your signature, host images and save an edit link.';
+    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
@@ -2831,6 +3322,10 @@
     const link = document.getElementById('teamOfferLink');
     if (!offer || !link || !FACTS.teamPaymentLink) return;
     link.href = FACTS.teamPaymentLink;
+    link.addEventListener('click', function(event) {
+      event.preventDefault();
+      handleProPurchase(FACTS.teamPaymentLink);
+    });
     offer.querySelectorAll('[data-team-price]').forEach(el => { el.textContent = FACTS.teamPrice.display; });
     offer.querySelectorAll('[data-team-seats]').forEach(el => { el.textContent = String(FACTS.teamSeats); });
     offer.hidden = false;
@@ -2923,8 +3418,8 @@
         updateLiveStatus(hint, TEAM_JOIN_ERRORS[body.code] || 'Could not join the team. Try again.', 'error');
         return;
       }
-      localStorage.setItem(FACTS.proTokenStorageKey, body.token);
-      localStorage.setItem(PRO_VERIFIED_STORAGE_KEY, body.token);
+      setProToken(body.token);
+      storageSet('local', PRO_VERIFIED_STORAGE_KEY, body.token);
       unlockPro();
       const panel = document.getElementById('teamMemberPanel');
       if (panel) panel.hidden = true;
@@ -2941,7 +3436,7 @@
 
   async function shareTeamLink(btn) {
     const hint = document.getElementById('teamLinkHint');
-    const token = localStorage.getItem(FACTS.proTokenStorageKey);
+    const token = getProToken();
     if (!isPro || !token) return;
     const design = collectSignatureState();
     if (!design.data.company) {
@@ -2969,11 +3464,10 @@
       try { body = await resp.json(); } catch {}
       if (!resp.ok || !body.url) throw new Error(body.code || '');
       const left = Math.max(0, (body.seats || FACTS.teamSeats) - 1 - (body.members || 0));
-      try {
-        await navigator.clipboard.writeText(body.url);
+      if (await writeClipboardText(body.url)) {
         showCopied(btn);
         updateLiveStatus(hint, `Team link copied. ${left} of ${(body.seats || FACTS.teamSeats) - 1} colleague seats left. Your own signature counts as the first seat.`, 'success');
-      } catch {
+      } else {
         updateLiveStatus(hint, 'Team link: ' + body.url + ` (${left} colleague seats left)`, 'success');
       }
     } catch (err) {

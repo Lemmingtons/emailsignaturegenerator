@@ -277,31 +277,31 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="website">Website</label>
-                <input type="url" id="website" placeholder="https://acme.com" aria-describedby="website-error" aria-invalid="false">
+                <input type="url" id="website" placeholder="acme.com" aria-describedby="website-error" aria-invalid="false">
                 <span class="error-message" id="website-error" role="alert"></span>
               </div>
               <div class="form-group">
                 <label for="linkedin">LinkedIn</label>
-                <input type="url" id="linkedin" placeholder="https://linkedin.com/in/..." aria-describedby="linkedin-error" aria-invalid="false">
+                <input type="url" id="linkedin" placeholder="linkedin.com/in/..." aria-describedby="linkedin-error" aria-invalid="false">
                 <span class="error-message" id="linkedin-error" role="alert"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="instagram">Instagram</label>
-                <input type="url" id="instagram" placeholder="https://instagram.com/..." aria-describedby="instagram-error" aria-invalid="false">
+                <input type="url" id="instagram" placeholder="instagram.com/..." aria-describedby="instagram-error" aria-invalid="false">
                 <span class="error-message" id="instagram-error" role="alert"></span>
               </div>
               <div class="form-group">
                 <label for="facebook">Facebook</label>
-                <input type="url" id="facebook" placeholder="https://facebook.com/..." aria-describedby="facebook-error" aria-invalid="false">
+                <input type="url" id="facebook" placeholder="facebook.com/..." aria-describedby="facebook-error" aria-invalid="false">
                 <span class="error-message" id="facebook-error" role="alert"></span>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="google">Google</label>
-                <input type="url" id="google" placeholder="https://g.co/..." aria-describedby="google-error" aria-invalid="false">
+                <input type="url" id="google" placeholder="g.co/..." aria-describedby="google-error" aria-invalid="false">
                 <span class="error-message" id="google-error" role="alert"></span>
               </div>
             </div>
@@ -515,6 +515,9 @@
             Check &amp; Install
           </div>
           <div class="card-body">
+            <div class="unlocked-notice" id="unlockedNotice" hidden>
+              <p><strong>You&rsquo;re unlocked &mdash; copy your signature.</strong> Press Copy HTML below, then paste it into Gmail or Outlook using the steps underneath.</p>
+            </div>
             <div class="sig-check" id="sigCheck">
               <div class="sig-check-score" id="sigCheckScore" aria-hidden="true">&ndash;</div>
               <div class="sig-check-text">
@@ -525,6 +528,7 @@
             <p class="photo-hint">We test for Gmail dark mode, Outlook layout, image hosting, contrast, link formats and size, using the same engine as the free <a href="/health-check">signature health check</a>.</p>
 
             <button type="button" class="btn btn-primary install-copy-btn" id="installCopyBtn">Copy HTML</button>
+            <p class="photo-hint install-status" id="installStatusHint" aria-hidden="true"></p>
 
             <div class="install-guides">
               <details class="instructions">
@@ -616,6 +620,14 @@
                 </button>
                 <p class="photo-hint" id="teamLinkHint" role="status" aria-live="polite" aria-atomic="true"></p>
               </div>
+              <div class="team-panel access-link-panel" id="accessLinkPanel" role="region" aria-label="Your access link" hidden>
+                <p><strong>Use Pro on another device.</strong> Opening your access link restores Pro in another browser or on another device, so keep it private: anyone who has it can use your purchase.</p>
+                <button type="button" class="btn btn-secondary" id="accessLinkBtn">
+                  <span class="btn-label">Copy my access link</span>
+                  <span class="btn-feedback">Link copied!</span>
+                </button>
+                <p class="photo-hint" id="accessLinkHint" role="status" aria-live="polite" aria-atomic="true"></p>
+              </div>
               <p class="photo-hint" id="exportStatusHint" role="status" aria-live="polite" aria-atomic="true"></p>
               <p class="photo-hint" id="saveLinkHint" role="status" aria-live="polite" aria-atomic="true">Save your signature and reopen it later on any device. Anyone with the link can view it.</p>
               <button class="mobile-back-to-form" id="mobileBackToForm" aria-label="Back to form">↑ Back to form</button>
@@ -686,6 +698,27 @@
   <script src="js/sweep-animator.js"></script>
   <script src="js/health-check.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- Paywall: opened by Copy HTML, Plain Text and Save & get link before purchase.
+       Prices, the team line and the contact address are filled from js/site-facts.js. -->
+  <dialog id="paywallDialog" class="paywall-dialog" aria-labelledby="paywallTitle" aria-describedby="paywallLead">
+    <div class="paywall-inner">
+      <h2 id="paywallTitle" class="paywall-title" tabindex="-1">Your signature is ready to use</h2>
+      <p id="paywallLead" class="paywall-lead">Building it is free. A one-time payment of <span data-pro-price></span> lets you take it into your inbox.</p>
+      <div class="paywall-preview" id="paywallPreview" inert></div>
+      <ul class="paywall-includes">
+        <li>Copy it into Gmail, Outlook or Apple Mail, as HTML or plain text, as often as you like</li>
+        <li>Your photo and logo hosted, so they show up in every inbox</li>
+        <li>An edit link to change your signature later on any device</li>
+      </ul>
+      <button type="button" class="btn btn-primary paywall-buy" id="paywallBuyBtn">Unlock and copy</button>
+      <p class="paywall-reassure">Secure checkout by Stripe. One-time payment, no subscription. Prices in USD, tax included.</p>
+      <p class="paywall-reassure">Refunds are handled case by case: email <a id="paywallRefundEmail" href="/privacy">us</a> within 14 days of purchase.</p>
+      <p class="paywall-team" id="paywallTeam" hidden>Signatures for your whole team? <a id="paywallTeamLink" href="/#pricing">Team pack: <span data-team-price></span> once for up to <span data-team-seats></span> people</a>.</p>
+      <p class="photo-hint paywall-status" id="paywallStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+      <button type="button" class="btn btn-secondary paywall-close" id="paywallCloseBtn">Keep editing</button>
+    </div>
+  </dialog>
 
   <!-- Photo Crop Modal -->
   <div id="cropModal" class="crop-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="cropModalTitle" aria-describedby="cropModalHint" aria-hidden="true">
