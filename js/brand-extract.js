@@ -223,6 +223,42 @@ function organization(html) {
 
 // ── Main ──
 
+// True when the markup just before an <img> is a logo/brand-classed element,
+// optionally followed by opening <a>, <span>, <div>, <picture> or <source> tags
+// and whitespace. Walks back from the end in linear time; the regex this
+// replaced backtracked quadratically on long runs of whitespace.
+const WRAPPER_TAG = /^<(?:a|span|div|picture|source)\b/i;
+const LOGO_CLASS = /class\s*=\s*["']([^"']*)["']/gi;
+
+function hasLogoClass(fragment) {
+  LOGO_CLASS.lastIndex = 0;
+  let m;
+  while ((m = LOGO_CLASS.exec(fragment))) {
+    if (/logo|brand/i.test(m[1])) return true;
+  }
+  return false;
+}
+
+function wrappedInLogoClass(before) {
+  let end = before.length;
+  while (end > 0) {
+    const ch = before.charCodeAt(end - 1);
+    if (ch === 32 || (ch >= 9 && ch <= 13)) { end--; continue; }
+    const open = before.lastIndexOf('<', end - 1);
+    if (open < 0) return false;
+    const segment = before.slice(open, end);
+    if (before[end - 1] === '>' && WRAPPER_TAG.test(segment)) {
+      if (hasLogoClass(segment)) return true;
+      end = open;
+      continue;
+    }
+    // The nearest non-wrapper content: a logo class must sit in this last tag,
+    // with only text (no further tags) after it.
+    return hasLogoClass(segment);
+  }
+  return false;
+}
+
 export function extractBrand(html, fetchedUrl) {
   const source = String(html || '').slice(0, 600_000);
   const head = source.slice(0, 300_000);
@@ -268,7 +304,7 @@ export function extractBrand(html, fetchedUrl) {
     const a = parseAttributes(im[0]);
     const before = source.slice(Math.max(0, im.index - 300), im.index);
     const hint = /logo|brand/i.test([a.class, a.id, a.alt, a.src, a['data-src']].join(' ')) ||
-      /class\s*=\s*["'][^"']*(logo|brand)[^"']*["'][^<]*(<a\b[^>]*>|<span\b[^>]*>|<div\b[^>]*>|<picture\b[^>]*>|<source\b[^>]*>|\s)*$/i.test(before);
+      wrappedInLogoClass(before);
     if (!hint) continue;
     // Lazy-loaded logos keep a placeholder in src and the real file in data-src.
     const src = [a.src, a['data-src'], a['data-lazy-src'], (a.srcset || '').split(/\s+/)[0]]

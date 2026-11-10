@@ -175,4 +175,47 @@ assert.equal(put.status, 405);
 const limited = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand?url=acme.com'), { RATE_LIMIT: { limit: async () => ({ success: false }) } });
 assert.equal(limited.status, 429);
 
+// A logo URL answering 204 (no body) is skipped, not a 500.
+const emptyLogoPage = '<html><head><title>Empty Logo Co</title><link rel="apple-touch-icon" href="/touch.png"></head><body><img class="logo" src="/empty-logo.png"></body></html>';
+routes = {
+  'https://emptylogo.example.com/': { body: emptyLogoPage, type: 'text/html' },
+  'https://emptylogo.example.com/touch.png': { body: PNG, type: 'image/png' },
+};
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const href = typeof input === 'string' ? input : input.url;
+  if (href === 'https://emptylogo.example.com/empty-logo.png') return new Response(null, { status: 204 });
+  return realFetch(input, init);
+};
+r = await callBrand('emptylogo.example.com');
+globalThis.fetch = realFetch;
+assert.equal(r.status, 200, 'an empty logo response does not break the lookup: ' + JSON.stringify(r.body));
+assert.equal(r.body.logo && r.body.logo.type, 'image/png', 'the next logo candidate is used');
+
+// Oversized lookup bodies are refused before parsing, with or without Content-Length.
+const bigBody = JSON.stringify({ url: 'acme.com', pad: 'x'.repeat(10_000) });
+let big = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: bigBody }), env);
+assert.equal(big.status, 413);
+const streamed = new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode(bigBody)); c.close(); } });
+big = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand', { method: 'POST', body: streamed, duplex: 'half' }), env);
+assert.equal(big.status, 413, 'a streamed body without Content-Length is capped too');
+
+// The logo-wrapper check keeps its old answers but runs in linear time.
+const oldWrapper = /class\s*=\s*["'][^"']*(logo|brand)[^"']*["'][^<]*(<a\b[^>]*>|<span\b[^>]*>|<div\b[^>]*>|<picture\b[^>]*>|<source\b[^>]*>|\s)*$/i;
+const pieces = ['<div class="logo">', '<span class="x">', '<a href="/">', '</a>', '<p class="brand-mark">', '<picture>', '<source srcset="a.png">', ' ', '\n', 'Acme', '<section>', '<div id="brand">', "<a class='site-logo'>", '</div>'];
+let seed = 7;
+const rand = (n) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+for (let i = 0; i < 3000; i++) {
+  let before = '';
+  const len = 1 + rand(6);
+  for (let j = 0; j < len; j++) before += pieces[rand(pieces.length)];
+  const html = `<html><body>${before}<img src="/pic-${i}.png"></body></html>`;
+  const found = extractBrand(html, 'https://fuzz.example.com/').logos.some((l) => l.url === `https://fuzz.example.com/pic-${i}.png`);
+  assert.equal(found, oldWrapper.test(before.slice(-300)), 'wrapper check changed for: ' + JSON.stringify(before));
+}
+const hostileWrappers = '<html><body>' + Array.from({ length: 400 }, () => '<span class="logo">' + ' '.repeat(270) + '<b><img src="/p.png">').join('') + '</body></html>';
+const startedAt = Date.now();
+extractBrand(hostileWrappers, 'https://slow.example.com/');
+assert.ok(Date.now() - startedAt < 1000, 'hostile whitespace runs do not stall extraction (' + (Date.now() - startedAt) + ' ms)');
+
 console.log('Brand import checks passed');
