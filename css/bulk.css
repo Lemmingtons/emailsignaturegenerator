@@ -48,6 +48,7 @@
 .bulk-error { color: #a32121; font-size: 13px; line-height: 1.7; margin-top: 10px; overflow-wrap: anywhere; }
 .bulk-status { font-size: 12px; margin-top: 10px; overflow-wrap: anywhere; }
 .bulk-status:empty { display: none; }
+.bulk-checkout-note { font-size: 12px; line-height: 1.6; color: var(--text); margin-top: 12px; }
 .bulk-notice { padding: 11px 13px; border-left: 2px solid var(--text-secondary); background: var(--surface-soft); font-size: 12px; margin-top: 12px; overflow-wrap: anywhere; }
 .bulk-row-errors { margin-top: 14px; font-size: 12px; }
 .bulk-row-errors summary, .bulk-api-docs summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 500; }

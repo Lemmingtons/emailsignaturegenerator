@@ -80,7 +80,8 @@ async function buy(env, plan, returnTo = '') {
   assert.equal(response.status, 302, 'paid checkout redeems');
   const location = new URL(response.headers.get('Location'));
   assert.equal(location.pathname, returnTo === 'bulk' ? '/bulk' : '/generator', 'only the whitelisted bulk marker changes the return page');
-  return { token: location.searchParams.get('token'), paymentIntent: session.payment_intent };
+  assert.equal(location.search, '', 'the token never travels in the query string');
+  return { token: new URLSearchParams(location.hash.slice(1)).get('token'), paymentIntent: session.payment_intent };
 }
 async function keyFor(env, token, action = 'create') {
   const response = await manage(env, token, action);
@@ -174,7 +175,7 @@ for (const type of ['charge.refunded', 'charge.dispute.created']) {
   const target = makeEnv();
   const purchase = await buy(target, 'team', 'bulk');
   const key = await keyFor(target, purchase.token);
-  await webhook(target, type, { payment_intent: purchase.paymentIntent });
+  await webhook(target, type, { payment_intent: purchase.paymentIntent, amount: 2900, amount_refunded: 2900, refunded: true });
   assert.equal((await info(target, purchase.token)).status, 401);
   assert.equal((await generate(target, purchase.token, 1)).status, 401);
   assert.equal((await generate(target, key, 1)).status, 401);

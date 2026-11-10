@@ -31,3 +31,11 @@ jobs:
         run: |
           npm run test:bulk
           npm run test:agents
+      - name: Builder checkout recovery and paywall
+        run: npm run test:builder
+      - name: Signature template output
+        run: npm run test:templates
+      - name: Worker payment and input hardening
+        run: |
+          npm run test:worker
+          npm run test:purchase-email

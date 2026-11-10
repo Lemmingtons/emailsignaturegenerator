@@ -24,7 +24,15 @@ namespace_id = "1001"
 limit = 25
 period = 60
 
-# Workers Logs: keeps console output and uncaught exceptions so error alerts
-# have something to read. Logs carry error codes only, never secrets or ids.
+# Workers Logs keeps the Worker's own console output and uncaught exceptions,
+# so error alerts have something to read. Those lines carry error codes and
+# route names only, never secrets or ids.
+#
+# Invocation logs are off: Cloudflare would otherwise record every request's
+# method and full URL, and some URLs carry capabilities (the Stripe return
+# /api/verify-payment?session_id=..., saved signatures /generator?s=...).
 [observability]
 enabled = true
+
+[observability.logs]
+invocation_logs = false

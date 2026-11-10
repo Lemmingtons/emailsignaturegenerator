@@ -5,12 +5,18 @@
   const bulk = window.SignatureBulk;
   const templates = window.SignatureTemplates.TEMPLATES;
   const $ = (id) => document.getElementById(id);
-  const returnUrl = new URL(window.location.href);
-  const returnedToken = returnUrl.searchParams.get('token');
-  if (returnedToken) {
-    returnUrl.searchParams.delete('token');
-    history.replaceState(null, '', returnUrl.pathname + returnUrl.search + returnUrl.hash);
-  }
+  const local = bulk.safeStorage(() => window.localStorage);
+  const session = bulk.safeStorage(() => window.sessionStorage);
+  const tokenKey = facts.proTokenStorageKey;
+  // Strip the token from the address bar first, then keep it before anything
+  // can fail: a paid token that only lives in memory is lost on the first
+  // network error, refresh or closed tab.
+  const returned = bulk.takeReturnedToken(window.location.href);
+  if (returned.changed) history.replaceState(null, '', returned.cleaned);
+  const storedToken = local.get(tokenKey) || '';
+  let tokenRemembered = true;
+  if (returned.token && returned.token !== storedToken) tokenRemembered = local.set(tokenKey, returned.token);
+  const restoreHelp = `Open your access link (use “Copy my access link” in the signature builder) or email ${facts.supportEmail}.`;
   let imported = null;
   let batch = null;
   let selected = 0;
@@ -19,9 +25,14 @@
   let cancelWorkbook = null;
   let downloading = false;
   let payload = null;
-  let purchaseToken = '';
+  let purchaseToken = returned.token || storedToken;
+  // An earlier purchase in this browser, tried if the returned token is rejected.
+  let fallbackToken = returned.token && storedToken !== returned.token ? storedToken : '';
   let paidAccess = null;
   let managingKey = false;
+  // 'idle' | 'checking' | 'retry': while a stored purchase is unconfirmed the
+  // buy buttons stay hidden so a network blip cannot lead to a second purchase.
+  let accessState = 'idle';
 
   function credential() {
     return $('bulk-key').value.trim() || (paidAccess ? purchaseToken : '');
@@ -30,14 +41,15 @@
   function updateAccess() {
     const paid = Boolean(paidAccess);
     const team = paid && paidAccess.plan === 'team';
-    $('buy-individual').hidden = paid;
+    $('buy-individual').hidden = paid || !facts.paymentLink;
     $('buy-team').hidden = team || !facts.teamPaymentLink;
-    $('bulk-purchase').hidden = team;
+    $('bulk-purchase').hidden = team || (!paid && accessState !== 'idle');
+    $('retry-access').hidden = accessState !== 'retry';
     if (paid) {
       $('paid-status').textContent = `${team ? 'Team' : 'Individual'} lifetime access is active. Up to ${paidAccess.maxRows} signatures per batch.${!team && batch && batch.total > paidAccess.maxRows ? ' Choose Team for this batch of 20 or more.' : ''}`;
       $('agent-status').textContent = `${team ? 'Team' : 'Individual'} access: up to ${paidAccess.maxRows} signatures per batch through the API or MCP.`;
     } else {
-      $('paid-status').textContent = '';
+      $('paid-status').textContent = accessState === 'checking' ? 'Checking your purchase…' : '';
       $('agent-status').textContent = 'Buy a lifetime plan to create your API and MCP key.';
       $('agent-key').value = '';
       $('agent-key-result').hidden = true;
@@ -47,22 +59,45 @@
   }
 
   async function refreshAccess(token = purchaseToken) {
-    if (!token) return;
+    if (!token || accessState === 'checking') return;
+    purchaseToken = token;
+    accessState = 'checking';
+    showError('purchase-error', '');
+    updateAccess();
+    let status = 0;
+    let info = null;
     try {
       const response = await fetch('/api/v1/access-key', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', credentials: 'omit' });
-      if (!response.ok) {
-        if (response.status >= 500) throw new Error('Could not check your purchase access. Refresh the page and try again.');
-        paidAccess = null;
-        if (response.status === 403) showError('purchase-error', 'Use the original buyer’s purchase access to manage API keys. If you have an older Pro purchase, contact support to restore access.');
-        updateAccess();
-        return;
-      }
-      paidAccess = await response.json();
-      purchaseToken = token;
-      try { localStorage.setItem(facts.proTokenStorageKey, token); }
-      catch { showError('purchase-error', 'Access is active in this tab, but your browser could not remember it. Keep your purchase return link private so you can restore access.'); }
-      updateAccess();
-    } catch (err) { showError('purchase-error', err.message); }
+      status = response.status;
+      info = await response.json().catch(() => null);
+    } catch { /* offline or blocked: treated as temporarily unavailable */ }
+    if (token !== purchaseToken) return;
+    let outcome = bulk.accessOutcome(status, info && (info.code || info.error));
+    if (outcome === 'active' && !(info && Number.isInteger(info.maxRows) && ['pro', 'team'].includes(info.plan))) outcome = 'unavailable';
+    accessState = outcome === 'busy' || outcome === 'unavailable' ? 'retry' : 'idle';
+    // The checkout draft is kept until the purchase is settled either way, so a
+    // refresh after a failed check still brings the staff list back.
+    if (accessState === 'idle') session.remove(facts.bulkCheckoutDraftStorageKey);
+    if (outcome === 'active') {
+      paidAccess = info;
+      if (!tokenRemembered) showError('purchase-error', `Access is active in this tab, but your browser could not remember it. Keep this tab open while you work, or email ${facts.supportEmail} to restore access later.`);
+    } else if (outcome === 'rejected') {
+      paidAccess = null;
+      if (local.get(tokenKey) === token) { if (fallbackToken) local.set(tokenKey, fallbackToken); else local.remove(tokenKey); }
+      purchaseToken = '';
+      const next = fallbackToken;
+      fallbackToken = '';
+      if (next) { refreshAccess(next); return; }
+      showError('purchase-error', `This purchase access was not accepted. ${restoreHelp}`);
+    } else if (outcome === 'not_owner') {
+      paidAccess = null;
+      showError('purchase-error', `Use the original buyer’s purchase access to manage bulk downloads and API keys. If you have an older Pro purchase, email ${facts.supportEmail} to restore access.`);
+    } else {
+      showError('purchase-error', outcome === 'busy'
+        ? 'Your purchase is saved in this browser, but too many checks were made just now. Wait a minute, then check again.'
+        : 'Your purchase is saved in this browser, but we could not confirm it just now. Check your connection, then check again.');
+    }
+    updateAccess();
   }
 
   async function manageKey(action) {
@@ -284,14 +319,14 @@
         const info = await response.json().catch(() => ({}));
         const messages = {
           invalid_api_key: 'That bulk access key was not accepted. Check the key or request bulk access.',
-          bulk_not_configured: 'Bulk downloads are not enabled on this server yet. Contact us for access.',
+          bulk_not_configured: `Bulk downloads are not enabled on this server yet. Email ${facts.supportEmail} for access.`,
           rate_limited: 'You have reached the request limit. Wait a minute and try again.',
           rate_limit_not_configured: 'Bulk downloads are temporarily unavailable. Try again later.',
           rate_limit_unavailable: 'Bulk downloads are temporarily unavailable. Try again later.',
           too_large: 'The batch is too large. Split your list into smaller batches.',
           no_valid_rows: 'No valid signatures were found. Correct your spreadsheet before downloading.',
           team_plan_required: 'This batch needs Team access. Individual access supports up to 19 signatures per batch.',
-          invalid_token: 'Your purchase access could not be verified. Restore access using your purchase return link.',
+          invalid_token: `Your purchase access could not be verified. ${restoreHelp}`,
         };
         throw new Error(messages[info.code || info.error] || `Could not generate your ZIP (${response.status}). Check your details and try again.`);
       }
@@ -330,6 +365,13 @@
   document.querySelectorAll('[data-pro-price]').forEach((el) => { el.textContent = facts.proPrice.display; });
   document.querySelectorAll('[data-team-price]').forEach((el) => { el.textContent = facts.teamPrice.display; });
   document.querySelectorAll('[data-team-seats]').forEach((el) => { el.textContent = facts.teamSeats; });
+  // Named only when the configured checkout really is Stripe's hosted page.
+  let checkoutHost = '';
+  try { checkoutHost = new URL(facts.paymentLink).hostname; } catch { /* no individual checkout configured */ }
+  if (checkoutHost === 'stripe.com' || checkoutHost.endsWith('.stripe.com')) {
+    $('checkout-note').textContent = 'Secure checkout by Stripe. One-time payment, no subscription.';
+    $('checkout-note').hidden = false;
+  }
   [['buy-individual', facts.paymentLink], ['buy-team', facts.teamPaymentLink]].forEach(([id, link]) => {
     if (!link) { $(id).hidden = true; return; }
     const checkout = new URL(link);
@@ -359,11 +401,14 @@
   });
   $('mcp-url').textContent = `${facts.origin}/mcp`;
   $('mcp-command').textContent = `claude mcp add --transport http signatures ${facts.origin}/mcp --header "Authorization: Bearer YOUR_API_KEY"`;
+  $('retry-access').addEventListener('click', () => refreshAccess());
   resetResults();
   try {
-    const saved = sessionStorage.getItem(facts.bulkCheckoutDraftStorageKey);
+    const saved = session.get(facts.bulkCheckoutDraftStorageKey);
     const draft = bulk.decodeBulkCheckoutDraft(saved);
-    sessionStorage.removeItem(facts.bulkCheckoutDraftStorageKey);
+    // Without a purchase to confirm there is nothing to wait for; otherwise the
+    // draft is cleared once the access check settles.
+    if (!draft || !purchaseToken) session.remove(facts.bulkCheckoutDraftStorageKey);
     if (draft) {
       const savedPayload = draft.payload;
       imported = { employees: savedPayload.employees, rowNumbers: draft.rowNumbers, ignored: [] };
@@ -377,8 +422,12 @@
       render();
     }
   } catch { showError('purchase-error', 'This browser could not restore a checkout draft. You can import your spreadsheet again.'); }
-  try { purchaseToken = localStorage.getItem(facts.proTokenStorageKey) || ''; } catch { /* current-tab purchase access still works */ }
-  refreshAccess(returnedToken || purchaseToken);
-  window.addEventListener('storage', (event) => { if (event.key === facts.proTokenStorageKey && event.newValue) refreshAccess(event.newValue); });
   updateAccess();
+  refreshAccess();
+  window.addEventListener('storage', (event) => {
+    if (event.key !== tokenKey || !event.newValue || event.newValue === purchaseToken) return;
+    tokenRemembered = true;
+    accessState = 'idle';
+    refreshAccess(event.newValue);
+  });
 })();

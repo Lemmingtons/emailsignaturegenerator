@@ -76,6 +76,14 @@
       },
       {
         "@type": "Question",
+        "name": "Is tax included?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Prices are in US dollars and already include any tax that applies, so the price you see is the price you pay at checkout. If your card is in another currency, your bank may show a converted amount."
+        }
+      },
+      {
+        "@type": "Question",
         "name": "Will my signature work in Gmail and Outlook?",
         "acceptedAnswer": {
           "@type": "Answer",
@@ -95,7 +103,7 @@
         "name": "Do I need to create an account?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser."
+          "text": "No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there."
         }
       },
       {
@@ -103,7 +111,7 @@
         "name": "What if I need to update my signature later?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "With Pro, use Save & get link to store your signature and reopen it from any device to edit. Pro access is also stored in your browser, so you can create as many signatures as you like with no limits and no extra charges."
+          "text": "With Pro, use Save & get link to store your signature and reopen it from any device to edit. Pro access is also stored in your browser, so you can create as many signatures as you like with no limits and no extra charges. On a new browser or device, open the access link you copied from the builder to restore Pro."
         }
       },
       {
@@ -161,6 +169,18 @@
 
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/motion.css">
+  <style>
+    /* Homepage pricing: the team card sits beside the single plan. */
+    #pricing .pricing-card { display: flex; flex-direction: column; }
+    #pricing .pricing-card ul { flex: 1; }
+    /* The shared "Most Popular" badge is a claim we cannot back with data. */
+    #pricing .pricing-card.featured::before { content: none; }
+    .team-card-for { font-size: 14px; color: var(--text); margin: -8px 0 16px; line-height: 1.5; }
+    .pricing-reassure { max-width: 640px; margin: 28px auto 0; text-align: center; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
+    .pricing-reassure p + p { margin-top: 4px; }
+    .pricing-reassure a { color: var(--primary); font-weight: 600; }
+    .pricing-reassure .pricing-works-in { margin-top: 14px; color: var(--text-muted); }
+  </style>
 </head>
 <body>
 
@@ -179,6 +199,7 @@
       <a href="/email-signature-examples">Examples</a>
       <a href="/health-check">Health Check</a>
       <a href="/blog/">Guides</a>
+      <a href="/bulk">Teams</a>
       <a href="#pricing">Pricing</a>
       <a href="/generator" class="nav-cta">Create Signature</a>
     </nav>
@@ -377,6 +398,10 @@
           <h3>Hosted Photos</h3>
           <p>Upload a headshot and use the hosted URL in your signature. No extra image hosting setup required.</p>
         </div>
+        <a class="showcase-card guide-card" href="/bulk" data-reveal>
+          <h3>Signatures for Your Whole Team</h3>
+          <p>Upload a staff spreadsheet, preview one shared design for everyone, and download every signature in a ZIP.</p>
+        </a>
       </div>
     </section>
 
@@ -446,10 +471,10 @@
     <section class="pricing-section" id="pricing" aria-label="Pricing">
       <div class="landing-section" style="padding-bottom: 80px;">
         <div class="landing-section-header" data-reveal>
-          <h2>One price. No surprises.</h2>
+          <h2>Pay once. No surprises.</h2>
           <p>Build your signature and see exactly how it looks before you pay a cent. Pay once when you're ready to use it.</p>
         </div>
-        <div class="pricing-grid pricing-grid-single" data-reveal-group>
+        <div class="pricing-grid pricing-grid-single" id="pricingGrid" data-reveal-group>
 
           <div class="pricing-card featured" data-reveal>
             <h3>Everything</h3>
@@ -468,9 +493,30 @@
             </ul>
             <a href="/generator" class="btn btn-primary" id="checkoutBtn" aria-label="Buy for $9">Get it &mdash; $9</a>
             <p class="pricing-try-note">Or <a href="/generator">try the builder first</a> — free, no account.</p>
-            <p class="pricing-try-note team-offer" id="teamOffer" hidden>Buying for a team? <a id="teamOfferLink" href="/generator">Team pack: <span data-team-price></span> once for up to <span data-team-seats></span> people</a>. Set the brand once and share a link; each person adds their own details.</p>
           </div>
 
+          <!-- Shown only when SiteFacts.teamPaymentLink is set (see script below). -->
+          <div class="pricing-card team-card" id="teamOffer" hidden>
+            <h3>Team</h3>
+            <div class="price" data-team-price></div>
+            <div class="price-note">One-time, up to <span data-team-seats></span> people. <strong>No subscription.</strong></div>
+            <p class="team-card-for">For teams, or anyone making <span data-team-threshold></span> or more signatures.</p>
+            <ul>
+              <li>One shared design: set the brand once, share a link</li>
+              <li><span><span data-team-seats></span> editing seats, each with everything in the single plan</span></li>
+              <li><span>Spreadsheet import: one signature per person, up to <span data-bulk-limit></span> per batch</span></li>
+              <li>Every signature downloaded in one ZIP</li>
+              <li>API and MCP access for your agents</li>
+            </ul>
+            <a href="/bulk" class="btn btn-primary" id="teamBulkBtn">Preview your staff list</a>
+            <p class="pricing-try-note">Free to preview. Ready now? <a id="teamOfferLink" href="/bulk">Buy the team pack &mdash; <span data-team-price></span></a></p>
+          </div>
+
+        </div>
+        <div class="pricing-reassure" data-reveal>
+          <p>Secure checkout by Stripe. One-time payment, no subscription. Prices in USD, tax included.</p>
+          <p>Refunds are handled case by case: email <a href="mailto:info@emailsignaturegenerator.ai" data-contact-email>info@emailsignaturegenerator.ai</a> within 14 days of purchase.</p>
+          <p class="pricing-works-in">Works in Gmail, Outlook, Apple Mail and Yahoo Mail. Already have a signature? <a href="/health-check">Check it free</a>.</p>
         </div>
       </div>
     </section>
@@ -488,6 +534,10 @@
           <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. Pay $9 once and you get lifetime access to all 28 templates. No subscription, no recurring charges, no hidden fees. If we add new templates in the future, you get those too.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
+          <summary>Is tax included?</summary>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. Prices are in US dollars and already include any tax that applies, so the price you see is the price you pay at checkout. If your card is in another currency, your bank may show a converted amount.</p>
+        </details>
+        <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Will my signature work in Gmail and Outlook?</summary>
           <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">Yes. All signatures use HTML table-based layouts that are compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients. We test every template across major clients.</p>
         </details>
@@ -497,11 +547,11 @@
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Do I need to create an account?</summary>
-          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser.</p>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>What if I need to update my signature later?</summary>
-          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">With Pro, use Save &amp; get link to store your signature and reopen it from any device to edit. Pro access is also stored in your browser, so you can create as many signatures as you like. No limits, no extra charges.</p>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">With Pro, use Save &amp; get link to store your signature and reopen it from any device to edit. Pro access is also stored in your browser, so you can create as many signatures as you like. No limits, no extra charges. On a new browser or device, open the access link you copied from the builder to restore Pro.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Can it use my company's branding automatically?</summary>
@@ -534,6 +584,8 @@
       &nbsp;&middot;&nbsp;
       <a href="/blog/">Guides</a>
       &nbsp;&middot;&nbsp;
+      <a href="/bulk">Teams &amp; Bulk</a>
+      &nbsp;&middot;&nbsp;
       <a href="#pricing">Pricing</a>
       &nbsp;&middot;&nbsp;
       <a href="/privacy">Privacy &amp; Terms</a>
@@ -564,10 +616,22 @@
     // The team pack shows only once its Stripe link exists.
     var teamOffer = document.getElementById('teamOffer');
     if (teamOffer && window.SiteFacts && window.SiteFacts.teamPaymentLink) {
-      document.getElementById('teamOfferLink').href = window.SiteFacts.teamPaymentLink;
-      teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = window.SiteFacts.teamPrice.display; });
-      teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(window.SiteFacts.teamSeats); });
+      var facts = window.SiteFacts;
+      document.getElementById('teamOfferLink').href = facts.teamPaymentLink;
+      teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = facts.teamPrice.display; });
+      teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(facts.teamSeats); });
+      teamOffer.querySelectorAll('[data-team-threshold]').forEach(function (el) { el.textContent = String(facts.bulkIndividualMaxRows + 1); });
+      teamOffer.querySelectorAll('[data-bulk-limit]').forEach(function (el) { el.textContent = String(facts.bulkMaxRows); });
+      document.getElementById('teamOfferLink').setAttribute('aria-label', 'Buy the team pack for ' + facts.teamPrice.display);
+      document.getElementById('pricingGrid').classList.remove('pricing-grid-single');
       teamOffer.hidden = false;
+    }
+
+    if (window.SiteFacts && window.SiteFacts.contactEmail) {
+      document.querySelectorAll('[data-contact-email]').forEach(function (el) {
+        el.href = 'mailto:' + window.SiteFacts.contactEmail;
+        el.textContent = window.SiteFacts.contactEmail;
+      });
     }
 
     var D = {

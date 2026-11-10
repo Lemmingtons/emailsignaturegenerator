@@ -14,7 +14,11 @@ The **Email Signature Examples** hub at /email-signature-examples provides 52 ro
 
 ## Pricing
 
-One plan, one price: **US$9, one-time**. It includes all 28 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding.
+Single plan: **US$9, one-time**. It includes all 28 templates, full customisation, animated photo effects, hosted photo and logo, CTA buttons, saved re-editable signatures, and lifetime access to future templates. Signatures never carry any branding. It also covers spreadsheet downloads of up to 19 signatures per batch, and API and MCP access.
+
+Team pack: **US$29, one-time**, for teams or anyone making 20 or more signatures. It includes 10 editing seats that share one brand design, spreadsheet import with up to 250 signatures per batch downloaded as one ZIP, and API and MCP access. Details and a free preview of your staff list are at /bulk.
+
+Prices are in USD, tax included. Checkout is by Stripe.
 
 The builder itself is free to use with no account: anyone can pick any of the 28 templates, customise it fully, and see a live preview of exactly what they will get. Payment is required to copy the signature out, host images, or save an edit link.
 
@@ -50,11 +54,14 @@ No subscription. No recurring charges. No account needed.
 **Is this a one-time payment?**
 Yes. Pay US$9 once and get lifetime access to all 28 templates, including future templates. No subscription, no recurring charges.
 
+**Is tax included?**
+Yes. Prices are in US dollars and already include any tax that applies, so the price shown is the price charged at checkout. A bank may show a converted amount for cards in another currency.
+
 **Does it work in Gmail and Outlook?**
 Yes. All signatures use HTML table-based layouts compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients.
 
 **Do I need an account?**
-No. The generator runs in your browser with no login and no account. Pro access is stored in your browser as a signed token.
+No. The generator runs in your browser with no login and no account. Pro access is stored in your browser as a signed token. To use Pro in another browser or on another device, copy your access link in the builder and open it there.
 
 **Is my data stored?**
 Only if you choose to. Signature details stay in your browser by default. Hosting a photo or logo, or using "Save & get link", stores that content on Cloudflare R2 so email clients can load the image and you can reopen the signature. Payment is handled by Stripe; card details never reach this site.
@@ -81,6 +88,7 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 - [Email Signature Examples](https://emailsignaturegenerator.ai/email-signature-examples) — 52 examples by role, industry, platform, and use case
 - [Health Check](https://emailsignaturegenerator.ai/health-check) — Free email signature checker: paste any HTML to test dark-mode, contrast, Outlook compatibility, trackers, and accessibility
 - [Brand Extractor](https://emailsignaturegenerator.ai/brand-extractor) — Free tool: type any website and get its logo, brand colours as hex codes, company name, phone and social links
+- [Team and Bulk Signatures](https://emailsignaturegenerator.ai/bulk) — Upload a staff spreadsheet, preview one shared design for everyone, and download every signature in a ZIP; team pack and API/MCP access
 - [Privacy & Terms](https://emailsignaturegenerator.ai/privacy) — What is stored, where, and why
 
 ### Email client setup guides
