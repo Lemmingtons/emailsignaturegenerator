@@ -66,7 +66,7 @@ async function buy(env, link, n) {
   await webhook(env, 'checkout.session.completed', session);
   const res = await call(env, `/api/verify-payment?session_id=${session.id}`);
   if (res.status !== 302) return { status: res.status };
-  return { status: 302, token: new URL(res.headers.get('Location')).searchParams.get('token'), paymentIntent: session.payment_intent };
+  return { status: 302, token: new URLSearchParams(new URL(res.headers.get('Location')).hash.slice(1)).get('token'), paymentIntent: session.payment_intent };
 }
 
 const verify = async (env, token) => (await call(env, '/api/verify-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })).json();
@@ -194,7 +194,7 @@ const env2 = makeEnv();
 const owner2 = await buy(env2, 'plink_team123', 9);
 const team2 = await (await call(env2, '/api/team', bearer(owner2.token, { method: 'POST', body: JSON.stringify(design) }))).json();
 const member2 = (await (await call(env2, `/api/team/${team2.id}/join`, { method: 'POST' })).json()).token;
-await webhook(env2, 'charge.refunded', { payment_intent: owner2.paymentIntent });
+await webhook(env2, 'charge.refunded', { payment_intent: owner2.paymentIntent, amount: 2900, amount_refunded: 2900, refunded: true });
 res = await call(env2, `/api/team/${team2.id}/join`, { method: 'POST' });
 assert.equal(res.status, 403);
 assert.equal((await res.json()).code, 'team_inactive');

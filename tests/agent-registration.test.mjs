@@ -39,7 +39,7 @@ async function buy(plan = 'pro') {
   await webhook('checkout.session.completed', session);
   const response = await call('/api/verify-payment?session_id=' + session.id);
   assert.equal(response.status, 302);
-  return { token: new URL(response.headers.get('Location')).searchParams.get('token'), paymentIntent: session.payment_intent };
+  return { token: new URLSearchParams(new URL(response.headers.get('Location')).hash.slice(1)).get('token'), paymentIntent: session.payment_intent };
 }
 async function register(name = 'Fixture Assistant') {
   const response = await agent('register', { agent_name: name });
@@ -97,7 +97,7 @@ assert.equal((await generate(teamKey, 250)).status, 200);
 assert.equal((await generate(teamKey, 251)).status, 413);
 await post('/api/v1/access-key', { action: 'revoke' }, owner.token);
 assert.equal((await generate(key)).status, 401, 'the buyer can revoke a connected agent');
-await webhook('charge.refunded', { payment_intent: other.paymentIntent });
+await webhook('charge.refunded', { payment_intent: other.paymentIntent, amount: 2900, amount_refunded: 2900, refunded: true });
 assert.equal((await generate(teamKey)).status, 401, 'refunds revoke temporary grants');
 
 const paid = await buy();

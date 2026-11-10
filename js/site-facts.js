@@ -23,6 +23,8 @@
     contactEmail,
     supportEmail: contactEmail,
     reportEmail: contactEmail,
+    // Sender for purchase confirmations (dormant until the Worker is configured).
+    purchaseEmailFrom: 'purchases@mail.emailsignaturegenerator.ai',
     paymentLink: useSandboxPayments
       ? 'https://buy.stripe.com/test_eVqbJ01JQ8i8gsgd0C2go01'
       : 'https://buy.stripe.com/3cIdR84XH6vdcfKahF5Ne00',
