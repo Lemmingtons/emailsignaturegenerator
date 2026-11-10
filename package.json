@@ -14,6 +14,10 @@
     "test:agents": "node tests/agent-discovery.test.mjs && node tests/agent-registration.test.mjs && node tests/bulk-a2a.test.mjs",
     "test:team": "node tests/team-pack.test.mjs",
     "test:bulk": "node tests/bulk-core.test.js && node tests/bulk-api.test.mjs && node tests/paid-bulk.test.mjs && node tests/bulk-mcp.test.mjs",
+    "test:builder": "node tests/builder-recovery.test.js",
+    "test:templates": "node tests/template-output.test.js",
+    "test:worker": "node tests/worker-hardening.test.mjs",
+    "test:purchase-email": "node tests/purchase-email.test.mjs",
     "monitor": "node scripts/monitor-site.js"
   }
 }

@@ -2,6 +2,17 @@
 
 Current architecture notes after the May 2026 cleanup.
 
+## Purchase flow and access (November 2026)
+
+- **Deploy only through `main`.** Workers Builds redeploys `main` on every merge, so a manual `wrangler deploy` of uncommitted work is overwritten by the next merge. In November 2026 that silently removed checkout recovery, export validation and the `/bulk` links from production.
+- **The token travels in the URL fragment.** `/api/verify-payment` redirects to `/generator#token=…` or `/bulk#token=…`; both clients also still accept `?token=`. Fragments never reach the server, and `[observability.logs] invocation_logs = false` keeps request URLs (session ids, `?s=` capabilities) out of Workers Logs.
+- **Access recovery.** Unlocked visitors can use "Copy my access link" in the builder to restore Pro in another browser or device. The purchase confirmation email (`js/purchase-email.js`, `docs/purchase-emails.md`) carries the same kind of link but stays inert until both `PURCHASE_EMAILS_FROM` and `RESEND_API_KEY` are set.
+- **The builder keeps the buyer's work through checkout.** Every buy button in the builder saves a draft to `sessionStorage` (`checkoutDraftStorageKey`) first; the draft never holds the token and expires after 24 hours.
+- **Only a full refund revokes.** Revocation relies on Stripe's `charge.refunded` event with the charge fully refunded; `refund.*` events are ignored. The live webhook must stay subscribed to `charge.refunded` and `charge.dispute.created`.
+- **Prices are tax-inclusive.** The site says "Prices in USD, tax included" and `npm run check` fails on wording that says tax is added. The Stripe prices must be tax-inclusive to match.
+- **Link fields accept plain domains.** `escapeUrl` in `js/templates.js` turns `acme.com` into `https://acme.com`; the builder's field validation must accept exactly what that helper renders.
+- **Published-card cap** is enforced on a per-buyer ledger object (`card-quota/…`) with a conditional R2 write.
+
 ## Canonical product facts
 
 Shared pricing, template counts, contact details, and payment links live in `js/site-facts.js`.
@@ -132,7 +143,7 @@ A second Stripe Payment Link sells the team pack (`teamPrice`, `teamSeats` in `j
 
 ## Deploy checklist
 
-GitHub Actions (`.github/workflows/ci.yml`) runs `npm run check` and `npm run test:frontend` on every PR and every push to `main`.
+GitHub Actions (`.github/workflows/ci.yml`) runs `npm run check` and every test suite on every PR and every push to `main`.
 
 Production deploys come from Cloudflare Workers Builds on the Ryan@homesafeinspections.com.au account, connected to this repo's `main` branch. A merge to `main` is a deploy, so only merge with CI green. When a change touches generated output:
 
