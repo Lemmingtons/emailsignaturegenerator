@@ -38,6 +38,8 @@ assert.match(app, /kind === 'error' \? 'assertive' : 'polite'/);
 assert.match(generator, /<dialog id="paywallDialog"[^>]+aria-labelledby="paywallTitle"[^>]+aria-describedby="paywallLead"/);
 assert.match(generator, /id="paywallTitle"[^>]+tabindex="-1"/);
 assert.match(generator, /id="paywallPreview"[^>]*\binert\b/);
+assert.match(generator, /Prices in USD, tax included\./);
+assert.ok(!/tax may be added/i.test(generator), 'prices are tax-inclusive; never say tax is added at checkout');
 assert.match(generator, /id="paywallCloseBtn"[^>]*>Keep editing</);
 assert.match(generator, /id="paywallStatus"[^>]+role="status"[^>]+aria-live="polite"/);
 assert.ok(!/paywallDialog[\s\S]*\$\d/.test(generator.slice(generator.indexOf('<dialog id="paywallDialog"'), generator.indexOf('</dialog>'))), 'paywall prices come from site facts');
