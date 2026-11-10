@@ -165,6 +165,11 @@ label:has(+ .file-input-accessible:focus-visible) {
 @media (max-width: 1000px) {
   .site-nav { gap: 16px; }
 }
+/* Tablets: drop the two links the footer also carries so the rest fit on one line. */
+@media (max-width: 920px) {
+  .site-nav a[href="/email-signature-examples"],
+  .site-nav a[href="/health-check"] { display: none; }
+}
 @media (max-width: 760px) {
   .site-nav a:not(.nav-cta) { display: none; }
 }
