@@ -372,7 +372,7 @@
     $('checkout-note').textContent = 'Secure checkout by Stripe. One-time payment, no subscription.';
     $('checkout-note').hidden = false;
   }
-  [['buy-individual', facts.paymentLink], ['buy-team', facts.teamPaymentLink]].forEach(([id, link]) => {
+  [['buy-individual', facts.paymentLink, 'bulk-pro'], ['buy-team', facts.teamPaymentLink, 'bulk-team']].forEach(([id, link, placement]) => {
     if (!link) { $(id).hidden = true; return; }
     const checkout = new URL(link);
     checkout.searchParams.set('client_reference_id', 'bulk');
@@ -389,6 +389,10 @@
           event.preventDefault();
           showError('purchase-error', 'Your browser could not keep your staff list safe through checkout. Allow tab storage or buy before importing your list.');
         }
+      }
+      // Records a real click on its way to Stripe; see /api/checkout-click.
+      if (!event.defaultPrevented) {
+        try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement })); } catch { /* best effort */ }
       }
     });
   });

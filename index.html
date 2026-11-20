@@ -656,9 +656,16 @@
       });
     }
 
+    // Records a real buy-button click before it leaves for Stripe, so abandoned
+    // Stripe sessions can be told apart from link previews. Never blocks checkout.
+    function trackCheckoutClick(placement) {
+      try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement: placement })); } catch (e) { /* best effort */ }
+    }
+
     var checkoutButton = document.getElementById('checkoutBtn');
     if (checkoutButton && window.SiteFacts) {
       checkoutButton.href = window.SiteFacts.paymentLink;
+      checkoutButton.addEventListener('click', function () { trackCheckoutClick('home-pro'); });
     }
 
     // The team pack shows only once its Stripe link exists.
@@ -666,6 +673,7 @@
     if (teamOffer && window.SiteFacts && window.SiteFacts.teamPaymentLink) {
       var facts = window.SiteFacts;
       document.getElementById('teamOfferLink').href = facts.teamPaymentLink;
+      document.getElementById('teamOfferLink').addEventListener('click', function () { trackCheckoutClick('home-team'); });
       teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = facts.teamPrice.display; });
       teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(facts.teamSeats); });
       teamOffer.querySelectorAll('[data-team-threshold]').forEach(function (el) { el.textContent = String(facts.bulkIndividualMaxRows + 1); });
