@@ -29,6 +29,40 @@
   }
   </script>
 
+  <!-- FAQ Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Where should I start?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Read the best practices guide to decide what goes in your signature, then follow the guide for your email client to install it. If you already have a signature, run it through the free health check first."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I install a signature in Gmail or Outlook?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Copy the signature, then paste it into Gmail's Signature box under Settings, See all settings, General, or into Outlook's signature settings. Set it as the default for new emails and for replies. The Gmail and Outlook guides cover each version step by step."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my signature look different on someone else's screen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Email clients render HTML differently, block images until the reader allows them, and apply dark mode in their own way. Table-based layouts with hosted images hold up best. The size and logo guides explain the settings that matter."
+        }
+      }
+    ]
+  }
+  </script>
+
   <link rel="stylesheet" href="../css/styles.css">
   <style>
     .blog-index { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
@@ -42,6 +76,11 @@
     .post-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 12px; }
     .post-meta { font-size: 0.8rem; color: var(--text-secondary); }
     .post-tag { display: inline-block; background: var(--surface-soft); color: var(--text-secondary); font-size: 0.75rem; padding: 2px 8px; border-radius: 100px; margin-bottom: 8px; }
+    .guide-hub { margin-top: 48px; }
+    .guide-hub h2 { font-size: 1.35rem; margin-bottom: 8px; }
+    .guide-hub h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+    .guide-hub ul { padding-left: 22px; line-height: 1.8; color: var(--text-secondary); }
+    .guide-hub > p { color: var(--text-secondary); }
     @media (max-width: 560px) { .post-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -184,6 +223,63 @@
       </div>
 
     </div>
+
+    <section class="guide-hub" aria-labelledby="by-task">
+      <h2 id="by-task">Guides by task</h2>
+      <p>Every guide on this site, grouped by what you are trying to do.</p>
+      <h3>Install your signature</h3>
+      <ul>
+        <li><a href="/blog/how-to-add-email-signature-in-gmail">Gmail</a> — add, change or remove a signature on a computer and phone</li>
+        <li><a href="/blog/how-to-add-email-signature-in-outlook">Outlook</a> — new Outlook, classic Outlook, Outlook on the web and Mac</li>
+        <li><a href="/blog/how-to-add-email-signature-on-iphone-and-android">iPhone and Android</a> — Mail, Gmail and Outlook apps</li>
+        <li><a href="/seo/email-signature-generator-for-apple-mail">Apple Mail</a> — set up on a Mac and test images and dark mode</li>
+        <li><a href="/seo/email-signature-generator-for-gmail">Gmail troubleshooting</a> — fix images, spacing and dark mode</li>
+        <li><a href="/seo/email-signature-generator-for-outlook">Outlook troubleshooting</a> — fix images and spacing across versions</li>
+      </ul>
+      <h3>Design it</h3>
+      <ul>
+        <li><a href="/blog/email-signature-best-practices">Best practices</a> — what to include and what to leave out</li>
+        <li><a href="/blog/email-signature-size">Size</a> — width, height, logo and headshot dimensions</li>
+        <li><a href="/blog/email-signature-with-logo">Logo</a> — pick, host and add your logo</li>
+        <li><a href="/blog/email-signature-social-media-icons">Social icons</a> — add icons that display in every client</li>
+        <li><a href="/blog/email-signature-credentials">Credentials</a> — order degrees, licences and certifications</li>
+        <li><a href="/health-check">Health check</a> — test a signature you already have</li>
+      </ul>
+      <h3>Examples by role</h3>
+      <ul>
+        <li><a href="/email-signature-examples">All examples</a> — finished signatures for common roles</li>
+        <li><a href="/blog/student-email-signature-examples">Students</a> — school, university and job hunting</li>
+        <li><a href="/blog/teacher-email-signature-examples">Teachers</a> — classroom, department heads and tutors</li>
+        <li><a href="/seo/real-estate-agent-email-signature">Real estate agents</a> — licence number, brokerage and booking button</li>
+        <li><a href="/seo/nurse-email-signature">Nurses</a> — credentials, unit and confidentiality notice</li>
+        <li><a href="/seo/lawyer-email-signature">Lawyers</a> — firm details, bar admission and disclaimer</li>
+      </ul>
+      <h3>Choose a generator</h3>
+      <ul>
+        <li><a href="/seo/best-email-signature-generators">Best email signature generators</a> — ten tools side by side, with sources</li>
+        <li><a href="/blog/free-vs-paid-email-signature-generators">Free vs paid</a> — which kind of tool fits which job</li>
+        <li><a href="/seo/wisestamp-alternative">WiseStamp alternative</a></li>
+        <li><a href="/seo/exclaimer-alternative">Exclaimer alternative</a></li>
+        <li><a href="/seo/canva-email-signature-alternative">Canva alternative</a></li>
+        <li><a href="/seo/hubspot-email-signature-generator-alternative">HubSpot alternative</a></li>
+      </ul>
+    </section>
+
+    <section class="guide-hub" aria-labelledby="guide-faq">
+      <h2 id="guide-faq">Frequently asked questions</h2>
+      <details class="instructions">
+        <summary>Where should I start?</summary>
+        <p>Read the best practices guide to decide what goes in your signature, then follow the guide for your email client to install it. If you already have a signature, run it through the free health check first.</p>
+      </details>
+      <details class="instructions">
+        <summary>How do I install a signature in Gmail or Outlook?</summary>
+        <p>Copy the signature, then paste it into Gmail's Signature box under Settings, See all settings, General, or into Outlook's signature settings. Set it as the default for new emails and for replies. The Gmail and Outlook guides cover each version step by step.</p>
+      </details>
+      <details class="instructions">
+        <summary>Why does my signature look different on someone else's screen?</summary>
+        <p>Email clients render HTML differently, block images until the reader allows them, and apply dark mode in their own way. Table-based layouts with hosted images hold up best. The size and logo guides explain the settings that matter.</p>
+      </details>
+    </section>
   </main>
 
   <footer class="site-footer" role="contentinfo">

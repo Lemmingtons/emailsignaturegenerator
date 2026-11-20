@@ -590,6 +590,39 @@ assert(landingDescription.length > 0 && landingDescription.length <= 160,
     }
   }
 }
+// Every "<tool> alternative" page is built to one spec (COMPARISON_SPEC in
+// generate-pages.js): comparison table, verdict, when each fits, how to switch,
+// links to the other comparisons, six FAQs and at least eight in-body links.
+{
+  const competitors = JSON.parse(read('datasets/competitors.json'));
+  const slugs = new Set(competitors.map((entry) => entry.slug));
+  const onDisk = fs.readdirSync(fromRoot('seo')).filter((f) => f.endsWith('-alternative.html')).map((f) => f.replace(/\.html$/, ''));
+  for (const slug of onDisk) assert(slugs.has(slug), `seo/${slug}.html has no entry in competitors.json`);
+  const hub = read('seo/best-email-signature-generators.html');
+  const sitemap = read('sitemap.xml');
+  for (const entry of competitors) {
+    const file = `seo/${entry.slug}.html`;
+    assert(fs.existsSync(fromRoot(file)), `${file} is missing; run npm run generate`);
+    if (!fs.existsSync(fromRoot(file))) continue;
+    const html = read(file);
+    const main = html.match(/<main[\s\S]*<\/main>/)?.[0] || '';
+    assert((html.match(/<h1[\s>]/g) || []).length === 1, `${file} must have exactly one <h1>`);
+    assert((html.match(/"@type": "Question"/g) || []).length === 6, `${file} must carry exactly 6 FAQ questions`);
+    assert((main.match(/<details class="instructions">/g) || []).length === 6, `${file} must show exactly 6 FAQs`);
+    for (const heading of ['the verdict', 'is the better choice', 'When this generator is the better choice', 'How to switch from', 'Other email signature tools compared']) {
+      assert(main.includes(heading), `${file} is missing the "${heading}" section`);
+    }
+    assert(/<table class="comparison-table">/.test(main), `${file} is missing its comparison table`);
+    assert(/details checked on <time datetime="\d{4}-\d{2}-\d{2}">/.test(main), `${file} must date its competitor facts`);
+    const internal = new Set([...main.matchAll(/href="(\/[^"#]*)/g)].map((m) => m[1]));
+    assert(internal.size >= 8, `${file} has ${internal.size} distinct internal links in <main>; the spec needs at least 8`);
+    for (const other of competitors) {
+      if (other.slug !== entry.slug) assert(main.includes(`href="/seo/${other.slug}"`), `${file} must link to /seo/${other.slug}`);
+    }
+    assert(hub.includes(`href="/seo/${entry.slug}"`), `seo/best-email-signature-generators.html must link to /seo/${entry.slug}`);
+    assert(sitemap.includes(`/seo/${entry.slug}</loc>`), `sitemap.xml is missing /seo/${entry.slug}`);
+  }
+}
 // The landing title and description quote the price; a price change must update them.
 for (const [label, text] of [['title', landingTitle], ['description', landingDescription]]) {
   for (const price of text.match(/US\$\d+(?:\.\d+)?/g) || []) {

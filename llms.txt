@@ -102,6 +102,14 @@ Refunds are handled case by case. Email info@emailsignaturegenerator.ai within 1
 - [Best Email Signature Generators (2026)](https://emailsignaturegenerator.ai/seo/best-email-signature-generators) — Ten tools, ours included, compared on free option, cheapest paid plan, subscription, sign-up and website brand import, with sources, checked 25 October 2026
 - [WiseStamp Alternative](https://emailsignaturegenerator.ai/seo/wisestamp-alternative) — Side-by-side price and feature comparison with WiseStamp (US$9 once vs US$108 a year for Pro+)
 - [HubSpot Email Signature Generator Alternative](https://emailsignaturegenerator.ai/seo/hubspot-email-signature-generator-alternative) — Comparison with HubSpot's free generator: website branding import, hosted images, 28 vs 12 templates
+- [Exclaimer Alternative](https://emailsignaturegenerator.ai/seo/exclaimer-alternative) — For individuals and small teams: no ten-user minimum, US$9 once vs Exclaimer's per-mailbox annual plans
+- [CodeTwo Alternative](https://emailsignaturegenerator.ai/seo/codetwo-alternative) — For one person: no ten-licence minimum, compared with CodeTwo Email Signatures 365's single per-user plan
+- [SignatureForEmail Alternative](https://emailsignaturegenerator.ai/seo/signatureforemail-alternative) — Branding filled in from your website, hosted images and no branding link, compared with SignatureForEmail's plans
+- [Canva Email Signature Alternative](https://emailsignaturegenerator.ai/seo/canva-email-signature-alternative) — Canva exports signatures as PNG images; this builds HTML with selectable text and working links
+- [Blinq Email Signature Alternative](https://emailsignaturegenerator.ai/seo/blinq-email-signature-alternative) — Blinq's non-Business signatures are images linked to a card; this builds an HTML signature
+- [MySignature Alternative](https://emailsignaturegenerator.ai/seo/mysignature-alternative) — US$9 once vs MySignature's per-user yearly plans; MySignature says signatures stop working after you cancel
+- [Newoldstamp Alternative](https://emailsignaturegenerator.ai/seo/newoldstamp-alternative) — US$9 once vs Newoldstamp's per-signature annual billing; its signatures stop working when the subscription expires
+- [Gimmio Alternative](https://emailsignaturegenerator.ai/seo/gimmio-alternative) — Gimmio sells one signature for US$7 with 7 days of access; this fills in branding from your website, hosts images and has no time limit
 
 ### Signature examples by job
 
