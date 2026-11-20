@@ -128,13 +128,43 @@ function fillFacts(value) {
   return value;
 }
 
-function comparisonPageHTML(entry) {
-  const competitor = fillFacts(entry);
-  for (const field of ['seoTitle', 'metaDescription', 'heading', 'checkedOn', 'sources', 'rows', 'whenTheyFit', 'whenWeFit', 'faqs']) {
-    if (!competitor[field] || (Array.isArray(competitor[field]) && !competitor[field].length)) {
-      throw new Error(`competitors.json ${competitor.slug} missing ${field}`);
-    }
+// Every "<tool> alternative" page is built to this one spec so none ends up
+// thin. scripts/validate-site.js checks the generated pages against it too.
+const COMPARISON_SPEC = Object.freeze({
+  minRows: 7,
+  faqs: 6,
+  minWhen: 2,
+  minSwitchSteps: 3,
+  minSources: 1,
+  minInternalLinks: 8,
+});
+const COMPARISON_HUB = Object.freeze({ href: '/seo/best-email-signature-generators', label: 'Compare generators' });
+
+function assertComparisonSpec(competitor) {
+  const fail = (message) => { throw new Error(`competitors.json ${competitor.slug}: ${message}`); };
+  for (const field of ['seoTitle', 'metaDescription', 'heading', 'checkedOn', 'verdict', 'compareLabel']) {
+    if (typeof competitor[field] !== 'string' || !competitor[field].trim()) fail(`missing ${field}`);
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(competitor.checkedOn)) fail('checkedOn must be YYYY-MM-DD');
+  const atLeast = (field, min) => {
+    if (!Array.isArray(competitor[field]) || competitor[field].length < min) fail(`${field} needs at least ${min} entries`);
+  };
+  atLeast('rows', COMPARISON_SPEC.minRows);
+  atLeast('whenTheyFit', COMPARISON_SPEC.minWhen);
+  atLeast('whenWeFit', COMPARISON_SPEC.minWhen);
+  atLeast('switchSteps', COMPARISON_SPEC.minSwitchSteps);
+  atLeast('sources', COMPARISON_SPEC.minSources);
+  if (!Array.isArray(competitor.faqs) || competitor.faqs.length !== COMPARISON_SPEC.faqs) fail(`needs exactly ${COMPARISON_SPEC.faqs} FAQs`);
+  if (!competitor.rows.some((row) => row.feature === 'Price')) fail('needs a Price row');
+  for (const source of competitor.sources) {
+    if (!/^https:\/\//.test(source.url || '')) fail(`source ${source.label} needs an https URL`);
+  }
+}
+
+function comparisonPageHTML(entry, allCompetitors = [entry]) {
+  const competitor = fillFacts(entry);
+  assertComparisonSpec(competitor);
+  const others = allCompetitors.filter((other) => other.slug !== competitor.slug).map(fillFacts);
 
   return pageHTML({
     url: `${SITE_URL}/seo/${competitor.slug}`,
@@ -150,6 +180,7 @@ function comparisonPageHTML(entry) {
     ctaText: 'Build Your Signature From Your Website',
     brandForm: true,
     seoLabel: competitor.label,
+    breadcrumbParent: COMPARISON_HUB,
     comparison: {
       label: competitor.label,
       rows: competitor.rows,
@@ -157,19 +188,29 @@ function comparisonPageHTML(entry) {
       sources: competitor.sources,
     },
     guideSections: [
+      { heading: `${competitor.compareLabel} or Email Signature Generator: the verdict`, paragraphs: [competitor.verdict] },
       { heading: `When ${competitor.label} is the better choice`, items: competitor.whenTheyFit },
       { heading: 'When this generator is the better choice', items: competitor.whenWeFit },
+      { heading: `How to switch from ${competitor.label}`, items: competitor.switchSteps, ordered: true },
+    ],
+    otherComparisons: [
+      ...others.map((other) => ({ href: `/seo/${other.slug}`, label: `${other.compareLabel} alternative`, description: other.linkSummary })),
+      { href: COMPARISON_HUB.href, label: 'Best email signature generators', description: 'ten tools side by side, with sources' },
     ],
     relatedLinks: [
       { href: '/generator', label: 'Email signature generator', description: 'type your website and see your signature' },
       { href: '/#pricing', label: 'Pricing', description: `${PRICE} once, no subscription` },
+      { href: '/email-signature-templates', label: `All ${TEMPLATE_COUNT} templates`, description: 'every design with its export size' },
+      { href: '/email-signature-examples', label: 'Email signature examples', description: 'finished signatures by role' },
       { href: '/health-check', label: 'Signature health check', description: 'test any signature for Gmail, Outlook and dark mode' },
+      { href: '/seo/email-signature-generator-for-gmail', label: 'Gmail signature guide', description: 'install and troubleshoot in Gmail' },
+      { href: '/seo/email-signature-generator-for-outlook', label: 'Outlook signature guide', description: 'install in Outlook for Windows, Mac and the web' },
     ],
     faqs: competitor.faqs,
   });
 }
 
-function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks, comparison, brandForm }) {
+function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks, otherComparisons, comparison, brandForm, breadcrumbParent }) {
   const faqSchema = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -199,7 +240,8 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://emailsignaturegenerator.ai/" },
-      { "@type": "ListItem", "position": 2, "name": h1, "item": url }
+      ...(breadcrumbParent ? [{ "@type": "ListItem", "position": 2, "name": breadcrumbParent.label, "item": `${SITE_URL}${breadcrumbParent.href}` }] : []),
+      { "@type": "ListItem", "position": breadcrumbParent ? 3 : 2, "name": h1, "item": url }
     ]
   }, null, 2);
 
@@ -215,10 +257,18 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
     <section class="guide-section">
       <h2>${escapeHtml(section.heading)}</h2>
       ${(section.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('\n      ')}
-      ${section.items ? `<ul class="guide-list">
+      ${section.items ? `<${section.ordered ? 'ol' : 'ul'} class="guide-list">
         ${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('\n        ')}
-      </ul>` : ''}
+      </${section.ordered ? 'ol' : 'ul'}>` : ''}
     </section>`).join('\n') : '';
+
+  const otherComparisonsHTML = otherComparisons ? `
+    <section class="guide-section" aria-label="Other comparisons">
+      <h2>Other email signature tools compared</h2>
+      <ul class="guide-list">
+        ${otherComparisons.map(link => `<li><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>${link.description ? ` — ${escapeHtml(link.description)}` : ''}</li>`).join('\n        ')}
+      </ul>
+    </section>` : '';
 
   const troubleshootingHTML = troubleshooting ? `
     <section class="troubleshooting-section">
@@ -370,7 +420,7 @@ ${siteHeaderHTML()}
   <main id="main-content" class="seo-page">
 
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Home</a> › ${escapeHtml(h1)}
+      <a href="/">Home</a> › ${breadcrumbParent ? `<a href="${escapeHtml(breadcrumbParent.href)}">${escapeHtml(breadcrumbParent.label)}</a> › ` : ''}${escapeHtml(h1)}
     </nav>
 
     <h1>${escapeHtml(h1)}</h1>
@@ -423,7 +473,7 @@ ${comparisonHTML}
     ${guideHTML}
 
     ${troubleshootingHTML}
-
+${otherComparisonsHTML}
     ${relatedHTML}
 
     <section class="faq-section" aria-label="Frequently asked questions">
@@ -742,6 +792,30 @@ const TEMPLATE_CSS = `    .gallery-grid { display: grid; grid-template-columns: 
     @media (max-width: 520px) { .gallery-grid { grid-template-columns: 1fr; } }
 `;
 
+// Measured at build time from the real export, so the numbers are this site's
+// own data and update whenever a template changes.
+function templateSizeSectionHTML(templates) {
+  const rows = templates
+    .map(template => ({ template, features: templateFeatures(template.id) }))
+    .sort((a, b) => a.features.length - b.features.length);
+  const smallest = rows[0];
+  const largest = rows[rows.length - 1];
+  const percent = length => Math.round(length / GMAIL_SIGNATURE_LIMIT * 100);
+  return `    <section aria-labelledby="sizes">
+      <h2 id="sizes">Every template measured: HTML size and images</h2>
+      <p>Gmail caps signatures at ${GMAIL_SIGNATURE_LIMIT.toLocaleString('en-US')} characters, and every image is one more thing an email client can block. We exported all ${templates.length} templates with the same sample details (a headshot, three social profiles and a booking button where the template has one) and measured the result. The smallest, ${escapeHtml(smallest.template.name)}, uses ${percent(smallest.features.length)}% of Gmail's limit; the largest, ${escapeHtml(largest.template.name)}, uses ${percent(largest.features.length)}%.</p>
+      <div class="table-scroll">
+        <table class="fact-table size-table">
+          <thead><tr><th scope="col">Template</th><th scope="col">HTML characters</th><th scope="col">Share of Gmail's limit</th><th scope="col">Images</th><th scope="col">Headshot</th><th scope="col">Button</th></tr></thead>
+          <tbody>
+${rows.map(({ template, features }) => `            <tr><td><a href="${TEMPLATE_HUB_PATH}/${template.id}">${escapeHtml(template.name)}</a></td><td>${features.length.toLocaleString('en-US')}</td><td>${percent(features.length)}%</td><td>${features.images}</td><td>${features.photo ? 'Yes' : 'No'}</td><td>${features.cta ? 'Yes' : 'No'}</td></tr>`).join('\n')}
+          </tbody>
+        </table>
+      </div>
+      <p class="specimen-caption">Measured on the exported HTML when these pages were built. Your own signature will differ with longer names, extra links or a disclaimer. Images are hosted, so they do not count toward the character limit.</p>
+    </section>`;
+}
+
 function templateHubHTML(templates) {
   const url = `${SITE_URL}${TEMPLATE_HUB_PATH}`;
   const title = `${TEMPLATE_COUNT} Email Signature Templates for Gmail and Outlook`;
@@ -805,6 +879,8 @@ ${categories.map(category => `      <li><a href="#${category.id}">${escapeHtml(c
 
 ${sections}
 
+${templateSizeSectionHTML(templates)}
+
     <section aria-labelledby="choose">
       <h2 id="choose">How to choose an email signature template</h2>
       <ul class="guide-list">
@@ -828,7 +904,9 @@ ${faqSectionHTML(faqs)}`;
   return shellHTML({
     url, title, metaDesc,
     schemas: [breadcrumbSchema([{ name: 'Home', url: `${SITE_URL}/` }, { name: 'Email signature templates', url }]), itemList, faqSchema(faqs)],
-    css: TEMPLATE_CSS,
+    css: `${TEMPLATE_CSS}    .size-table th, .size-table td { width: auto; white-space: nowrap; }
+    .size-table td:first-child { white-space: normal; }
+`,
     body,
     bodyClass: 'content-page gallery-page',
   });
@@ -1186,9 +1264,11 @@ function readGeneratorComparison() {
   return entry;
 }
 
-function generatorComparisonHTML(entry) {
+function generatorComparisonHTML(entry, competitors = []) {
   const url = `${SITE_URL}/seo/${entry.slug}`;
   const others = entry.tools.filter(tool => !tool.self);
+  // Each tool with its own comparison page links to it, so the roundup works as the hub.
+  const comparisonFor = tool => competitors.find(competitor => !tool.self && tool.name.startsWith(competitor.compareLabel));
 
   const itemList = {
     '@context': 'https://schema.org',
@@ -1259,7 +1339,8 @@ ${entry.tools.map(tool => `      <article class="tool-brief${tool.self ? ' is-se
         <h3>${escapeHtml(tool.name)}</h3>
         <p><strong>Best for:</strong> ${escapeHtml(tool.bestFor)}</p>
         <p><strong>Limits:</strong> ${escapeHtml(tool.limits)}</p>
-        ${tool.self ? `<p><a href="/generator">Try it with your website</a> · <a href="/#pricing">Pricing</a></p>` : `<p class="specimen-caption">Source: ${sourceLinks(tool)}</p>`}
+        ${tool.self ? `<p><a href="/generator">Try it with your website</a> · <a href="/#pricing">Pricing</a></p>` : `${comparisonFor(tool) ? `<p><a href="/seo/${comparisonFor(tool).slug}">${escapeHtml(comparisonFor(tool).compareLabel)} compared with this generator</a></p>
+        ` : ''}<p class="specimen-caption">Source: ${sourceLinks(tool)}</p>`}
       </article>`).join('\n')}
     </section>
 
@@ -1268,7 +1349,7 @@ ${entry.tools.map(tool => `      <article class="tool-brief${tool.self ? ' is-se
       <ul class="guide-list">
 ${entry.method.map(item => `        <li>${escapeHtml(item)}</li>`).join('\n')}
       </ul>
-      <p>If a detail here is wrong or out of date, email <a href="mailto:${SITE_FACTS.contactEmail}">${SITE_FACTS.contactEmail}</a> and we will correct it. Direct comparisons: <a href="/seo/wisestamp-alternative">WiseStamp</a> and <a href="/seo/hubspot-email-signature-generator-alternative">HubSpot</a>.</p>
+      <p>If a detail here is wrong or out of date, email <a href="mailto:${SITE_FACTS.contactEmail}">${SITE_FACTS.contactEmail}</a> and we will correct it. Direct comparisons: ${competitors.map(competitor => `<a href="/seo/${competitor.slug}">${escapeHtml(competitor.compareLabel)}</a>`).join(', ')}.</p>
     </section>
 
     <div class="page-cta">
@@ -1375,14 +1456,14 @@ function generatePages() {
   }
 
   for (const competitor of competitors) {
-    writePage(`${competitor.slug}.html`, comparisonPageHTML(competitor));
+    writePage(`${competitor.slug}.html`, comparisonPageHTML(competitor, competitors));
   }
 
   for (const profession of professions) {
     writePage(`${profession.slug}.html`, professionPageHTML(profession));
   }
 
-  writePage(`${generatorComparison.slug}.html`, generatorComparisonHTML(generatorComparison));
+  writePage(`${generatorComparison.slug}.html`, generatorComparisonHTML(generatorComparison, competitors));
 
   fs.writeFileSync(path.join(__dirname, 'email-signature-templates.html'), templateHubHTML(templates), 'utf8');
   fs.writeFileSync(path.join(__dirname, 'brand-extractor.html'), brandExtractorHTML(), 'utf8');

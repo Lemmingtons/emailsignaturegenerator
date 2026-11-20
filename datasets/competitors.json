@@ -13,17 +13,51 @@
     "entryPlanAnnualUsd": 108,
     "keywords": "wisestamp alternative, wisestamp alternative one-time payment, cheaper than wisestamp, email signature generator no subscription, wisestamp pricing",
     "sources": [
-      { "label": "WiseStamp pricing", "url": "https://www.wisestamp.com/pricing/" },
-      { "label": "WiseStamp AI Designer help article", "url": "https://support.wisestamp.com/en/articles/13832414-how-to-use-the-ai-designer" }
+      {
+        "label": "WiseStamp pricing",
+        "url": "https://www.wisestamp.com/pricing/"
+      },
+      {
+        "label": "WiseStamp AI Designer help article",
+        "url": "https://support.wisestamp.com/en/articles/13832414-how-to-use-the-ai-designer"
+      }
     ],
     "rows": [
-      { "feature": "Price", "us": "{{price}} once. No renewal.", "them": "Pro+ is US$9 a month billed yearly (US$108 a year). Business plans start at US$19 a month plus US$1 per employee." },
-      { "feature": "Branding setup", "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.", "them": "Upload your logo or a sample image, or describe the design in a prompt. Colours are suggested from the uploaded image." },
-      { "feature": "Templates", "us": "All {{templates}} templates included.", "them": "Pro+ lists 3 templates, plus a template studio." },
-      { "feature": "Photo and logo hosting", "us": "Included. Images are hosted so they load in every inbox.", "them": "Included." },
-      { "feature": "Installing the signature", "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.", "them": "One-click sync to Gmail and Outlook." },
-      { "feature": "Account", "us": "None needed to build or buy.", "them": "Account required, 14-day trial." },
-      { "feature": "Team management and analytics", "us": "Not offered.", "them": "Business plans add central management, banner campaigns and analytics." }
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Pro+ is US$9 a month billed yearly (US$108 a year). Business plans start at US$19 a month plus US$1 per employee."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Upload your logo or a sample image, or describe the design in a prompt. Colours are suggested from the uploaded image."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "Pro+ lists 3 templates, plus a template studio."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Included."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "One-click sync to Gmail and Outlook."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Account required, 14-day trial."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "Not offered.",
+        "them": "Business plans add central management, banner campaigns and analytics."
+      }
     ],
     "whenTheyFit": [
       "You manage signatures for a whole company and want them pushed out from Google Workspace or Microsoft 365.",
@@ -36,9 +70,40 @@
       "You want animated photo and call-to-action effects that fall back safely in Outlook."
     ],
     "faqs": [
-      { "q": "Is there a WiseStamp alternative without a subscription?", "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal. You can build and preview with all {{templates}} templates before paying." },
-      { "q": "How much does WiseStamp cost per year?", "a": "On 10 October 2026, WiseStamp's pricing page listed Pro+ at US$9 a month billed yearly, which is US$108 a year. Business plans started at US$19 a month plus US$1 per employee, billed yearly. Check their pricing page for current figures." },
-      { "q": "Can I copy my branding from my website instead of uploading a logo?", "a": "Yes. Type your website in the generator and it reads your logo, brand colours, company name, phone number and social links from the page. You can change anything it fills in." }
+      {
+        "q": "Is there a WiseStamp alternative without a subscription?",
+        "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal. You can build and preview with all {{templates}} templates before paying."
+      },
+      {
+        "q": "How much does WiseStamp cost per year?",
+        "a": "On 10 October 2026, WiseStamp's pricing page listed Pro+ at US$9 a month billed yearly, which is US$108 a year. Business plans started at US$19 a month plus US$1 per employee, billed yearly. Check their pricing page for current figures."
+      },
+      {
+        "q": "Can I copy my branding from my website instead of uploading a logo?",
+        "a": "Yes. Type your website in the generator and it reads your logo, brand colours, company name, phone number and social links from the page. You can change anything it fills in."
+      },
+      {
+        "q": "Is WiseStamp free?",
+        "a": "On 10 October 2026 WiseStamp's pricing page offered a 14-day trial rather than a free tier. Here, building and previewing with all {{templates}} templates is free, and you pay {{price}} once to use the signature."
+      },
+      {
+        "q": "Will my signature still work if I stop paying?",
+        "a": "With a one-time purchase there is nothing to stop paying for. Your signature is plain HTML in your email client and hosted images keep loading in emails you have already sent."
+      },
+      {
+        "q": "Can I use this for a team instead of WiseStamp?",
+        "a": "For a few people, yes: buy Pro and build a signature for each person, or use the Teams and bulk page to make several at once. If you need signatures pushed centrally to every mailbox, a managed platform such as WiseStamp is the better fit."
+      }
+    ],
+    "compareLabel": "WiseStamp",
+    "linkSummary": "US$108 a year for Pro+ against {{price}} once",
+    "verdict": "Pick WiseStamp if you are rolling signatures out to a company and want them managed centrally, with banner campaigns and click analytics. For one person or a handful of people, you get the parts that matter here — your branding filled in from your website, every template and hosted images — for {{price}} once instead of US$108 every year.",
+    "switchSteps": [
+      "Open your current WiseStamp signature and note anything you want to keep, such as a disclaimer or a booking link.",
+      "Type your company website into the generator. Your logo, brand colours, company name, phone number and social links are filled in.",
+      "Pick a template, add your name, title and photo, and check the preview.",
+      "Pay {{price}} once, copy the signature and paste it into Gmail, Outlook or Apple Mail in place of the old one.",
+      "If you installed the WiseStamp browser extension or add-in, remove it so it does not insert the old signature again, then cancel the subscription before it renews."
     ]
   },
   {
@@ -54,16 +119,47 @@
     "checkedOn": "2026-10-10",
     "keywords": "hubspot email signature generator alternative, hubspot signature generator, free email signature generator alternative, email signature with logo hosting",
     "sources": [
-      { "label": "HubSpot email signature generator", "url": "https://www.hubspot.com/email-signature-generator" }
+      {
+        "label": "HubSpot email signature generator",
+        "url": "https://www.hubspot.com/email-signature-generator"
+      }
     ],
     "rows": [
-      { "feature": "Price", "us": "Free to build and preview. {{price}} once to use it.", "them": "Free." },
-      { "feature": "Branding setup", "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.", "them": "Enter details and pick colours by hand." },
-      { "feature": "Templates", "us": "{{templates}} templates.", "them": "12 templates." },
-      { "feature": "Photo and logo hosting", "us": "Included. Images are hosted so they load in every inbox.", "them": "Not included. Host the image yourself and paste its link." },
-      { "feature": "Animated photo and buttons", "us": "Included, with a still fallback for Outlook.", "them": "Not listed on its page." },
-      { "feature": "Edit later", "us": "Save a private link and reopen the signature on any device.", "them": "Not listed on its page." },
-      { "feature": "Account", "us": "None needed.", "them": "None needed." }
+      {
+        "feature": "Price",
+        "us": "Free to build and preview. {{price}} once to use it.",
+        "them": "Free."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Enter details and pick colours by hand."
+      },
+      {
+        "feature": "Templates",
+        "us": "{{templates}} templates.",
+        "them": "12 templates."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Not included. Host the image yourself and paste its link."
+      },
+      {
+        "feature": "Animated photo and buttons",
+        "us": "Included, with a still fallback for Outlook.",
+        "them": "Not listed on its page."
+      },
+      {
+        "feature": "Edit later",
+        "us": "Save a private link and reopen the signature on any device.",
+        "them": "Not listed on its page."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed.",
+        "them": "None needed."
+      }
     ],
     "whenTheyFit": [
       "You want a plain signature, already have your logo hosted, and do not want to pay anything.",
@@ -75,9 +171,903 @@
       "You want more templates, animation, or a link to edit the signature later."
     ],
     "faqs": [
-      { "q": "Is HubSpot's email signature generator really free?", "a": "Yes. On 10 October 2026 HubSpot described it as free with no registration, and you supply a hosted link for your logo." },
-      { "q": "Why would I pay for a signature generator when HubSpot's is free?", "a": "Mainly to save setup time and get images that load reliably. This generator fills in your branding from your website and hosts your logo and photo, for {{price}} once." },
-      { "q": "Can I try it before paying?", "a": "Yes. You can build and preview with all {{templates}} templates, including the website import, before paying." }
+      {
+        "q": "Is HubSpot's email signature generator really free?",
+        "a": "Yes. On 10 October 2026 HubSpot described it as free with no registration, and you supply a hosted link for your logo."
+      },
+      {
+        "q": "Why would I pay for a signature generator when HubSpot's is free?",
+        "a": "Mainly to save setup time and get images that load reliably. This generator fills in your branding from your website and hosts your logo and photo, for {{price}} once."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. You can build and preview with all {{templates}} templates, including the website import, before paying."
+      },
+      {
+        "q": "Does HubSpot host my logo?",
+        "a": "No. On 10 October 2026 HubSpot's generator asked for a link to an image you have already hosted. This generator hosts your logo and photo so they load in every inbox."
+      },
+      {
+        "q": "Do I need a HubSpot account to use either one?",
+        "a": "Neither needs an account. HubSpot's generator describes itself as free with no registration, and this one needs no account to build or buy."
+      },
+      {
+        "q": "Will a signature from either tool work in Outlook?",
+        "a": "Both produce HTML signatures you paste into your email client. This generator's templates use table-based layouts tested in Gmail, Outlook and Apple Mail, and you can check any signature with the free health check."
+      }
+    ],
+    "compareLabel": "HubSpot",
+    "linkSummary": "free with 12 templates, but you host your own logo",
+    "verdict": "Pick HubSpot's generator if you want a plain signature at no cost and your logo is already hosted somewhere. Pick this generator if you want your branding filled in from your website, your logo and photo hosted for you, more templates and a link to edit the signature later — for {{price}} once.",
+    "switchSteps": [
+      "Keep your HubSpot signature open so you can copy any wording you want to keep.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in, so you no longer need a hosted image link.",
+      "Pick one of the {{templates}} templates and add your details.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the HubSpot one.",
+      "Send yourself a test email and check it on your phone."
+    ]
+  },
+  {
+    "slug": "exclaimer-alternative",
+    "label": "Exclaimer",
+    "compareLabel": "Exclaimer",
+    "linkSummary": "a 10-mailbox minimum against {{price}} once for one person",
+    "seoTitle": "Exclaimer Alternative for One Person: {{price}} Once, No Minimum",
+    "metaDescription": "An Exclaimer alternative for individuals and small teams. No 10-user minimum and no subscription: type your website, get your branding filled in, pay {{price}} once.",
+    "heading": "Exclaimer Alternative for Individuals and Small Teams",
+    "description": "Exclaimer is built for IT teams that apply signatures to every mailbox in Microsoft 365 or Google Workspace. If you only need a signature for yourself or a few people, its 10-user minimum means paying for seats you will not use.",
+    "shortAnswer": "Exclaimer's cheapest plan, Starter, is US$0.90 per user a month billed annually with a minimum of ten users, so the smallest yearly bill is about US$108. Its free generator needs no account but does not save your logo or signature. Here you type your website, your branding is filled in, images are hosted, and you pay {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "exclaimer alternative, exclaimer alternative for small business, exclaimer pricing, email signature without minimum users, exclaimer free generator alternative",
+    "sources": [
+      {
+        "label": "Exclaimer pricing",
+        "url": "https://www.exclaimer.com/pricing"
+      },
+      {
+        "label": "Exclaimer free generator",
+        "url": "https://www.exclaimer.com/email-signature-generator"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Starter is US$0.90 per user a month billed annually, minimum ten users (about US$108 a year). Standard is US$1.45 and Pro US$1.75 per user a month."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Brand kits set up by hand: one on Starter, three on Standard, unlimited on Pro."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "One template on Starter; unlimited on Standard and Pro."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Not stated on the pricing page. The free generator does not store uploaded logos."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Applied centrally, server-side or client-side, for Microsoft 365, Google Workspace and Exchange."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Account needed for paid plans, with a 14-day trial. The free generator needs no account."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Central management and directory sync on every plan; campaigns from Standard; analytics from Pro."
+      }
+    ],
+    "whenTheyFit": [
+      "IT manages signatures for ten or more mailboxes and wants them applied automatically.",
+      "You need signatures added on the server, so they appear on every device and in replies.",
+      "You want banner campaigns, targeting rules or engagement analytics."
+    ],
+    "whenWeFit": [
+      "You need a signature for yourself or a small team and do not want a ten-seat minimum.",
+      "You would rather pay once than renew per mailbox every year.",
+      "You want your logo and colours pulled from your website instead of building a brand kit."
+    ],
+    "verdict": "Pick Exclaimer if you run IT for an organisation and need signatures applied to every mailbox from one console. For one person or a small team it is the wrong shape: the ten-user minimum puts the smallest bill at about US$108 a year, and the free generator does not save anything. Here you pay {{price}} once and keep your logo hosted.",
+    "switchSteps": [
+      "If Exclaimer applies your signature server-side, ask your admin to remove you from the signature rule first, or you will get two signatures.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template, add your details and check the preview.",
+      "Pay {{price}} once, copy the signature and paste it into your email client.",
+      "Send a test email to yourself and to a colleague to confirm only one signature appears."
+    ],
+    "faqs": [
+      {
+        "q": "Is there an Exclaimer alternative without a minimum number of users?",
+        "a": "Yes. Email Signature Generator has no minimum. One person pays {{price}} once for Pro, and you can build and preview with all {{templates}} templates before paying."
+      },
+      {
+        "q": "How much does Exclaimer cost for one person?",
+        "a": "On 20 November 2026 Exclaimer's pricing page listed Starter at US$0.90 per user a month billed annually with a minimum of ten users, so even one person pays for ten seats, about US$108 a year. Check their pricing page for current figures."
+      },
+      {
+        "q": "Is Exclaimer's free email signature generator enough?",
+        "a": "It builds and copies a signature with no account, but Exclaimer says uploaded logos and banners are not stored, so you need your own image hosting and cannot reopen the signature later. This generator hosts your images and can save an edit link."
+      },
+      {
+        "q": "Does this generator apply signatures centrally like Exclaimer?",
+        "a": "No. You paste the signature into each email client. If you need signatures applied on the server for a whole organisation, Exclaimer or a similar managed tool is the better fit."
+      },
+      {
+        "q": "Will the signature work in Outlook and Microsoft 365?",
+        "a": "Yes. The templates use table-based HTML tested in Outlook, Gmail and Apple Mail. The Outlook guide on this site covers Windows, Mac and the web."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing, including the website import, is free with no account. You pay {{price}} once when you are ready to copy the signature."
+      }
+    ]
+  },
+  {
+    "slug": "codetwo-alternative",
+    "label": "CodeTwo Email Signatures 365",
+    "compareLabel": "CodeTwo",
+    "linkSummary": "a 10-licence Microsoft 365 tool against {{price}} once",
+    "seoTitle": "CodeTwo Alternative for Individuals: {{price}} Once, No Licences",
+    "metaDescription": "A CodeTwo Email Signatures 365 alternative for one person or a small team. No 10-licence minimum and no renewal: type your website and pay {{price}} once.",
+    "heading": "CodeTwo Email Signatures 365 Alternative for Individuals",
+    "description": "CodeTwo Email Signatures 365 is a central signature manager for organisations, sold in licences with a minimum of ten. If you just need your own signature to look right, that is more tool and more seats than the job needs.",
+    "shortAnswer": "CodeTwo has one plan at US$1.22 per user a month billed yearly, with a minimum of ten licences, which is about US$146 a year at the smallest size. Here you type your website, your logo and colours are filled in, images are hosted, and you pay {{price}} once with no renewal.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "codetwo alternative, codetwo email signatures alternative, codetwo pricing, email signature for one person, microsoft 365 email signature without licences",
+    "sources": [
+      {
+        "label": "CodeTwo pricing",
+        "url": "https://www.codetwo.com/email-signatures/pricing/"
+      },
+      {
+        "label": "CodeTwo Email Signatures 365",
+        "url": "https://www.codetwo.com/email-signatures/"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "One plan: US$1.22 per user a month billed yearly or US$1.36 monthly, excluding VAT, minimum ten licences (about US$146 a year)."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Built in a browser editor, with user details and photos pulled from Entra ID (Azure AD)."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "Unlimited templates, with dozens of predesigned ones."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Images, banners and social buttons supported; hosting details not stated on the pricing page."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Applied automatically to every email app and device, including replies and forwards."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Admin panel account, 14-day free trial with no credit card."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Central management, delegated admins, scheduled campaigns and URL tagging for campaign tracking."
+      }
+    ],
+    "whenTheyFit": [
+      "You administer Microsoft 365 for ten or more people and want signatures applied without anyone pasting HTML.",
+      "You want signatures in replies and forwards on every device, managed from one place.",
+      "You need user details filled in automatically from Entra ID."
+    ],
+    "whenWeFit": [
+      "You are one person or a small team and do not want to buy ten licences.",
+      "You would rather pay once than renew a subscription.",
+      "Your brand already lives on your website and you want it filled in for you."
+    ],
+    "verdict": "Pick CodeTwo if you manage a Microsoft 365 organisation and want every signature applied centrally. For your own signature, the ten-licence minimum puts the smallest bill at about US$146 a year. Here you get a signature built from your website, with hosted images, for {{price}} once.",
+    "switchSteps": [
+      "If CodeTwo applies your signature centrally, ask your admin to exclude your mailbox so you do not get two signatures.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template and add your name, title and photo.",
+      "Pay {{price}} once, copy the signature and paste it into Outlook or your other email client.",
+      "Send a test email, including a reply, to check only one signature appears."
+    ],
+    "faqs": [
+      {
+        "q": "Is there a CodeTwo alternative for one user?",
+        "a": "Yes. Email Signature Generator has no licence minimum. One person pays {{price}} once for Pro, with all {{templates}} templates."
+      },
+      {
+        "q": "How much does CodeTwo Email Signatures 365 cost?",
+        "a": "On 20 November 2026 CodeTwo's pricing page listed one plan at US$1.22 per user a month billed yearly, or US$1.36 monthly, excluding VAT, with a minimum of ten licences. Check their pricing page for current figures."
+      },
+      {
+        "q": "Is CodeTwo free?",
+        "a": "No. CodeTwo offers a 14-day free trial with no credit card. Here, building and previewing is free and you pay {{price}} once to use the signature."
+      },
+      {
+        "q": "Will my signature appear in replies and forwards?",
+        "a": "A pasted signature appears wherever your email client inserts it; most clients let you choose a signature for replies and forwards. CodeTwo adds signatures on the server, so it covers those cases without any settings."
+      },
+      {
+        "q": "Does this generator work with Outlook?",
+        "a": "Yes. The templates use table-based HTML tested in Outlook for Windows, Mac and the web, and the Outlook guide walks through installing it."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing, including the website import, is free with no account."
+      }
+    ]
+  },
+  {
+    "slug": "signatureforemail-alternative",
+    "label": "SignatureForEmail",
+    "compareLabel": "SignatureForEmail",
+    "linkSummary": "US$30 a year for Personal against {{price}} once",
+    "seoTitle": "SignatureForEmail Alternative: {{price}} Once, Branding Filled In",
+    "metaDescription": "A SignatureForEmail alternative that builds your signature from your website. No branding link and no yearly plan: type your URL and pay {{price}} once.",
+    "heading": "SignatureForEmail Alternative: Your Brand Filled In, {{price}} Once",
+    "description": "SignatureForEmail is a long-running, low-cost signature builder. Free signatures carry a link back to its site, and hosted images and analytics come with a yearly or monthly plan. If you want your branding set up for you and one payment, there is another way.",
+    "shortAnswer": "SignatureForEmail is free for simple signatures, which include a small link to its site. Its cheapest paid plan, Personal, was US$30 a year or US$5 a month and adds image hosting. Here you type your website, your logo and colours are filled in, images are hosted with no branding link, and you pay {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "signatureforemail alternative, signature for email alternative, signatureforemail pricing, email signature without branding link",
+    "sources": [
+      {
+        "label": "SignatureForEmail pricing",
+        "url": "https://signatureforemail.com/site/pricing"
+      },
+      {
+        "label": "SignatureForEmail",
+        "url": "https://www.signatureforemail.com/"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Free for simple signatures. Personal is US$30 a year or US$5 a month; Pro US$60 a year; Business US$180 a year."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Upload your photo or logo, or link to an image hosted elsewhere, and set colours by hand."
+      },
+      {
+        "feature": "Branding link",
+        "us": "None.",
+        "them": "Free signatures include a small link to SignatureForEmail."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Included from Personal, which stores up to 20 photos."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Copy and paste, with guides for Gmail, Outlook, Apple Mail, iOS, Thunderbird and Yahoo."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Sign-up with Google, Facebook or email to save signatures."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Analytics from Personal; bulk creation and CSV import on Pro and Business."
+      }
+    ],
+    "whenTheyFit": [
+      "You want a free, plain signature and do not mind a small link back to the builder.",
+      "You want click analytics on your signature links.",
+      "You need to create many signatures from a CSV file with a Pro or Business plan."
+    ],
+    "whenWeFit": [
+      "You want your logo, colours and social links filled in from your website.",
+      "You would rather pay once than keep a yearly plan for image hosting.",
+      "You want no branding link and no account."
+    ],
+    "verdict": "Pick SignatureForEmail if a free signature with a small backlink is enough, or if you want link analytics. Pick this generator if you want your branding filled in from your website, hosted images and no branding link without renewing a plan: {{price}} once against US$30 every year for Personal.",
+    "switchSteps": [
+      "Copy any wording you want to keep from your current SignatureForEmail signature.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template and check the preview.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the old one.",
+      "Your old signature's images stay on SignatureForEmail's servers while your plan lasts, so replace the signature before the plan ends."
+    ],
+    "faqs": [
+      {
+        "q": "Is there a SignatureForEmail alternative without a subscription?",
+        "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with hosted images and no branding link. SignatureForEmail also mentions a one-off fee option on its homepage but does not list its price."
+      },
+      {
+        "q": "How much does SignatureForEmail cost?",
+        "a": "On 20 November 2026 its pricing page listed Personal at US$30 a year or US$5 a month, Pro at US$60 a year and Business at US$180 a year. Check their pricing page for current figures."
+      },
+      {
+        "q": "How do I remove the link from a free SignatureForEmail signature?",
+        "a": "SignatureForEmail removes the link on its paid plans. This generator never adds a branding link to your signature."
+      },
+      {
+        "q": "Does this generator host my logo and photo?",
+        "a": "Yes, with Pro. Images are hosted so they load in Gmail, Outlook and Apple Mail instead of arriving as attachments."
+      },
+      {
+        "q": "Do I need an account?",
+        "a": "No. You can build, preview and buy without an account. Pro access is stored in your browser, and you can copy an access link to use it on another device."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing with all {{templates}} templates, including the website import, is free."
+      }
+    ]
+  },
+  {
+    "slug": "canva-email-signature-alternative",
+    "label": "Canva",
+    "compareLabel": "Canva",
+    "linkSummary": "an image signature with no live text against real HTML",
+    "seoTitle": "Canva Email Signature Alternative: Real HTML, Not an Image",
+    "metaDescription": "Canva exports email signatures as images, so text is not selectable and links need extra work. Build a real HTML signature from your website instead, {{price}} once.",
+    "heading": "Canva Email Signature Alternative: A Real HTML Signature",
+    "description": "Canva is a great design tool, and many people try it for their email signature. The catch is the export: Canva says HTML export is not available, so your signature becomes a picture, with text that cannot be selected and links you add by hand.",
+    "shortAnswer": "Canva's email signature templates are free, but Canva's own help page says exporting as HTML is not available, so you download a PNG image and add links yourself in your email client. Here you type your website and get a table-based HTML signature with live text and working links, images hosted, for {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "canva email signature alternative, canva email signature, canva email signature html, email signature not image, clickable email signature",
+    "sources": [
+      {
+        "label": "Canva email signature help",
+        "url": "https://www.canva.com/help/email-signature/"
+      },
+      {
+        "label": "Canva email signatures",
+        "url": "https://www.canva.com/create/email-signatures/"
+      },
+      {
+        "label": "Canva pricing",
+        "url": "https://www.canva.com/pricing/"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Free templates and editor. Pro is US$18 a month for one person; a yearly option is offered."
+      },
+      {
+        "feature": "What you get",
+        "us": "An HTML signature with selectable text and working links.",
+        "them": "An image, usually a PNG. Canva says HTML export is not available."
+      },
+      {
+        "feature": "Links",
+        "us": "Every email, phone, website and social link works as soon as you paste.",
+        "them": "Links in a downloaded design may not work; you add a link to the image in your email client."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Brand Kit colours and logos you add by hand. On Canva Free, the Brand Kit holds up to three colours."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "You download the image and insert it yourself."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Insert the image into Gmail, Outlook or Yahoo, then add links by hand."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Canva account required."
+      }
+    ],
+    "whenTheyFit": [
+      "You want a highly designed graphic and do not mind that its text cannot be selected or copied.",
+      "You already have a Canva Pro subscription and design everything there."
+    ],
+    "whenWeFit": [
+      "You want people to be able to tap your phone number, email and links.",
+      "You want a signature that stays readable when images are blocked, which an image-only signature does not.",
+      "You want your logo and colours pulled from your website instead of rebuilt in a design tool."
+    ],
+    "verdict": "Use Canva for social graphics and keep it out of your signature. An image signature looks right until someone tries to tap your phone number, or their email client blocks images and shows nothing. Here you get real HTML with working links, built from your website, for {{price}} once.",
+    "switchSteps": [
+      "Note the colours and fonts from your Canva design, or skip this and let the website import fill in your brand colours.",
+      "Type your company website into the generator. Your logo, colours and social links are filled in.",
+      "Pick the template closest to your Canva design and adjust colours and fonts.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the image.",
+      "Delete the old image signature and send yourself a test email to check the links work."
+    ],
+    "faqs": [
+      {
+        "q": "Can Canva make an HTML email signature?",
+        "a": "Not at the moment. On 20 November 2026 Canva's help page said exporting as HTML is not yet available and recommended saving the signature as a PNG image."
+      },
+      {
+        "q": "Why is an image-only email signature a problem?",
+        "a": "The text cannot be selected or copied, links do not work unless you add them by hand, and many email clients block images until the reader allows them, so the signature can appear blank."
+      },
+      {
+        "q": "Is Canva free for email signatures?",
+        "a": "Canva's email signature templates and editor are free. Canva Pro, listed at US$18 a month for one person on 20 November 2026, adds more Brand Kits: five instead of one."
+      },
+      {
+        "q": "Can I keep my Canva design style?",
+        "a": "You can get close. Pick a template here, set your brand colours (or let the website import fill them in), choose from email-safe fonts and add your logo. If your Canva design has a graphic element, you can include it as an image in the signature."
+      },
+      {
+        "q": "Will the signature work in Gmail and Outlook?",
+        "a": "Yes. The templates use table-based HTML tested in Gmail, Outlook and Apple Mail, and you can check any signature with the free health check."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing with all {{templates}} templates is free, with no account."
+      }
+    ]
+  },
+  {
+    "slug": "blinq-email-signature-alternative",
+    "label": "Blinq",
+    "compareLabel": "Blinq",
+    "linkSummary": "an image signature tied to a business card against HTML",
+    "seoTitle": "Blinq Email Signature Alternative: HTML Signature, {{price}} Once",
+    "metaDescription": "Outside Business plans, Blinq signatures are images linked to a business card. Get an HTML signature built from your website instead, {{price}} once.",
+    "heading": "Blinq Email Signature Alternative",
+    "description": "Blinq is a digital business card app that also makes email signatures. Outside its Business plans, the signature is an image linked to your Blinq card rather than HTML. If the signature is what you need, you can build that directly.",
+    "shortAnswer": "Blinq's free tier includes a signature, but outside its Business plans Blinq generates an image of your signature linked to your Blinq card; HTML signatures are on Business, from five cards. Premium is US$7.33 a month billed annually, about US$88 a year. Here you type your website and get an HTML signature with working links, for {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "blinq email signature alternative, blinq email signature, blinq alternative, html email signature, digital business card email signature",
+    "sources": [
+      {
+        "label": "Blinq pricing",
+        "url": "https://www.blinq.me/pricing"
+      },
+      {
+        "label": "Blinq email signatures overview",
+        "url": "https://support.blinq.me/en/articles/76198-blinq-email-signatures-overview"
+      },
+      {
+        "label": "Blinq email signature",
+        "url": "https://blinq.me/solutions/email-signature"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Free tier includes a signature. Premium is US$7.33 a month billed annually or US$9.99 monthly; Business US$4.99 per card a month billed annually, from five cards."
+      },
+      {
+        "feature": "What you get",
+        "us": "An HTML signature with selectable text and working links.",
+        "them": "An image of your signature linked to your Blinq card. HTML signatures are on Business plans."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Upload your logo and headshot, or import details from your Blinq card."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "Not stated on its pages."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Copy and paste into Gmail and Outlook on the web and Apple Mail. Blinq notes the Gmail and Outlook mobile apps only support plain-text signatures."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Blinq account required. Trials of 7 days on Premium and Pro, 30 days on Business."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Admin-controlled signatures listed on its plans, tied to Blinq business cards."
+      }
+    ],
+    "whenTheyFit": [
+      "You mainly want a digital business card, with a signature that points to it.",
+      "Your company already uses Blinq cards and manages them centrally."
+    ],
+    "whenWeFit": [
+      "You want an HTML signature without buying a five-card Business plan.",
+      "You want your logo and colours filled in from your website.",
+      "You would rather pay once than keep a monthly or yearly plan."
+    ],
+    "verdict": "Pick Blinq if the business card is the product you want and the signature is a bonus. If the signature is what you need, an image linked to a card is a weaker result than HTML, and HTML on Blinq means a Business plan from five cards. Here you get an HTML signature built from your website for {{price}} once.",
+    "switchSteps": [
+      "Copy the details you want to keep from your Blinq card, such as your title and phone number.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template and add your details. If you want to keep your Blinq card, add its link as a button or social link.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the Blinq image.",
+      "Send yourself a test email and check that each link works."
+    ],
+    "faqs": [
+      {
+        "q": "Is a Blinq email signature an image?",
+        "a": "Outside Blinq's Business plans, yes. On 20 November 2026 Blinq's help centre said it generates an image of your signature with an embedded link to your signature card, and that HTML signatures are available on Business plans."
+      },
+      {
+        "q": "How much does Blinq cost?",
+        "a": "On 20 November 2026 Blinq listed Premium at US$9.99 a month or US$7.33 a month billed annually, and Business at US$4.99 per card a month billed annually from five cards. A free tier was also listed. Check their pricing page for current figures."
+      },
+      {
+        "q": "Can I keep my Blinq business card and use this signature?",
+        "a": "Yes. Add your Blinq card link to the signature as a button or link. The signature itself stays HTML, so the rest of your details work without the card."
+      },
+      {
+        "q": "Does the signature work on phones?",
+        "a": "A signature set in Gmail or Outlook on the web or desktop is added when you send from there. The Gmail and Outlook phone apps keep their own plain-text signature, which Blinq also notes, so set a short one there. The phone guide on this site covers iPhone and Android."
+      },
+      {
+        "q": "Do I need an account?",
+        "a": "No. You can build, preview and buy without an account."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing with all {{templates}} templates, including the website import, is free."
+      }
+    ]
+  },
+  {
+    "slug": "mysignature-alternative",
+    "label": "MySignature",
+    "compareLabel": "MySignature",
+    "linkSummary": "US$6 per user a month, billed yearly, against {{price}} once",
+    "seoTitle": "MySignature Alternative: {{price}} Once, Signature Keeps Working",
+    "metaDescription": "A MySignature alternative with no subscription. Type your website, get your logo and colours filled in, and pay {{price}} once. Nothing stops working later.",
+    "heading": "MySignature Alternative: Pay Once, Keep Your Signature",
+    "description": "MySignature is a popular signature editor with tracking and digital business cards. Its paid plans are billed per user every year, and its own pricing page says signatures stop working after you cancel. If you want one signature that stays yours, you can build it here and pay once.",
+    "shortAnswer": "MySignature's Core plan is US$6 per user a month billed yearly, which is US$72 a year for one person, and its pricing page says signatures, online cards and wallet cards stop working after you cancel. Its free tier is limited to basic signatures with MySignature branding. Here you type your website, your branding is filled in, and you pay {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "mysignature alternative, mysignature pricing, mysignature free alternative, email signature generator no subscription, mysignature cancel",
+    "sources": [
+      {
+        "label": "MySignature pricing",
+        "url": "https://mysignature.io/pricing"
+      },
+      {
+        "label": "MySignature generator",
+        "url": "https://mysignature.io/"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Core is US$6 per user a month billed yearly (US$72 a year); Connect, which adds a digital business card, is US$7. A free tier offers basic signatures."
+      },
+      {
+        "feature": "If you stop paying",
+        "us": "Nothing to stop paying. Your signature and hosted images keep working.",
+        "them": "Its pricing page says signatures, online cards and wallet cards stop working at the end of the billing cycle after you cancel."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Upload a photo and logo and set colours and fonts by hand."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "100+ editable templates."
+      },
+      {
+        "feature": "Branding on the signature",
+        "us": "None.",
+        "them": "Free signatures carry MySignature branding; paid plans remove it."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Copy and paste, with guides for Gmail, Outlook, Apple Mail, Thunderbird and Yahoo Mail. Teams on Google Workspace or Microsoft 365 get automatic updates."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Account needed to save, copy and manage a signature."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Email tracking, signature analytics, banners and team management on paid plans."
+      }
+    ],
+    "whenTheyFit": [
+      "You want email open tracking in Gmail and click analytics on your signature.",
+      "You want a digital business card and wallet card alongside your signature.",
+      "You manage a team on Google Workspace or Microsoft 365 and want updates pushed to everyone."
+    ],
+    "whenWeFit": [
+      "You want a signature that keeps working without a yearly bill.",
+      "You want your logo and colours pulled from your website instead of set up by hand.",
+      "You do not want to create an account just to copy your signature."
+    ],
+    "verdict": "Pick MySignature if you want email tracking, a digital business card or team-wide updates, and are happy to pay every year for them. If you just want a good signature, the subscription is the catch: MySignature says signatures stop working after you cancel. Here you pay {{price}} once and the signature stays yours.",
+    "switchSteps": [
+      "Copy any wording you want to keep from your MySignature signature, such as a disclaimer or banner link.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template and add your name, title and photo.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the old one.",
+      "Replace the signature before your MySignature subscription ends, because its images and links stop working after that."
+    ],
+    "faqs": [
+      {
+        "q": "Is there a MySignature alternative without a subscription?",
+        "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal. You can build and preview with all {{templates}} templates before paying."
+      },
+      {
+        "q": "How much does MySignature cost?",
+        "a": "On 20 November 2026 MySignature's pricing page listed Core at US$6 per user a month and Connect at US$7 per user a month, both billed yearly. Check their pricing page for current figures."
+      },
+      {
+        "q": "What happens to my MySignature signature if I cancel?",
+        "a": "MySignature's pricing page says you keep access until the end of your billing cycle, and after that signatures, online cards and wallet cards stop working."
+      },
+      {
+        "q": "Is MySignature free?",
+        "a": "MySignature offers a free tier with basic signatures and MySignature branding, limited to one signature per email address. Its paid plans remove the branding and add tracking and analytics."
+      },
+      {
+        "q": "Do I need an account?",
+        "a": "MySignature says you can start in its editor but need an account to save and copy your signature. Here you can build, preview and buy without an account."
+      },
+      {
+        "q": "Can I track email opens with this generator?",
+        "a": "No. This generator makes the signature only and does not track opens or clicks. If tracking matters to you, MySignature is the better fit."
+      }
+    ]
+  },
+  {
+    "slug": "newoldstamp-alternative",
+    "label": "Newoldstamp",
+    "compareLabel": "Newoldstamp",
+    "linkSummary": "US$54 a year for one signature against {{price}} once",
+    "seoTitle": "Newoldstamp Alternative: {{price}} Once, No Yearly Renewal",
+    "metaDescription": "A Newoldstamp alternative for one person or a few. No yearly plan and nothing stops working: type your website, get your branding filled in, pay {{price}} once.",
+    "heading": "Newoldstamp Alternative for Individuals",
+    "description": "Newoldstamp is a signature platform for marketing teams, with banner campaigns, analytics and Google Workspace and Microsoft 365 sync. It is priced per signature, billed annually, and its FAQ says a signature stops working when the subscription expires.",
+    "shortAnswer": "Newoldstamp's pricing slider showed one signature at US$54 billed annually, and five at US$109. Its 7-day trial does not let you use the signatures until you upgrade, and signatures stop working when the subscription expires. Here you type your website, your branding is filled in, and you pay {{price}} once.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "newoldstamp alternative, newoldstamp pricing, newoldstamp free alternative, email signature without subscription",
+    "sources": [
+      {
+        "label": "Newoldstamp pricing",
+        "url": "https://newoldstamp.com/pricing/"
+      },
+      {
+        "label": "Newoldstamp generator",
+        "url": "https://newoldstamp.com/email-signature-generator/"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Per signature, billed annually: US$54 a year for one signature, US$109 a year for five (US$1.80 per signature a month)."
+      },
+      {
+        "feature": "If you stop paying",
+        "us": "Nothing to stop paying. Your signature and hosted images keep working.",
+        "them": "Its FAQ says the signature stops working when the subscription expires or the account is deleted."
+      },
+      {
+        "feature": "Free option",
+        "us": "Build and preview every template free. {{price}} once to use it.",
+        "them": "A free version with simple templates and basic customisation. Removing branding needs a paid plan. The 7-day trial does not let you use signatures until you upgrade."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Upload your photo or logo and customise templates by hand."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Images are stored on Newoldstamp's servers."
+      },
+      {
+        "feature": "Installing the signature",
+        "us": "Copy and paste into Gmail, Outlook, Apple Mail or any other client.",
+        "them": "Copy and paste the HTML into Gmail, Outlook or Apple Mail, with integrations for Google Workspace, Microsoft 365 and Exchange."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Central management, banner campaigns and analytics."
+      }
+    ],
+    "whenTheyFit": [
+      "A marketing team wants to run banner campaigns across everyone's signature.",
+      "You want signatures synced to Google Workspace, Microsoft 365 or Exchange and managed centrally.",
+      "You want analytics on signature clicks."
+    ],
+    "whenWeFit": [
+      "You need a signature for yourself or a few people and do not want a yearly bill.",
+      "You want your logo and colours filled in from your website.",
+      "You want a signature that keeps working without a subscription."
+    ],
+    "verdict": "Pick Newoldstamp if a marketing team wants central control, banner campaigns and analytics across every signature. For one person, the subscription is the cost that matters: US$54 every year for one signature, and the signature stops working if you stop paying. Here it is {{price}} once.",
+    "switchSteps": [
+      "Copy any wording or banner link you want to keep from your Newoldstamp signature.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick a template and add your details.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the old one.",
+      "Switch before your Newoldstamp subscription expires, because the old signature stops working then."
+    ],
+    "faqs": [
+      {
+        "q": "Is there a Newoldstamp alternative without a subscription?",
+        "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal, and your signature keeps working."
+      },
+      {
+        "q": "How much does Newoldstamp cost for one person?",
+        "a": "On 20 November 2026 Newoldstamp's pricing slider showed one signature at US$54 billed annually, which is US$4.50 a month. Check their pricing page for current figures."
+      },
+      {
+        "q": "Can I use Newoldstamp signatures during the free trial?",
+        "a": "Newoldstamp's FAQ says you can create and edit signatures during the 7-day trial, but you cannot start using them until you upgrade."
+      },
+      {
+        "q": "What happens if I cancel Newoldstamp?",
+        "a": "Its FAQ says your signature works while the subscription is valid and stops working when the subscription expires or you delete your account."
+      },
+      {
+        "q": "Does this generator run banner campaigns?",
+        "a": "No. You can add a call-to-action button to your signature, but there are no rotating banner campaigns or click analytics. For those, Newoldstamp is the better fit."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing with all {{templates}} templates, including the website import, is free with no account."
+      }
+    ]
+  },
+  {
+    "slug": "gimmio-alternative",
+    "label": "Gimmio",
+    "compareLabel": "Gimmio",
+    "linkSummary": "US$7 for a week of editing, or US$28 a year, against {{price}} once",
+    "seoTitle": "Gimmio Alternative: Your Brand Filled In, {{price}} Once",
+    "metaDescription": "Gimmio sells one signature for US$7 with 7 days of premium access. Compare it with a generator that fills in your branding from your website for {{price}} once.",
+    "heading": "Gimmio Alternative: Branding From Your Website",
+    "description": "Gimmio is one of the few signature tools that also sells a single signature without a subscription. That makes it the closest match to this generator, so the differences are in what the one-off payment covers and how much setup you do yourself.",
+    "shortAnswer": "Gimmio sells a single signature for US$7 once, with unlimited access to its premium layouts and features for 7 days. Its subscription is US$4 a month or US$28 a year for one signature. Gimmio is cheaper up front. Here it costs {{price}} once: your logo, colours and links are filled in from your website, images are hosted, and Pro has no time limit.",
+    "datePublished": "2026-11-20",
+    "dateModified": "2026-11-20",
+    "checkedOn": "2026-11-20",
+    "keywords": "gimmio alternative, gimmio pricing, gimmio single signature, one-time email signature generator, email signature no subscription",
+    "sources": [
+      {
+        "label": "Gimmio pricing",
+        "url": "https://gimm.io/en_US/email-signature-generator/pricing"
+      },
+      {
+        "label": "Gimmio single purchase",
+        "url": "https://gimm.io/en_US/email-signature-generator/single-purchase"
+      },
+      {
+        "label": "Gimmio generator",
+        "url": "https://gimm.io/en_US/email-signature-generator"
+      }
+    ],
+    "rows": [
+      {
+        "feature": "Price",
+        "us": "{{price}} once. No renewal.",
+        "them": "Single signature US$7 once, with 7 days of premium access. Subscription US$4 a month or US$28 a year for one signature."
+      },
+      {
+        "feature": "How long you can edit",
+        "us": "No time limit. Pro stays unlocked, and a saved edit link reopens your signature on any device.",
+        "them": "The single purchase gives unlimited premium access for 7 days. A subscription keeps access going."
+      },
+      {
+        "feature": "Branding setup",
+        "us": "Type your website. Logo, brand colours, company name, phone and social links are filled in for you.",
+        "them": "Details are entered in its signature editor; a website import is not mentioned on its pricing or generator pages."
+      },
+      {
+        "feature": "Templates",
+        "us": "All {{templates}} templates included.",
+        "them": "55+ templates."
+      },
+      {
+        "feature": "Photo and logo hosting",
+        "us": "Included. Images are hosted so they load in every inbox.",
+        "them": "Not stated on its pricing or single-purchase pages."
+      },
+      {
+        "feature": "Account",
+        "us": "None needed to build or buy.",
+        "them": "Account needed to store signatures; its free trial charges your card when the trial ends."
+      },
+      {
+        "feature": "Team management and analytics",
+        "us": "The Teams and bulk page builds signatures for several people at once. No central admin console, banner campaigns or click analytics.",
+        "them": "Grouped signatures, bulk CSV import and sending signatures to staff on its business plans."
+      }
+    ],
+    "whenTheyFit": [
+      "You want the lowest one-off price and can finish your signature within a week.",
+      "You manage signatures for staff and want to send them out and update them in groups.",
+      "You want more than 55 templates to choose from."
+    ],
+    "whenWeFit": [
+      "You want your logo, colours and links filled in from your website.",
+      "You want to come back and edit your signature later without paying again.",
+      "You want to make more than one signature with a single purchase."
+    ],
+    "verdict": "Gimmio is cheaper: US$7 against {{price}}. Pick it if you will finish your signature in one sitting and are happy to set up your branding yourself. Pick this generator if you want your branding filled in from your website, hosted images and the ability to edit or rebuild your signature later without paying again.",
+    "switchSteps": [
+      "Copy the wording you want to keep from your Gimmio signature.",
+      "Type your company website into the generator. Your logo, brand colours and social links are filled in.",
+      "Pick the template closest to your Gimmio layout and adjust it.",
+      "Pay {{price}} once, copy the signature and paste it into your email client in place of the old one.",
+      "Save an edit link so you can update the signature later from any device."
+    ],
+    "faqs": [
+      {
+        "q": "Is there a Gimmio alternative that is also one-time?",
+        "a": "Yes. Email Signature Generator charges {{price}} once for Pro, with no renewal and no time limit on editing."
+      },
+      {
+        "q": "How much does Gimmio cost?",
+        "a": "On 20 November 2026 Gimmio listed a single signature at US$7 once, with 7 days of premium access, and a one-signature subscription at US$4 a month or US$28 a year. Check their pricing page for current figures."
+      },
+      {
+        "q": "Is Gimmio cheaper than this generator?",
+        "a": "Up front, yes: US$7 against {{price}}. The difference is what you get: here your branding is filled in from your website, images are hosted and Pro has no time limit, so you can edit or make new signatures later."
+      },
+      {
+        "q": "Is Gimmio free?",
+        "a": "Gimmio has a free version. Its pricing page says custom signatures and premium features need a subscription or a single signature purchase."
+      },
+      {
+        "q": "Can I edit my signature after I buy?",
+        "a": "Yes. Pro stays unlocked in your browser, and Save & get link stores your signature so you can reopen and edit it from any device."
+      },
+      {
+        "q": "Can I try it before paying?",
+        "a": "Yes. Building and previewing with all {{templates}} templates, including the website import, is free with no account."
+      }
     ]
   }
 ]
