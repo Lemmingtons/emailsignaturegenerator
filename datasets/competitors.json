@@ -550,7 +550,7 @@
       },
       {
         "label": "Canva pricing",
-        "url": "https://www.canva.com/pricing/"
+        "url": "https://www.canva.com/en/pricing/?countryCode=us"
       }
     ],
     "rows": [
@@ -610,7 +610,7 @@
     "faqs": [
       {
         "q": "Can Canva make an HTML email signature?",
-        "a": "Not at the moment. On 20 November 2026 Canva's help page said exporting as HTML is not yet available and recommended saving the signature as a PNG image."
+        "a": "Not for signatures. On 20 November 2026 Canva's email signature help page said exporting as HTML is not yet available and recommended saving the signature as a JPG or PNG image. Canva Email, Canva's separate tool for newsletters and campaigns, does export HTML, but that is for email bodies rather than a signature you set in Gmail or Outlook."
       },
       {
         "q": "Why is an image-only email signature a problem?",
