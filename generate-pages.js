@@ -164,7 +164,7 @@ function assertComparisonSpec(competitor) {
 function comparisonPageHTML(entry, allCompetitors = [entry]) {
   const competitor = fillFacts(entry);
   assertComparisonSpec(competitor);
-  const others = allCompetitors.filter((other) => other.slug !== competitor.slug);
+  const others = allCompetitors.filter((other) => other.slug !== competitor.slug).map(fillFacts);
 
   return pageHTML({
     url: `${SITE_URL}/seo/${competitor.slug}`,

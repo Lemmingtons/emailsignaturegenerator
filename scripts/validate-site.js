@@ -607,6 +607,7 @@ assert(landingDescription.length > 0 && landingDescription.length <= 160,
     const html = read(file);
     const main = html.match(/<main[\s\S]*<\/main>/)?.[0] || '';
     assert((html.match(/<h1[\s>]/g) || []).length === 1, `${file} must have exactly one <h1>`);
+    assert(!/\{\{\w+\}\}/.test(html), `${file} contains an unfilled {{placeholder}}`);
     assert((html.match(/"@type": "Question"/g) || []).length === 6, `${file} must carry exactly 6 FAQ questions`);
     assert((main.match(/<details class="instructions">/g) || []).length === 6, `${file} must show exactly 6 FAQs`);
     for (const heading of ['the verdict', 'is the better choice', 'When this generator is the better choice', 'How to switch from', 'Other email signature tools compared']) {
