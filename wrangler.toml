@@ -16,6 +16,12 @@ STRIPE_TEAM_PAYMENT_LINK_ID = "plink_1UPJOvBjqL7zQu5VQtr3E85s"
 binding = "UPLOADS"
 bucket_name = "email-sig-photos"
 
+# Buy-button clicks (/api/checkout-click). Cloudflare creates the dataset on
+# first write; query it with the Analytics Engine SQL API.
+[[analytics_engine_datasets]]
+binding = "CHECKOUT_CLICKS"
+dataset = "checkout_clicks"
+
 [[ratelimits]]
 name = "RATE_LIMIT"
 namespace_id = "1001"

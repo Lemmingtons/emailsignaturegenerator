@@ -334,4 +334,26 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   assert.equal((await streamed('/api/card', 20_000, { Authorization: 'Bearer ' + owner.token })).status, 413);
 }
 
+// ── Checkout clicks: allowlisted placements only, nothing identifying kept ──
+{
+  const points = [];
+  const env = makeEnv({ CHECKOUT_CLICKS: { writeDataPoint: (point) => points.push(point) } });
+  const click = (body, headers = {}) => call(env, '/api/checkout-click', { method: 'POST', headers: { 'CF-Connecting-IP': '198.51.100.9', ...headers }, body });
+  assert.equal((await click(JSON.stringify({ placement: 'generator-paywall' }), { 'User-Agent': 'Mozilla/5.0 Safari/605' })).status, 204);
+  assert.equal((await click(JSON.stringify({ placement: 'bulk-team' }), { 'User-Agent': 'HeadlessChrome/120' })).status, 204);
+  assert.deepEqual(points, [
+    { indexes: ['generator-paywall'], blobs: ['generator-paywall', 'pro', 'XX', 'browser'], doubles: [1] },
+    { indexes: ['bulk-team'], blobs: ['bulk-team', 'team', 'XX', 'automated'], doubles: [1] },
+  ], 'only placement, plan, country and a browser/automation flag are written');
+  assert.ok(!JSON.stringify(points).includes('198.51.100.9'), 'no IP is stored');
+  for (const bad of ['{"placement":"anything"}', '{"placement":"__proto__"}', 'not json', '']) {
+    assert.equal((await click(bad)).status, 400, `rejects ${bad || 'an empty body'}`);
+  }
+  assert.equal((await click('{"placement":"home-pro","pad":"' + 'x'.repeat(400) + '"}')).status, 413, 'body is capped');
+  assert.equal((await call(env, '/api/checkout-click')).status, 405, 'GET is refused');
+  assert.equal(points.length, 2, 'rejected clicks write nothing');
+  assert.ok(limiterKeys.includes('checkout-click:198.51.100.9'), 'clicks are rate limited per IP');
+  assert.equal((await call(makeEnv(), '/api/checkout-click', { method: 'POST', body: '{"placement":"home-team"}' })).status, 204, 'a missing dataset binding still answers');
+}
+
 console.log('Worker hardening checks passed: full-refund-only revocation, fragment tokens, capped payment return pages, Web Analytics CSP and HSTS, verify-token input, concurrent card cap, bounded bodies.');

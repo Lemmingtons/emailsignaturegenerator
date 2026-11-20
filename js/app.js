@@ -395,7 +395,7 @@
 
     const saveLinkBtn = document.getElementById('saveLinkBtn');
     if (saveLinkBtn) saveLinkBtn.addEventListener('click', function() { saveSignatureLink(this); });
-    if (buyProBtn) buyProBtn.addEventListener('click', () => handleProPurchase(FACTS.paymentLink));
+    if (buyProBtn) buyProBtn.addEventListener('click', () => handleProPurchase(FACTS.paymentLink, 'generator-unlock'));
 
     const teamJoinBtn = document.getElementById('teamJoinBtn');
     if (teamJoinBtn) teamJoinBtn.addEventListener('click', joinTeam);
@@ -556,7 +556,18 @@
     return false;
   }
 
-  function handleProPurchase(destination) {
+  // Tells the Worker a buy button was pressed, so Stripe sessions opened by a
+  // real click can be told apart from link previews. Never blocks checkout.
+  function trackCheckoutClick(placement) {
+    try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement })); } catch { /* best effort */ }
+  }
+
+  // A middle-click opens a checkout link in a new tab and fires auxclick, not click.
+  function trackCheckoutMiddleClick(link, placement) {
+    link.addEventListener('auxclick', event => { if (event.button === 1) trackCheckoutClick(placement); });
+  }
+
+  function handleProPurchase(destination, placement) {
     if (restoringCheckout || !destination) return;
     const brandButton = document.getElementById('brandImportBtn');
     if (brandButton && brandButton.disabled) {
@@ -568,6 +579,7 @@
       setCheckoutStatus('Your browser could not save this draft for checkout, so you may need to enter it again afterwards. Press the button again to continue, or allow site storage first. Your signature is still here.', 'error');
       return;
     }
+    trackCheckoutClick(placement);
     window.location.href = destination;
   }
 
@@ -676,7 +688,7 @@
     const buy = document.getElementById('paywallBuyBtn');
     if (buy) {
       buy.textContent = 'Unlock and copy \u2014 ' + price;
-      buy.addEventListener('click', () => handleProPurchase(FACTS.paymentLink));
+      buy.addEventListener('click', () => handleProPurchase(FACTS.paymentLink, 'generator-paywall'));
     }
     const refundEmail = document.getElementById('paywallRefundEmail');
     if (refundEmail) {
@@ -687,9 +699,10 @@
     const teamLink = document.getElementById('paywallTeamLink');
     if (teamLine && teamLink && FACTS.teamPaymentLink) {
       teamLink.href = FACTS.teamPaymentLink;
+      trackCheckoutMiddleClick(teamLink, 'generator-paywall-team');
       teamLink.addEventListener('click', function(event) {
         event.preventDefault();
-        handleProPurchase(FACTS.teamPaymentLink);
+        handleProPurchase(FACTS.teamPaymentLink, 'generator-paywall-team');
       });
       teamLine.hidden = false;
     }
@@ -3322,9 +3335,10 @@
     const link = document.getElementById('teamOfferLink');
     if (!offer || !link || !FACTS.teamPaymentLink) return;
     link.href = FACTS.teamPaymentLink;
+    trackCheckoutMiddleClick(link, 'generator-team-offer');
     link.addEventListener('click', function(event) {
       event.preventDefault();
-      handleProPurchase(FACTS.teamPaymentLink);
+      handleProPurchase(FACTS.teamPaymentLink, 'generator-team-offer');
     });
     offer.querySelectorAll('[data-team-price]').forEach(el => { el.textContent = FACTS.teamPrice.display; });
     offer.querySelectorAll('[data-team-seats]').forEach(el => { el.textContent = String(FACTS.teamSeats); });

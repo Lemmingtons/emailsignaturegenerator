@@ -1240,6 +1240,50 @@ function routeLabel(pathname) {
   return parts.slice(0, parts[1] === 'api' ? 3 : 2).join('/') || '/';
 }
 
+// ── Checkout clicks ─────────────────────────────────────────────────────────
+// Each buy button sends a beacon here before it leaves for Stripe, so abandoned
+// Stripe sessions can be told apart from link previews and crawlers, which open
+// the payment link without ever clicking a button. Only the button, its plan,
+// the visitor's country and a coarse browser/automation flag are kept: no IP,
+// no user agent, no ids. Writes go to Workers Analytics Engine and are dropped
+// silently when the binding is missing (local runs, previews).
+const CHECKOUT_CLICK_PLACEMENTS = {
+  'home-pro': 'pro',
+  'home-team': 'team',
+  'generator-unlock': 'pro',
+  'generator-paywall': 'pro',
+  'generator-paywall-team': 'team',
+  'generator-team-offer': 'team',
+  'bulk-pro': 'pro',
+  'bulk-team': 'team',
+};
+const MAX_CHECKOUT_CLICK_BODY_BYTES = 256;
+const AUTOMATED_USER_AGENT = /bot|crawl|spider|slurp|preview|headless|lighthouse|phantom|puppeteer|playwright/i;
+
+async function checkoutClickResponse(request, env) {
+  if (request.method !== 'POST') return apiError(405, 'method_not_allowed');
+  const read = await readRequestText(request, MAX_CHECKOUT_CLICK_BODY_BYTES);
+  if (read.error) return read.error;
+  let placement = '';
+  try { placement = JSON.parse(read.text).placement; } catch { /* rejected below */ }
+  const plan = typeof placement === 'string' && Object.hasOwn(CHECKOUT_CLICK_PLACEMENTS, placement)
+    ? CHECKOUT_CLICK_PLACEMENTS[placement]
+    : '';
+  if (!plan) return apiError(400, 'invalid_placement');
+  const limited = await enforceRateLimit(env, `checkout-click:${request.headers.get('CF-Connecting-IP') || 'unknown'}`);
+  if (limited) return limited;
+  if (env.CHECKOUT_CLICKS && typeof env.CHECKOUT_CLICKS.writeDataPoint === 'function') {
+    const country = (request.cf && typeof request.cf.country === 'string') ? request.cf.country : 'XX';
+    const agent = AUTOMATED_USER_AGENT.test(request.headers.get('User-Agent') || '') ? 'automated' : 'browser';
+    try {
+      env.CHECKOUT_CLICKS.writeDataPoint({ indexes: [placement], blobs: [placement, plan, country, agent], doubles: [1] });
+    } catch {
+      logServerError('checkout_click_write_failed', {});
+    }
+  }
+  return new Response(null, { status: 204 });
+}
+
 // Uptime monitors poll this. It reports only whether each dependency is wired
 // up, never a value, and touches R2 with a single cheap HEAD.
 async function healthResponse(env) {
@@ -1292,6 +1336,8 @@ async function handleRequest(request, env) {
       if (request.method !== 'GET' && request.method !== 'HEAD') return apiError(405, 'method_not_allowed');
       return healthResponse(env);
     }
+
+    if (url.pathname === '/api/checkout-click') return checkoutClickResponse(request, env);
 
     if (url.pathname === GOOGLE_SITE_VERIFICATION_FILE) {
       return new Response(`${GOOGLE_SITE_VERIFICATION_BODY}\n`, {
