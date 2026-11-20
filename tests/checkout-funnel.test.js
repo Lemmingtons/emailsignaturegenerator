@@ -35,10 +35,18 @@ assert.equal(byId.f, null, 'clicks outside the window do not match');
 
 const summary = summarise(matched);
 assert.deepEqual(summary.pro, {
-  sessions: 5, paid: 1, clicked: 3, clickedByOwner: 1, clickedAutomated: 1, noClick: 2, noClickPaid: 0, clicksWithoutSession: 1,
+  sessions: 5, paid: 1, clicked: 3, clickedByOwner: 1, clickedAutomated: 1, outside: 1, noClick: 2, noClickPaid: 0, clicksWithoutSession: 1,
 });
 assert.deepEqual(summary.team, {
-  sessions: 1, paid: 0, clicked: 1, clickedByOwner: 1, clickedAutomated: 0, noClick: 0, noClickPaid: 0, clicksWithoutSession: 0,
+  sessions: 1, paid: 0, clicked: 1, clickedByOwner: 1, clickedAutomated: 0, outside: 0, noClick: 0, noClickPaid: 0, clicksWithoutSession: 0,
 });
+
+// An AU automated click belongs to both excluded groups; it must not hide a
+// real outside visitor.
+const overlap = summarise(matchSessions(
+  [{ id: 'x', created: t, plan: 'pro', paid: false }, { id: 'y', created: t + 600_000, plan: 'pro', paid: false }],
+  [{ at: t - 1_000, plan: 'pro', country: 'AU', agent: 'automated' }, { at: t + 599_000, plan: 'pro', country: 'US', agent: 'browser' }],
+));
+assert.equal(overlap.pro.outside, 1, 'AU automated plus US browser leaves one outside visitor');
 
 console.log('Checkout funnel checks passed: windowed same-plan matching, single use of clicks, owner/automated split.');

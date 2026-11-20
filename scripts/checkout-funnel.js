@@ -59,7 +59,7 @@ function matchSessions(sessions, clicks) {
 function summarise(matched) {
   const plans = {};
   const row = (plan) => (plans[plan] ||= {
-    sessions: 0, paid: 0, clicked: 0, clickedByOwner: 0, clickedAutomated: 0, noClick: 0, noClickPaid: 0, clicksWithoutSession: 0,
+    sessions: 0, paid: 0, clicked: 0, clickedByOwner: 0, clickedAutomated: 0, outside: 0, noClick: 0, noClickPaid: 0, clicksWithoutSession: 0,
   });
   for (const entry of matched) {
     if (entry.orphanClick) { row(entry.orphanClick.plan).clicksWithoutSession++; continue; }
@@ -70,6 +70,8 @@ function summarise(matched) {
     r.clicked++;
     if (entry.click.country === OWNER_COUNTRY) r.clickedByOwner++;
     if (entry.click.agent === 'automated') r.clickedAutomated++;
+    // Counted directly: an AU automated click is in both groups above.
+    if (entry.click.country !== OWNER_COUNTRY && entry.click.agent !== 'automated') r.outside++;
   }
   return plans;
 }
@@ -89,10 +91,13 @@ async function fetchClicks(sinceMs) {
   if (!response.ok && /unknown table|does not exist/i.test(text)) return [];
   if (!response.ok) throw new Error(`Analytics Engine query failed: HTTP ${response.status} ${text.slice(0, 200)}`);
   const rows = JSON.parse(text).data || [];
-  // Sampling only starts at very high volume; expand it so counts stay right.
-  return rows.flatMap((r) => Array.from({ length: Math.max(1, Math.round(Number(r.weight) || 1)) }, () => ({
+  // A sampled row stands for clicks whose times are unknown, so it is never
+  // copied into extra clicks; the report warns that matching is approximate.
+  const clicks = rows.map((r) => ({
     at: Date.parse(`${r.timestamp.replace(' ', 'T')}Z`), placement: r.placement, plan: r.plan, country: r.country, agent: r.agent,
-  })));
+  }));
+  clicks.sampled = rows.some((r) => Number(r.weight) > 1);
+  return clicks;
 }
 
 function stripePage(sinceSec, startingAfter) {
@@ -140,8 +145,7 @@ function report(plans, sinceMs) {
     console.log(`  with a button click        ${r.clicked}  (${r.clickedByOwner} from ${OWNER_COUNTRY}, likely you; ${r.clickedAutomated} automated browser)`);
     console.log(`  with no click              ${r.noClick}  (link previews, crawlers or direct links${r.noClickPaid ? `; ${r.noClickPaid} paid` : ''})`);
     console.log(`  clicks with no session     ${r.clicksWithoutSession}  (left before Stripe loaded)`);
-    const outside = r.clicked - r.clickedByOwner - r.clickedAutomated;
-    console.log(`  real outside visitors      ${Math.max(0, outside)} clicked through\n`);
+    console.log(`  real outside visitors      ${r.outside} clicked through\n`);
   }
 }
 
@@ -151,8 +155,12 @@ async function main() {
   if (!Number.isFinite(days) || days <= 0) throw new Error('--days must be a positive number');
   const requested = Date.now() - days * 86_400_000;
   const sinceMs = Math.max(requested, TRACKING_STARTED_AT);
-  const [clicks, sessions] = await Promise.all([fetchClicks(sinceMs), fetchSessions(sinceMs, paymentLinkPlans())]);
-  report(summarise(matchSessions(sessions, clicks)), sinceMs);
+  // Clicks just before the window can still belong to sessions inside it.
+  const clicksFrom = Math.max(sinceMs - MATCH_BEFORE_MS, TRACKING_STARTED_AT);
+  const [clicks, sessions] = await Promise.all([fetchClicks(clicksFrom), fetchSessions(sinceMs, paymentLinkPlans())]);
+  const matched = matchSessions(sessions, clicks).filter((m) => !m.orphanClick || m.orphanClick.at >= sinceMs);
+  report(summarise(matched), sinceMs);
+  if (clicks.sampled) console.log('Analytics Engine sampled some clicks, so click counts and session matches are approximate.');
   if (requested < TRACKING_STARTED_AT) console.log('Click tracking started on 20 Nov 2026; earlier sessions are not included.');
 }
 
