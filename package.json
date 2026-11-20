@@ -18,6 +18,8 @@
     "test:templates": "node tests/template-output.test.js",
     "test:worker": "node tests/worker-hardening.test.mjs",
     "test:purchase-email": "node tests/purchase-email.test.mjs",
-    "monitor": "node scripts/monitor-site.js"
+    "monitor": "node scripts/monitor-site.js",
+    "test:funnel": "node tests/checkout-funnel.test.js",
+    "funnel": "node scripts/checkout-funnel.js"
   }
 }
