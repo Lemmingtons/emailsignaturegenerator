@@ -661,11 +661,16 @@
     function trackCheckoutClick(placement) {
       try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement: placement })); } catch (e) { /* best effort */ }
     }
+    // A middle-click opens Stripe in a new tab and fires auxclick, not click.
+    function trackCheckoutLink(link, placement) {
+      link.addEventListener('click', function () { trackCheckoutClick(placement); });
+      link.addEventListener('auxclick', function (event) { if (event.button === 1) trackCheckoutClick(placement); });
+    }
 
     var checkoutButton = document.getElementById('checkoutBtn');
     if (checkoutButton && window.SiteFacts) {
       checkoutButton.href = window.SiteFacts.paymentLink;
-      checkoutButton.addEventListener('click', function () { trackCheckoutClick('home-pro'); });
+      trackCheckoutLink(checkoutButton, 'home-pro');
     }
 
     // The team pack shows only once its Stripe link exists.
@@ -673,7 +678,7 @@
     if (teamOffer && window.SiteFacts && window.SiteFacts.teamPaymentLink) {
       var facts = window.SiteFacts;
       document.getElementById('teamOfferLink').href = facts.teamPaymentLink;
-      document.getElementById('teamOfferLink').addEventListener('click', function () { trackCheckoutClick('home-team'); });
+      trackCheckoutLink(document.getElementById('teamOfferLink'), 'home-team');
       teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = facts.teamPrice.display; });
       teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(facts.teamSeats); });
       teamOffer.querySelectorAll('[data-team-threshold]').forEach(function (el) { el.textContent = String(facts.bulkIndividualMaxRows + 1); });

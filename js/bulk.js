@@ -395,6 +395,11 @@
         try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement })); } catch { /* best effort */ }
       }
     });
+    // A middle-click opens Stripe in a new tab and fires auxclick, not click.
+    $(id).addEventListener('auxclick', (event) => {
+      if (event.button !== 1) return;
+      try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement })); } catch { /* best effort */ }
+    });
   });
   $('create-api-key').addEventListener('click', () => manageKey('create'));
   $('rotate-api-key').addEventListener('click', () => manageKey('rotate'));

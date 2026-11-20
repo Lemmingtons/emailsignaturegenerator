@@ -562,6 +562,11 @@
     try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement })); } catch { /* best effort */ }
   }
 
+  // A middle-click opens a checkout link in a new tab and fires auxclick, not click.
+  function trackCheckoutMiddleClick(link, placement) {
+    link.addEventListener('auxclick', event => { if (event.button === 1) trackCheckoutClick(placement); });
+  }
+
   function handleProPurchase(destination, placement) {
     if (restoringCheckout || !destination) return;
     const brandButton = document.getElementById('brandImportBtn');
@@ -694,6 +699,7 @@
     const teamLink = document.getElementById('paywallTeamLink');
     if (teamLine && teamLink && FACTS.teamPaymentLink) {
       teamLink.href = FACTS.teamPaymentLink;
+      trackCheckoutMiddleClick(teamLink, 'generator-paywall-team');
       teamLink.addEventListener('click', function(event) {
         event.preventDefault();
         handleProPurchase(FACTS.teamPaymentLink, 'generator-paywall-team');
@@ -3329,6 +3335,7 @@
     const link = document.getElementById('teamOfferLink');
     if (!offer || !link || !FACTS.teamPaymentLink) return;
     link.href = FACTS.teamPaymentLink;
+    trackCheckoutMiddleClick(link, 'generator-team-offer');
     link.addEventListener('click', function(event) {
       event.preventDefault();
       handleProPurchase(FACTS.teamPaymentLink, 'generator-team-offer');
