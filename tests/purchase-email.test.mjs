@@ -116,6 +116,7 @@ try {
   assert.equal(requests.length, 1, 'duplicate events do not resend');
   const saved = [...env.UPLOADS.store].find(([key]) => key.endsWith('/delivery.json'));
   assert.deepEqual(Object.keys(JSON.parse(saved[1].body)).sort(), ['providerId', 'sentAt', 'state']);
+  assert.deepEqual(purchaseEmailKeys(env), [saved[0]], 'purchase.json and receipt.json PII are cleaned up after durable send and stay absent on replay');
   await event(env, 'charge.refunded', { payment_intent: 'pi_email1', amount: 2900, amount_refunded: 2900, refunded: true });
   assert.equal((await redeem(env, 1)).status, 403, 'emailed link respects refunds');
 
@@ -191,29 +192,83 @@ try {
   assert.equal((await event(env, 'checkout.session.completed', session(9), {}, false)).status, 400);
   assert.equal((await event(env, 'checkout.session.completed', session(9), { livemode: true })).status, 400);
   assert.equal(requests.length, count, 'old, unrelated, unsigned or wrong-mode payments send nothing');
-  assert.equal((await receipt(env, 10, { receipt_url: 'https://pay.stripe.com.evil.example/receipts/phishing' })).status, 503);
-  assert.equal((await paid(env, 10, { customer_details: { email: 'victim@example.com\r\nBcc:other@example.com' } })).status, 503);
-  assert.equal(requests.length, count);
 
-  env = environment();
-  await receipt(env, 11, { amount: 2901 });
-  assert.equal((await paid(env, 11)).status, 503, 'mismatched receipt amount cannot be emailed');
-  assert.equal(requests.length, count);
-  assert.equal((await redeem(env, 11)).status, 302);
+  // Permanent/reconciliation errors return 200 to Stripe and log structured JSON without PII.
+  const logged = [];
+  const lastEmailError = () => [...logged].reverse().find((e) => e && e.event === 'purchase_email_error');
+  const realError = console.error;
+  console.error = (line) => { try { logged.push(JSON.parse(String(line))); } catch { logged.push(String(line)); } };
+  try {
+    // Missing receipt_url on an unrelated charge (no active entitlement) is ignored cleanly without logging.
+    assert.equal((await receipt(env, 100, { receipt_url: '' })).status, 200);
+    assert.equal(logged.length, 0, 'unrelated charge missing receipt_url logs nothing');
 
-  env = environment();
-  await receipt(env, 14, { amount: 2900, currency: 'jpy' });
-  await paid(env, 14, { amount_total: 2900, currency: 'jpy' });
-  assert.match(requests.at(-1).payload.text, /2,900 JPY/, 'zero-decimal currencies show the actual charged amount');
+    // Missing receipt_url when an active entitlement exists logs PurchaseEmailReceiptMissing and returns 200.
+    await paid(env, 101);
+    assert.equal((await receipt(env, 101, { receipt_url: '' })).status, 200);
+    assert.equal(lastEmailError()?.event, 'purchase_email_error');
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailReceiptMissing');
 
-  env = environment(); providerStatus = 503;
-  await receipt(env, 12); await paid(env, 12);
-  const delivery = [...env.UPLOADS.store].find(([key]) => key.endsWith('/delivery.json'));
-  const pending = JSON.parse(delivery[1].body); pending.firstAttemptAt = Date.now() - 24 * 60 * 60 * 1000;
-  await env.UPLOADS.put(delivery[0], JSON.stringify(pending));
-  const attempts = requests.length; providerStatus = 200;
-  assert.equal((await paid(env, 12)).status, 503);
-  assert.equal(requests.length, attempts, 'indeterminate sends beyond provider deduplication need reconciliation');
+    // Invalid/phishing receipt_url and control characters in buyer email return 200 (permanent) + structured log, no PII.
+    assert.equal((await receipt(env, 10, { receipt_url: 'https://pay.stripe.com.evil.example/receipts/phishing' })).status, 200);
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailReceiptMissing');
+    assert.equal((await paid(env, 10, { customer_details: { email: 'victim@example.com\r\nBcc:other@example.com' } })).status, 200);
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailDetailsMissing');
+    assert.equal((await paid(env, 102, { customer_details: { email: 'null\u0000byte@example.com' } })).status, 200);
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailDetailsMissing');
+    assert.ok(!JSON.stringify(logged).includes('victim@example.com') && !JSON.stringify(logged).includes('null\u0000byte'), 'structured error logs never contain buyer emails');
+    assert.equal(requests.length, count);
+
+    env = environment();
+    await receipt(env, 11, { amount: 2901 });
+    assert.equal((await paid(env, 11)).status, 200, 'mismatched receipt amount returns 200 so Stripe stops retrying');
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailReceiptMismatch');
+    assert.equal(requests.length, count);
+    assert.equal((await redeem(env, 11)).status, 302);
+
+    // Resend 4xx (except 429) is permanent (200); Resend 429 is retryable (503).
+    env = environment(); providerStatus = 422;
+    await receipt(env, 15);
+    assert.equal((await paid(env, 15)).status, 200, 'provider 422 is permanent');
+    assert.equal(lastEmailError()?.providerStatus, 422);
+    env = environment(); providerStatus = 429;
+    await receipt(env, 16);
+    assert.equal((await paid(env, 16)).status, 503, 'provider 429 is retryable');
+    assert.equal(lastEmailError()?.providerStatus, 429);
+    providerStatus = 200;
+
+    env = environment();
+    await receipt(env, 14, { amount: 2900, currency: 'jpy' });
+    await paid(env, 14, { amount_total: 2900, currency: 'jpy' });
+    assert.match(requests.at(-1).payload.text, /2,900 JPY/, 'zero-decimal currencies show the actual charged amount');
+
+    env = environment(); providerStatus = 503;
+    await receipt(env, 12); await paid(env, 12);
+    const delivery = [...env.UPLOADS.store].find(([key]) => key.endsWith('/delivery.json'));
+    const pending = JSON.parse(delivery[1].body); pending.firstAttemptAt = Date.now() - 24 * 60 * 60 * 1000;
+    await env.UPLOADS.put(delivery[0], JSON.stringify(pending));
+    const attempts = requests.length; providerStatus = 200;
+    assert.equal((await paid(env, 12)).status, 200, 'reconciliation boundary returns 200 instead of 503');
+    assert.equal(lastEmailError()?.reason, 'PurchaseEmailNeedsReconciliation');
+    assert.equal(requests.length, attempts, 'indeterminate sends beyond provider deduplication need reconciliation');
+  } finally {
+    console.error = realError;
+  }
+
+  // Sandbox mode uses the request origin when building the emailed access link.
+  {
+    const sandboxEnv = { ...environment(), SANDBOX_MODE: 'true' };
+    const sendSandbox = async (type, object) => {
+      const payload = JSON.stringify({ id: 'evt_sandboxemail', created: now, livemode: false, type, data: { object } });
+      const signature = createHmac('sha256', webhookSecret).update(`${now}.${payload}`).digest('hex');
+      return worker.default.fetch(new Request('https://sandbox.example.workers.dev/api/stripe-webhook', {
+        method: 'POST', body: payload, headers: { 'Stripe-Signature': `t=${now},v1=${signature}` },
+      }), sandboxEnv);
+    };
+    assert.equal((await sendSandbox('charge.succeeded', charge(17))).status, 200);
+    assert.equal((await sendSandbox('checkout.session.completed', session(17))).status, 200);
+    assert.ok(requests.at(-1).payload.text.includes('https://sandbox.example.workers.dev/api/verify-payment#session_id=cs_test_email17'), 'sandbox access link uses request origin');
+  }
 
   env = environment(); env.RESEND_API_KEY = '';
   const health = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/health'), env);

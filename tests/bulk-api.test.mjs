@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { inflateRawSync } from 'node:zlib';
+import { bulkApiResponse } from '../js/bulk-api.js';
 
 const worker = await import(new URL('../_worker.js', import.meta.url).href);
 const KEY_SECRET = 'local-test-secret-000000000000000000000000';
@@ -59,9 +60,17 @@ for (const authorization of ['', 'Bearer fixture.wrong', `Bearer unknown.${KEY_S
   assert.ok(!body.includes(KEY_SECRET) && !body.includes('Alice'));
 }
 for (const config of [undefined, '', '{broken', '[]', '{}', '{"fixture":"short"}', JSON.stringify({ fixture: KEY_SECRET, other: 'short' })]) {
-  const response = await post(batch, route, { ...env, BULK_API_KEYS: config });
-  assert.equal(response.status, 503);
-  assert.equal((await response.json()).code, 'bulk_not_configured');
+  // With paidAuthorizer wired (normal Worker path), missing/invalid operator config falls through to 401 (F-21).
+  const workerRes = await post(batch, route, { ...env, BULK_API_KEYS: config });
+  assert.equal(workerRes.status, 401, 'operator-shaped token falls through to paidAuthorizer when BULK_API_KEYS is unset/invalid');
+  // Without paidAuthorizer (operator-only mode), missing/invalid operator config still fails closed with 503.
+  const directRes = await bulkApiResponse(
+    new Request(`https://example.com${route}`, { method: 'POST', headers, body: JSON.stringify(batch) }),
+    { ...env, BULK_API_KEYS: config },
+    new URL(`https://example.com${route}`)
+  );
+  assert.equal(directRes.status, 503);
+  assert.equal((await directRes.json()).code, 'bulk_not_configured');
 }
 const rotated = { ...env, BULK_API_KEYS: JSON.stringify({ fixture: 'rotated-local-test-secret-0000000000000' }) };
 assert.equal((await post(batch, route, rotated)).status, 401, 'configuration changes revoke an old key immediately');

@@ -218,4 +218,134 @@ const startedAt = Date.now();
 extractBrand(hostileWrappers, 'https://slow.example.com/');
 assert.ok(Date.now() - startedAt < 1000, 'hostile whitespace runs do not stall extraction (' + (Date.now() - startedAt) + ' ms)');
 
+// ReDoS / resource exhaustion hardening (F-01, F-11).
+{
+  const t0 = Date.now();
+  const hostileCss = ':root{' + '--a'.repeat(50_000) + 'primary' + '-b'.repeat(50_000) + ':#0B5FFF;}';
+  rankColors(hostileCss, '');
+  assert.ok(Date.now() - t0 < 1000, 'hostile CSS variable names do not stall rankColors');
+
+  const cappedCss = ' '.repeat(260_000) + ':root{--brand-primary:#0B5FFF;}';
+  assert.equal(rankColors(cappedCss, '').primary, '', 'rankColors caps CSS input to 250,000 chars');
+
+  const t1 = Date.now();
+  const unclosedTags = '<script type="application/ld+json">'.repeat(2000) + '<style>'.repeat(2000) + '<title>'.repeat(2000);
+  extractBrand(unclosedTags, 'https://unclosed.example.com/');
+  assert.ok(Date.now() - t1 < 1000, 'unclosed script/style/title tags do not cause quadratic backtracking');
+
+  const hugeArrayJsonLd = `<script type="application/ld+json">[${Array.from({ length: 150_000 }, () => '1').join(',')}]</script>`;
+  assert.doesNotThrow(() => extractBrand(hugeArrayJsonLd, 'https://huge.example.com/'), 'huge JSON-LD arrays do not overflow the call stack');
+}
+
+// pickStylesheet requires exact host or subdomain match, never suffix collision.
+assert.equal(
+  pickStylesheet(['https://evil-harbour.example.com/style.css', 'https://cdn.harbour.example.com/app.css'], 'https://www.harbour.example.com/'),
+  'https://cdn.harbour.example.com/app.css',
+  'pickStylesheet ignores lookalike suffix hosts'
+);
+
+// sniffLogoType rejects HTML containing an inline <svg>, and accepts SVG with prolog/comments/DOCTYPE.
+routes = {
+  'https://svgcheck.example.com/': {
+    body: '<html><head><title>SVG Check</title><link rel="icon" type="image/svg+xml" href="/html-with-svg.svg"><link rel="apple-touch-icon" href="/real-svg.svg"></head></html>',
+    type: 'text/html',
+  },
+  'https://svgcheck.example.com/html-with-svg.svg': {
+    body: '<!doctype html><html><body><svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg></body></html>',
+    type: 'image/svg+xml',
+  },
+  'https://svgcheck.example.com/real-svg.svg': {
+    body: '<!-- comment --><?xml version="1.0"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>',
+    type: 'image/svg+xml',
+  },
+};
+r = await callBrand('svgcheck.example.com');
+assert.equal(r.status, 200);
+assert.equal(r.body.logo.type, 'image/svg+xml');
+const decodedLogo = Buffer.from(r.body.logo.dataUri.split(',')[1], 'base64').toString('utf8');
+assert.ok(!decodedLogo.includes('<!doctype html>'), 'HTML with inline <svg> is rejected as a logo');
+assert.ok(decodedLogo.includes('<!DOCTYPE svg'), 'real SVG with prolog/comments/DOCTYPE is accepted');
+
+// readCapped detects truncation when chunks sum to exact max plus trailing bytes;
+// brandFetch cancels bodies on redirects and non-2xx responses.
+{
+  let redirectCancelled = false;
+  let errorCancelled = false;
+  const savedFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const href = typeof input === 'string' ? input : input.url;
+    if (href === 'https://stream.example.com/') {
+      return new Response(new ReadableStream({
+        start(c) { c.enqueue(new TextEncoder().encode('redirecting')); },
+        cancel() { redirectCancelled = true; },
+      }), { status: 302, headers: { Location: 'https://www.stream.example.com/' } });
+    }
+    if (href === 'https://www.stream.example.com/') {
+      return new Response(
+        '<html><head><title>Stream Co</title><link rel="icon" type="image/svg+xml" href="/too-big.png"><link rel="apple-touch-icon" href="/ok.png"><link rel="stylesheet" href="/broken.css"></head></html>',
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      );
+    }
+    if (href === 'https://www.stream.example.com/broken.css') {
+      return new Response(new ReadableStream({
+        start(c) { c.enqueue(new TextEncoder().encode('server error')); },
+        cancel() { errorCancelled = true; },
+      }), { status: 500 });
+    }
+    if (href === 'https://www.stream.example.com/too-big.png') {
+      const exactMax = new Uint8Array(1_000_000);
+      exactMax.set(PNG);
+      return new Response(new ReadableStream({
+        start(c) {
+          c.enqueue(exactMax);
+          c.enqueue(new Uint8Array([1]));
+          c.close();
+        },
+      }), { status: 200, headers: { 'Content-Type': 'image/png' } });
+    }
+    if (href === 'https://www.stream.example.com/ok.png') {
+      return new Response(PNG, { status: 200, headers: { 'Content-Type': 'image/png' } });
+    }
+    return new Response('nope', { status: 404 });
+  };
+  try {
+    r = await callBrand('stream.example.com');
+  } finally {
+    globalThis.fetch = savedFetch;
+  }
+  assert.equal(r.status, 200);
+  assert.equal(r.body.logo.source, 'touch-icon', 'logo stream exceeding max by 1 byte after exact-max chunk is treated as truncated');
+  assert.equal(redirectCancelled, true, 'redirect response body is cancelled');
+  assert.equal(errorCancelled, true, 'non-2xx response body is cancelled');
+}
+
+// Cross-origin Origin headers are rejected on both POST and GET; same-origin is allowed.
+{
+  const crossPost = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' },
+    body: JSON.stringify({ url: 'harbour.example.com' }),
+  }), env);
+  assert.equal(crossPost.status, 403);
+  const crossGet = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand?url=harbour.example.com', {
+    method: 'GET',
+    headers: { Origin: 'https://evil.example' },
+  }), env);
+  assert.equal(crossGet.status, 403);
+  const nullOrigin = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand?url=harbour.example.com', {
+    method: 'GET',
+    headers: { Origin: 'null' },
+  }), env);
+  assert.equal(nullOrigin.status, 403);
+  routes = {
+    'https://sameorigin.example.com/': { body: '<html><head><title>Same Origin Co</title></head></html>', type: 'text/html' },
+  };
+  const samePost = await worker.default.fetch(new Request('https://emailsignaturegenerator.ai/api/brand', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://emailsignaturegenerator.ai' },
+    body: JSON.stringify({ url: 'sameorigin.example.com' }),
+  }), env);
+  assert.equal(samePost.status, 200);
+}
+
 console.log('Brand import checks passed');

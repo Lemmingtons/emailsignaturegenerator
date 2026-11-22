@@ -8,6 +8,14 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
   const metadata = { httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' } };
   const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
+  function emailError(code, { retryable = false, providerStatus = null } = {}) {
+    const err = new Error(code);
+    err.code = code;
+    err.retryable = retryable;
+    err.providerStatus = providerStatus;
+    return err;
+  }
+
   function configured(env) {
     if (!env.PURCHASE_EMAILS_FROM) return false;
     return Number.isFinite(Date.parse(env.PURCHASE_EMAILS_FROM)) && Boolean(env.RESEND_API_KEY) &&
@@ -22,10 +30,11 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
     } catch { return ''; }
   }
 
-  function message(draft, receipt) {
+  function message(draft, receipt, env, origin) {
     // The session id rides in the fragment, so link scanners, click trackers
     // and request logs never see it; /api/verify-payment moves it client-side.
-    const access = new URL('/api/verify-payment', facts.origin);
+    const linkOrigin = env && env.SANDBOX_MODE === 'true' && origin ? origin : facts.origin;
+    const access = new URL('/api/verify-payment', linkOrigin);
     access.hash = `session_id=${draft.sessionId}`;
     const plan = draft.plan === 'team' ? 'Team Pack' : 'Individual Pro';
     const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: draft.currency.toUpperCase() });
@@ -40,7 +49,14 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
       subject: `Your ${facts.siteName} ${plan} — receipt and access`, html, text };
   }
 
-  async function deliver(id, env) {
+  async function cleanupStaging(bucket, id) {
+    await Promise.all([
+      bucket.delete(`${prefix(id)}/purchase.json`).catch(() => {}),
+      bucket.delete(`${prefix(id)}/receipt.json`).catch(() => {}),
+    ]);
+  }
+
+  async function deliver(id, env, origin) {
     const bucket = uploadBucket(env);
     const [draft, receipt, active] = await Promise.all([
       readJsonObject(bucket, `${prefix(id)}/purchase.json`),
@@ -48,25 +64,32 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
       readJsonObject(bucket, `entitlements/active/${id}.json`),
     ]);
     if (!draft || !receipt || !active || active.status !== 'active' || await isEntitlementRevoked(bucket, id)) return;
-    if (receipt.amount !== draft.amount || receipt.currency !== draft.currency) throw new Error('PurchaseEmailReceiptMismatch');
+    if (receipt.amount !== draft.amount || receipt.currency !== draft.currency) {
+      throw emailError('PurchaseEmailReceiptMismatch', { retryable: false });
+    }
 
     const key = `${prefix(id)}/delivery.json`;
     const object = await bucket.get(key);
     const previous = object ? JSON.parse(await object.text()) : null;
-    if (previous && previous.state === 'sent') return;
+    if (previous && previous.state === 'sent') {
+      await cleanupStaging(bucket, id);
+      return;
+    }
     const now = Date.now();
-    if (previous && previous.leaseUntil > now) throw new Error('PurchaseEmailBusy');
+    if (previous && previous.leaseUntil > now) throw emailError('PurchaseEmailBusy', { retryable: true });
     // Resend remembers idempotency keys for 24 hours. An indeterminate send
     // older than that needs reconciliation, rather than risking a second email.
-    if (previous && now - previous.firstAttemptAt >= 23 * 60 * 60 * 1000) throw new Error('PurchaseEmailNeedsReconciliation');
+    if (previous && now - previous.firstAttemptAt >= 23 * 60 * 60 * 1000) {
+      throw emailError('PurchaseEmailNeedsReconciliation', { retryable: false });
+    }
     const claim = {
       state: 'pending', firstAttemptAt: previous ? previous.firstAttemptAt : now,
-      leaseUntil: now + 60_000, payload: previous ? previous.payload : message(draft, receipt),
+      leaseUntil: now + 60_000, payload: previous ? previous.payload : message(draft, receipt, env, origin),
     };
     const written = await bucket.put(key, JSON.stringify(claim), {
       ...metadata, onlyIf: object ? { etagMatches: object.etag } : { etagDoesNotMatch: '*' },
     });
-    if (!written) throw new Error('PurchaseEmailBusy');
+    if (!written) throw emailError('PurchaseEmailBusy', { retryable: true });
     try {
       if (await isEntitlementRevoked(bucket, id)) return;
       const response = await fetch('https://api.resend.com/emails', {
@@ -74,21 +97,30 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
         headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': `purchase-confirmation/${id}` },
         body: JSON.stringify(claim.payload),
       });
-      if (!response.ok) throw new Error('PurchaseEmailProviderRejected');
+      if (!response.ok) {
+        const retryable = response.status === 429 || response.status >= 500;
+        throw emailError('PurchaseEmailProviderRejected', { retryable, providerStatus: response.status });
+      }
       const result = await response.json();
-      if (typeof result.id !== 'string' || !result.id || result.id.length > 100) throw new Error('PurchaseEmailProviderResponse');
+      if (typeof result.id !== 'string' || !result.id || result.id.length > 100) {
+        throw emailError('PurchaseEmailProviderResponse', { retryable: true, providerStatus: response.status });
+      }
       const saved = await bucket.put(key, JSON.stringify({ state: 'sent', sentAt: Date.now(), providerId: result.id }), {
         ...metadata, onlyIf: { etagMatches: written.etag },
       });
-      if (!saved) throw new Error('PurchaseEmailSaveFailed');
-    } catch {
+      if (!saved) throw emailError('PurchaseEmailSaveFailed', { retryable: true });
+      await cleanupStaging(bucket, id);
+    } catch (err) {
       // Preserve the first attempt and the exact payload for safe provider retries.
-      await bucket.put(key, JSON.stringify({ ...claim, leaseUntil: 0 }), { ...metadata, onlyIf: { etagMatches: written.etag } });
-      throw new Error('PurchaseEmailDeliveryFailed');
+      try {
+        await bucket.put(key, JSON.stringify({ ...claim, leaseUntil: 0 }), { ...metadata, onlyIf: { etagMatches: written.etag } });
+      } catch { /* best-effort lease release; the 60s lease still expires */ }
+      if (err && typeof err.retryable === 'boolean') throw err;
+      throw emailError('PurchaseEmailDeliveryFailed', { retryable: true });
     }
   }
 
-  async function handle(event, env, purchase) {
+  async function handle(event, env, purchase, origin) {
     // Inert unless fully configured: no records, no provider call, no error.
     // A half-configured Worker is reported by /api/health instead.
     if (!configured(env)) return;
@@ -96,28 +128,41 @@ export function createPurchaseEmails({ facts, entitlementId, uploadBucket, readJ
     const since = Date.parse(env.PURCHASE_EMAILS_FROM);
     if (!Number.isInteger(event.created) || event.created * 1000 < since) return;
     const bucket = uploadBucket(env);
-    if (!bucket) throw new Error('PurchaseEmailStorageMissing');
+    if (!bucket) throw emailError('PurchaseEmailStorageMissing', { retryable: true });
     const object = event.data.object;
     let id;
     if (event.type === 'charge.succeeded') {
       const intent = typeof object.payment_intent === 'string' ? object.payment_intent : object.payment_intent && object.payment_intent.id;
       if (!/^pi_[A-Za-z0-9]+$/.test(intent || '') || object.paid !== true || object.status !== 'succeeded') return;
-      const url = receiptUrl(object.receipt_url);
-      if (!url || !Number.isSafeInteger(object.amount) || object.amount <= 0 || !/^[a-z]{3}$/.test(object.currency || '')) throw new Error('PurchaseEmailReceiptMissing');
       id = await entitlementId(intent, env.PRO_SIGNING_SECRET);
+      const existingDelivery = await readJsonObject(bucket, `${prefix(id)}/delivery.json`);
+      if (existingDelivery && existingDelivery.state === 'sent') return;
+      if (!object.receipt_url) {
+        const active = await readJsonObject(bucket, `entitlements/active/${id}.json`);
+        if (!active) return;
+        throw emailError('PurchaseEmailReceiptMissing', { retryable: false });
+      }
+      const url = receiptUrl(object.receipt_url);
+      if (!url || !Number.isSafeInteger(object.amount) || object.amount <= 0 || !/^[a-z]{3}$/.test(object.currency || '')) {
+        throw emailError('PurchaseEmailReceiptMissing', { retryable: false });
+      }
       await bucket.put(`${prefix(id)}/receipt.json`, JSON.stringify({ url, amount: object.amount, currency: object.currency }), { ...metadata, onlyIf: { etagDoesNotMatch: '*' } });
     } else {
       if (!purchase) return;
-      const email = object.customer_details && object.customer_details.email || object.customer_email;
-      if (typeof email !== 'string' || email.length > 254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) ||
-        !Number.isSafeInteger(object.amount_total) || object.amount_total <= 0 || !/^[a-z]{3}$/.test(object.currency || '')) throw new Error('PurchaseEmailDetailsMissing');
       id = purchase.id;
+      const existingDelivery = await readJsonObject(bucket, `${prefix(id)}/delivery.json`);
+      if (existingDelivery && existingDelivery.state === 'sent') return;
+      const email = object.customer_details && object.customer_details.email || object.customer_email;
+      if (typeof email !== 'string' || email.length > 254 || /[\u0000-\u001f\u007f]/.test(email) || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) ||
+        !Number.isSafeInteger(object.amount_total) || object.amount_total <= 0 || !/^[a-z]{3}$/.test(object.currency || '')) {
+        throw emailError('PurchaseEmailDetailsMissing', { retryable: false });
+      }
       await bucket.put(`${prefix(id)}/purchase.json`, JSON.stringify({
         email, sessionId: purchase.sessionId, plan: purchase.plan,
         amount: object.amount_total, currency: object.currency,
       }), { ...metadata, onlyIf: { etagDoesNotMatch: '*' } });
     }
-    await deliver(id, env);
+    await deliver(id, env, origin);
   }
 
   return { configured, handle };

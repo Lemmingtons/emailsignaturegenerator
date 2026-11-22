@@ -160,4 +160,22 @@ assert.equal(response.status, 404);
 assert.equal(await reason(response), 'TASK_NOT_FOUND');
 assert.equal((await call(env, message(), { path: '/a2a/unknown' })).status, 404);
 
+// A2A preserves 413 when internal MCP returns too_large.
+{
+  const realFacts = globalThis.SiteFacts;
+  let reads = 0;
+  globalThis.SiteFacts = Object.create(realFacts, {
+    bulkMaxInputBytes: {
+      get() { return ++reads === 1 ? realFacts.bulkMaxInputBytes : 10; },
+      enumerable: true,
+    },
+  });
+  try {
+    const tooBigMcp = await call(env, message('generate_signatures', { employees: employees(1) }));
+    assert.equal(tooBigMcp.status, 413, 'A2A preserves 413 when internal MCP rejects payload as too_large');
+  } finally {
+    globalThis.SiteFacts = realFacts;
+  }
+}
+
 console.log('A2A adapter tests passed: current 1.0 card/HTTP binding, paid allowance, 19/250 rows, hostile data, auth and protocol boundaries.');
