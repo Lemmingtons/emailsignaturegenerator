@@ -8,10 +8,11 @@ Current architecture notes after the May 2026 cleanup.
 - **The token travels in the URL fragment.** `/api/verify-payment` redirects to `/generator#token=…` or `/bulk#token=…`; both clients also still accept `?token=`. Fragments never reach the server, and `[observability.logs] invocation_logs = false` keeps request URLs (session ids, `?s=` capabilities) out of Workers Logs.
 - **Access recovery.** Unlocked visitors can use "Copy my access link" in the builder to restore Pro in another browser or device. The purchase confirmation email (`js/purchase-email.js`, `docs/purchase-emails.md`) carries the same kind of link but stays inert until both `PURCHASE_EMAILS_FROM` and `RESEND_API_KEY` are set.
 - **The builder keeps the buyer's work through checkout.** Every buy button in the builder saves a draft to `sessionStorage` (`checkoutDraftStorageKey`) first; the draft never holds the token and expires after 24 hours.
-- **Only a full refund revokes.** Revocation relies on Stripe's `charge.refunded` event with the charge fully refunded; `refund.*` events are ignored. The live webhook must stay subscribed to `charge.refunded` and `charge.dispute.created`.
+- **Only a full refund revokes.** Revocation relies on Stripe's `charge.refunded` event with the charge fully refunded; `refund.*` events are ignored. The live webhook must stay subscribed to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed` (restores access on `won` / `warning_closed`), and `charge.succeeded` (when purchase confirmation emails are enabled).
 - **Prices are tax-inclusive.** The site says "Prices in USD, tax included" and `npm run check` fails on wording that says tax is added. The Stripe prices must be tax-inclusive to match.
 - **Link fields accept plain domains.** `escapeUrl` in `js/templates.js` turns `acme.com` into `https://acme.com`; the builder's field validation must accept exactly what that helper renders.
 - **Published-card cap** is enforced on a per-buyer ledger object (`card-quota/…`) with a conditional R2 write.
+- **Operational runbooks** live in [`docs/runbooks.md`](docs/runbooks.md) (`PRO_SIGNING_SECRET` key-derivation warning and dual-key rotation, Stripe webhook rotation, rollback procedure, purchase-email reconciliation, and Cloudflare/R2 outage triage).
 
 ## Canonical product facts
 
@@ -23,12 +24,12 @@ Run `npm run validate` after changing pricing, counts, contact details, generate
 
 The active upload path is:
 
-- `POST /api/upload-image` with `X-Image-Type: photo` or `logo`
-- `GET /u/{opaque_upload_id}/{photo|logo}.{jpg|png|webp|gif}`
+- `POST /api/upload-image` with `X-Image-Type: photo | logo | cta | divider`
+- `GET /u/{opaque_upload_id}/{photo|logo|cta|divider}.{jpg|png|webp|gif}`
 
-The client sends the Pro JWT from `localStorage.sig_pro_token` as a bearer token. The Worker validates the token, verifies image magic bytes, stores the image in R2 under a deterministic opaque upload ID, and serves the public URL needed by email clients.
+The client sends the Pro JWT from `localStorage.sig_pro_token` as a bearer token. The Worker validates the token, verifies image magic bytes, stores the image in R2 under a deterministic opaque upload ID (per buyer, and per colleague folder `:m<member>` for team pack members so colleagues do not overwrite each other), and serves the public URL needed by email clients.
 
-Each slot holds at most one file: uploading a new extension into a slot evicts the old one, but `photo` and `logo` are independent. Size cap is 3 MB; Cloudflare's native rate-limiting binding allows 25 uploads per minute per customer.
+Uploading a new extension into a slot (for example switching from `photo.jpg` to an animated `photo.gif`) preserves other-extension siblings rather than deleting them, so already-sent emails referencing the earlier URL keep rendering. Storage remains bounded at 4 slots × 4 extensions (up to 16 small objects per user/colleague folder). Size cap is 3 MB; Cloudflare's native rate-limiting binding allows 25 uploads per minute per customer.
 
 `/api/upload` is legacy and returns `410`. Existing `/u/cus_...` image URLs remain readable for old signatures, but new uploads must not expose Stripe customer IDs.
 
@@ -36,7 +37,7 @@ Each slot holds at most one file: uploading a new extension into a slot evicts t
 
 Pro users can render the photo as an animated GIF via `js/photo-animator.js` (effects) and `js/gif-encoder.js` (a self-contained GIF89a writer). Encoding happens in the browser off the existing crop canvas — nothing is rendered server-side.
 
-Three effects: `sweep`, `ring`, `crossfade`. Output is 160x160 and typically lands between 15 KB and 100 KB.
+Six effects: `sweep`, `ring`, `drift`, `ringdraw`, `monogram`, `crossfade`. Output is 200x200 px.
 
 Three invariants that must not regress:
 
@@ -60,7 +61,7 @@ Applied to the `email-sig-photos` bucket:
 
 | Prefix | Rule |
 | --- | --- |
-| `users/` | **No expiry.** Deliberate — these images are referenced by signatures already sitting in other people's inboxes, so expiring them would break sent mail. Growth is bounded at two objects per customer by slot eviction. |
+| `users/` | **No expiry.** Deliberate — these images are referenced by signatures already sitting in other people's inboxes, so expiring them would break sent mail. Growth is bounded at up to 16 small objects per user or team-member folder (4 slots × 4 extensions, with cross-extension siblings preserved so sent mail keeps loading). |
 | `signatures/` | Expire objects after 365 days (`expire-saved-signatures-365d`). |
 | all prefixes | Abort incomplete multipart uploads after 7 days (Cloudflare's default rule, already present). |
 
@@ -84,7 +85,7 @@ Labels, accent colour and divider style are baked into the pixels, so changing a
 
 ## Social icons
 
-Email clients render neither `data:` URIs nor SVG. Icons are therefore real PNGs served by the Worker at `/i/{platform}-{hex}.png`, tinted on demand so they can follow each customer's brand colour without a file per colour.
+Email clients render neither `data:` URIs nor SVG. Icons are therefore real PNGs served by the Worker at `/i/{platform}-{hex}.png` (and `/i/{platform}-{hex}-c.png` for the `circle` style), tinted on demand so they can follow each customer's brand colour without a file per colour.
 
 - `js/png-encoder.js` writes the PNG. Deflate uses stored (uncompressed) blocks — legitimate zlib, and irrelevant at 8 KB per icon when the response is immutable and edge-cached.
 - `js/icon-masks.js` holds the alpha masks, base64, generated from `assets/icon-masks/*.bin` by `scripts/build-icon-masks.js`. The `.bin` files are the source of truth; they were rasterised from the original icon SVGs at 44px (2x the 22px display size) in a browser canvas.
@@ -93,7 +94,7 @@ Email clients render neither `data:` URIs nor SVG. Icons are therefore real PNGs
 
 Until July 2026 these were inline `data:` SVGs, so every signature showed a row of identical broken-image placeholders in Gmail and Outlook. The validator now fails if any template emits a `data:` or `.svg` image.
 
-Note: the `rounded` and `square` icon styles render identically to `mono`. The original code computed a background colour and corner radius for them and then never used either; that is unchanged, not newly broken.
+The generator offers three distinct icon styles: `mono`, `color`, and `circle` (a filled brand-colour disc with a white knockout glyph via `PngEncoder.discMask`). The old no-op `rounded` and `square` styles were removed; saved signatures referencing them fall back to `mono` in `sanitizeStyle`, and `npm run check` fails if any two offered icon styles render identically.
 
 ## Saved signatures
 
@@ -117,7 +118,7 @@ The id is 256 bits of randomness and acts as a bearer capability: anyone holding
 
 - `/email-signature-templates` and `/email-signature-templates/<id>`: one page per template. The copy for each lives in `datasets/templates.json` and must cover every template in `js/templates.js`. Adding a template without an entry fails the build, and `npm run check` fails if the gallery is out of step with `templateCount`.
 - `/seo/<job>-email-signature`: real estate agent, nurse and lawyer guides from `datasets/professions.json`. Compliance examples pull their fields and disclaimer from `datasets/compliance.json`.
-- `/seo/best-email-signature-generators`: the ten-tool comparison (nine competitors plus ours) from `datasets/generators.json`, checked 25 October 2026 against each vendor's own pages. The monthly audit should re-check it alongside `competitors.json` and update `checkedOn`. Gimmio was left out because its pricing pages returned 404.
+- `/seo/best-email-signature-generators`: the ten-tool comparison (nine competitors plus ours) from `datasets/generators.json`, checked 25 October 2026 against each vendor's own pages. The monthly audit should re-check it alongside `competitors.json` and update `checkedOn`. A dedicated Gimmio comparison page (`/seo/gimmio-alternative`) has since shipped in `datasets/competitors.json`.
 - `/brand-extractor`: a free front end for `/api/brand` (`js/brand-tool.js`).
 
 The lookup figures on the homepage, the extractor page and in llms.txt come from a timed run on 25 October 2026: 12 public sites, all answered within 2.6 s (median 0.45 s), logo found on 10 and colours on 9. Re-measure before changing them. They live in `BRAND_TEST` in `generate-pages.js` and in the homepage "How it works" section.
@@ -151,17 +152,18 @@ Production deploys come from Cloudflare Workers Builds on the Ryan@homesafeinspe
 
 1. Run `npm run generate` and `npm run sitemap`.
 2. Review `git diff` and rerun `npm run check`.
-3. Merge the PR; Workers Builds deploys it. Roll back from the Worker's Deployments tab in Cloudflare.
+3. Merge the PR; Workers Builds deploys it. Roll back from the Worker's Deployments tab in Cloudflare (see [`docs/runbooks.md`](docs/runbooks.md)).
 
 The Hello@brighterdaysoftware.com account also holds a Worker named `emailsignaturegenerator`. Confirm it serves no route before retiring it.
 
 ## Monitoring and alerts
 
-- `GET /api/health` returns `{ ok, checks }`: 200 when the assets binding, R2, signing secret, webhook secret, payment link and rate limiter are all wired up, 503 naming the failing check otherwise. It never returns a value.
-- `[observability]` in `wrangler.toml` turns on Workers Logs. Server-side failures log one JSON line with an `event` (`api_error`, `unhandled_error`, `webhook_signature_rejected`, `health_failed`) and a code, never a token, customer id or body.
+- `GET /api/health` returns `{ ok, checks }`: 200 when `assets`, `signing`, `webhook`, `stripeMode`, `paymentLink`, `rateLimit`, `storage` (R2 `HEAD health/probe`), plus `teamPaymentLink` (when live with team pack active) and `purchaseEmails` (when `PURCHASE_EMAILS_FROM` is set) are all passing; 503 naming the failing check(s) otherwise. It never returns a value.
+- `[observability]` in `wrangler.toml` turns on Workers Logs. Server-side failures log one JSON line with an `event` (`api_error`, `unhandled_error`, `webhook_signature_rejected`, `health_failed`, `purchase_email_error`, `checkout_click_write_failed`) and a code, never a token, customer id or body.
 - Uncaught exceptions return a clean 500 instead of a Cloudflare error page.
 - Email alerts: a Cloudflare notification on Worker error rate, an external uptime monitor on `/api/health`, and Stripe's webhook-failure emails to an inbox that is read.
-- `.github/workflows/monitor.yml` runs `scripts/monitor-site.js` hourly against the live site: homepage meta, canonical and structured data, `/generator`, `/api/health`, every committed sitemap URL present live, robots.txt, and `llms.txt`. It is read-only. A failed run emails the repository owner through GitHub's Actions notifications (Settings → Notifications → Actions on github.com). `tests/monitor-site.test.js` runs the same checks against the committed files in CI.
+- `.github/workflows/monitor.yml` runs `scripts/monitor-site.js` hourly against the live site: homepage meta, canonical and structured data, `/generator`, `/api/health`, every committed sitemap URL (and disk HTML page across `blog/`, `seo/`, `email-signature-templates/`) present live, robots.txt, and `llms.txt`. It is read-only. A failed run emails the repository owner through GitHub's Actions notifications (Settings → Notifications → Actions on github.com). `tests/monitor-site.test.js` runs the same checks against the committed files in CI.
+- See [`docs/runbooks.md`](docs/runbooks.md) for secret rotation, rollback, purchase-email reconciliation, and Cloudflare/R2 outage triage.
 
 ## Scheduled agent work
 

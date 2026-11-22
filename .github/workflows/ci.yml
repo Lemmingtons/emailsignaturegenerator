@@ -19,10 +19,23 @@ jobs:
           node-version: 22
       - name: Site contract and Worker behaviour
         run: npm run check
-      - name: Frontend accessibility regressions
-        run: npm run test:frontend
-      - name: Live-site monitor logic
-        run: npm run test:monitor
+      - name: Generated pages up to date
+        run: node generate-pages.js --check
+      - name: Frontend accessibility and tool scripts
+        run: |
+          npm run test:frontend
+          node tests/health-check.test.js
+          node tests/brand-tool.test.js
+          node tests/connect-agent.test.js
+          node tests/bulk-ui.test.js
+      - name: Live-site monitor, funnel, Search Console, and automation scripts
+        run: |
+          npm run test:monitor
+          npm run test:funnel
+          node tests/export-search-console.test.js
+          npm run test:automation
+      - name: Media encoders and animations
+        run: node tests/media-encoders.test.js
       - name: Brand from website
         run: npm run test:brand
       - name: Team pack

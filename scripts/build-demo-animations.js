@@ -19,10 +19,11 @@ const GifEncoder = require(path.join(root, 'js/gif-encoder.js'));
 const PhotoAnimator = require(path.join(root, 'js/photo-animator.js'));
 const SweepAnimator = require(path.join(root, 'js/sweep-animator.js'));
 
-// Smaller than the 160px the generator produces: the carousel renders photos at
-// 80-100px, and halving the pixel count roughly halves the file.
+// Smaller than the 200px the generator produces: the carousel renders photos at
+// 80-100px, and reducing the pixel count keeps the demo assets compact.
 const SIZE = 120;
 const HOLD_CS = 500; // must match ANIMATION_HOLD_CS in js/app.js
+const FONT_PATH = process.env.DEMO_FONT_PATH || '/System/Library/Fonts/Supplemental/Arial Bold.ttf';
 
 // The ring bakes its accent colour into the pixels, so it needs one file per
 // carousel accent. The shine sweep only lightens, so a single file serves every
@@ -38,19 +39,24 @@ function loadHeadshot(size) {
   const raw = path.join(root, `.wrangler/tmp-headshot-${size}.raw`);
   fs.mkdirSync(path.dirname(raw), { recursive: true });
 
-  execFileSync('python3', ['-c', `
+  try {
+    execFileSync('python3', ['-c', `
+import sys
 from PIL import Image
-im = Image.open(${JSON.stringify(source)}).convert("RGB").resize((${size}, ${size}), Image.LANCZOS)
+source, out_path, size = sys.argv[1], sys.argv[2], int(sys.argv[3])
+im = Image.open(source).convert("RGB").resize((size, size), Image.LANCZOS)
 data = im.tobytes()
 out = bytearray()
 for i in range(0, len(data), 3):
     out += data[i:i+3] + b"\\xff"
-open(${JSON.stringify(raw)}, "wb").write(bytes(out))
-`]);
+with open(out_path, "wb") as f:
+    f.write(bytes(out))
+`, source, raw, String(size)]);
 
-  const bytes = new Uint8ClampedArray(fs.readFileSync(raw));
-  fs.unlinkSync(raw);
-  return bytes;
+    return new Uint8ClampedArray(fs.readFileSync(raw));
+  } finally {
+    fs.rmSync(raw, { force: true });
+  }
 }
 
 // Mirrors CTA_STYLE and renderCtaButtonCanvas in js/app.js. If those change, this
@@ -61,17 +67,19 @@ open(${JSON.stringify(raw)}, "wb").write(bytes(out))
 const CTA = { scale: 2, paddingX: 20, paddingY: 8, radius: 5, fontSize: 12 };
 
 function renderCtaButton(label, accent) {
+  if (!fs.existsSync(FONT_PATH)) {
+    throw new Error(`Required font not found at ${FONT_PATH}. Set DEMO_FONT_PATH to a bold TrueType font.`);
+  }
   const raw = path.join(root, '.wrangler/tmp-cta.raw');
   fs.mkdirSync(path.dirname(raw), { recursive: true });
 
-  const meta = execFileSync('python3', ['-c', `
+  try {
+    const meta = execFileSync('python3', ['-c', `
+import sys
 from PIL import Image, ImageDraw, ImageFont
-label = ${JSON.stringify(label)}
-scale, pad_x, pad_y, radius, size = ${CTA.scale}, ${CTA.paddingX}, ${CTA.paddingY}, ${CTA.radius}, ${CTA.fontSize}
-try:
-    font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", size * scale)
-except Exception:
-    font = ImageFont.load_default()
+label, accent, out_path, font_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+scale, pad_x, pad_y, radius, size = (int(v) for v in sys.argv[5:10])
+font = ImageFont.truetype(font_path, size * scale)
 probe = ImageDraw.Draw(Image.new("RGB", (1, 1)))
 box = probe.textbbox((0, 0), label, font=font)
 tw, th = box[2] - box[0], box[3] - box[1]
@@ -79,20 +87,23 @@ w = tw + pad_x * 2 * scale
 h = int(size * 1.35 * scale) + pad_y * 2 * scale
 im = Image.new("RGB", (w, h), "white")
 d = ImageDraw.Draw(im)
-d.rounded_rectangle([0, 0, w - 1, h - 1], radius=radius * scale, fill=${JSON.stringify(accent)})
+d.rounded_rectangle([0, 0, w - 1, h - 1], radius=radius * scale, fill=accent)
 d.text(((w - tw) / 2 - box[0], (h - th) / 2 - box[1]), label, font=font, fill="white")
 data = im.tobytes()
 out = bytearray()
 for i in range(0, len(data), 3):
     out += data[i:i+3] + b"\\xff"
-open(${JSON.stringify(raw)}, "wb").write(bytes(out))
+with open(out_path, "wb") as f:
+    f.write(bytes(out))
 print(f"{w},{h}")
-`]).toString().trim();
+`, label, accent, raw, FONT_PATH, String(CTA.scale), String(CTA.paddingX), String(CTA.paddingY), String(CTA.radius), String(CTA.fontSize)]).toString().trim();
 
-  const [width, height] = meta.split(',').map(Number);
-  const bytes = new Uint8ClampedArray(fs.readFileSync(raw));
-  fs.unlinkSync(raw);
-  return { bytes, width, height };
+    const [width, height] = meta.split(',').map(Number);
+    const bytes = new Uint8ClampedArray(fs.readFileSync(raw));
+    return { bytes, width, height };
+  } finally {
+    fs.rmSync(raw, { force: true });
+  }
 }
 
 const photo = loadHeadshot(SIZE);
