@@ -81,27 +81,31 @@ const TEMPLATES = {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
-      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; border-top: 4px solid ${primaryColor}; padding-top: 14px;">
-  <tr>
-    ${this._photoCell(data, photoRadius)}
-    <td style="vertical-align: top;">
-      <table cellpadding="0" cellspacing="0" border="0">
-        ${this._logoRow(data, primaryColor)}
-        <tr><td style="padding-bottom: 10px;">
-          ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title || data.company ? `<br/>
-          <span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}${data.title && data.company ? ' | ' : ''}${this.escapeAttr(data.company || '')}</span>` : ''}
-        </td></tr>
-        <tr><td>
-          <table cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
-            ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a></td></tr>` : ''}
-            ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a></td></tr>` : ''}
-            ${data.website && this.escapeUrl(data.website, 'href') ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a></td></tr>` : ''}
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr><td style="border-top: 4px solid ${primaryColor}; padding-top: 14px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+      <tr>
+        ${this._photoCell(data, photoRadius)}
+        <td style="vertical-align: top;">
+          <table cellpadding="0" cellspacing="0" border="0">
+            ${this._logoRow(data, primaryColor)}
+            <tr><td style="padding-bottom: 10px;">
+              ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title || data.company ? `<br/>
+              <span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">${this.escapeAttr(data.title || '')}${data.title && data.company ? ' | ' : ''}${this.escapeAttr(data.company || '')}</span>` : ''}
+            </td></tr>
+            <tr><td>
+              <table cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
+                ${data.phone ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">P</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a></td></tr>` : ''}
+                ${data.email ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">E</td><td style="padding-bottom: 3px;"><a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a></td></tr>` : ''}
+                ${data.website && this.escapeUrl(data.website, 'href') ? `<tr><td style="padding-bottom: 3px; padding-right: 8px; color: ${primaryColor}; font-weight: 700;">W</td><td style="padding-bottom: 3px;"><a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a></td></tr>` : ''}
+              </table>
+            </td></tr>
+            ${this._socialRow(data, iconStyle, primaryColor)}
           </table>
-        </td></tr>
-        ${this._socialRow(data, iconStyle, primaryColor)}
-      </table>
-    </td>
-  </tr>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
 </table>`;
     }
   },
@@ -249,25 +253,29 @@ const TEMPLATES = {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
-      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; background: #fafafa; border-radius: 8px; padding: 16px;">
-  ${this._logoRow(data, primaryColor)}
-  <tr><td>
-    <table cellpadding="0" cellspacing="0" border="0"><tr>
-      ${this._photoCellCustom(data, photoRadius, 80, 'vertical-align: top; padding-right: 16px;')}
-      <td style="vertical-align: top;">
-        ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title ? `<br/>
-        <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title)}</span>` : ''}
-        ${data.company ? `<br/><span style="font-size: 12px; color: #6e6e73; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 1px;">${this.escapeAttr(data.company)}</span>` : ''}
-      </td>
-    </tr></table>
+      return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#fafafa" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; background: #fafafa; border-radius: 8px;">
+  <tr><td bgcolor="#fafafa" style="background-color: #fafafa; border-radius: 8px; padding: 16px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+      ${this._logoRow(data, primaryColor)}
+      <tr><td>
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          ${this._photoCellCustom(data, photoRadius, 80, 'vertical-align: top; padding-right: 16px;')}
+          <td style="vertical-align: top;">
+            ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title ? `<br/>
+            <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title)}</span>` : ''}
+            ${data.company ? `<br/><span style="font-size: 12px; color: #6e6e73; font-family: ${fontFamily}; text-transform: uppercase; letter-spacing: 1px;">${this.escapeAttr(data.company)}</span>` : ''}
+          </td>
+        </tr></table>
+      </td></tr>
+      ${data.logoUrl ? '' : `<tr><td style="padding-top: 10px; padding-bottom: 6px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
+      </td></tr>`}
+      <tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
+        ${this._contactLine(data, fontFamily)}
+      </td></tr>
+      ${this._socialRow(data, iconStyle, primaryColor)}
+    </table>
   </td></tr>
-  ${data.logoUrl ? '' : `<tr><td style="padding-top: 10px; padding-bottom: 6px;">
-    <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 2px solid ${primaryColor}; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td></tr></table>
-  </td></tr>`}
-  <tr><td style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
-    ${this._contactLine(data, fontFamily)}
-  </td></tr>
-  ${this._socialRow(data, iconStyle, primaryColor)}
 </table>`;
     }
   },
@@ -341,6 +349,7 @@ const TEMPLATES = {
     icon: '&#8212;',
     render(data, style) {
       const { primaryColor, textColor, fontFamily, iconStyle } = style;
+      const socialRow = this._socialRow(data, iconStyle, primaryColor, 0);
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr><td style="border-left: 3px solid ${primaryColor}; padding-left: 12px;">
@@ -352,7 +361,7 @@ const TEMPLATES = {
     ${this._contactEntries(data).length ? `<span style="font-size: 13px; color: #55555a; font-family: ${fontFamily};">
       ${this._contactLine(data, fontFamily, ' | ')}
     </span>` : ''}
-    <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tbody>${this._socialRow(data, iconStyle, primaryColor, 0)}</tbody></table>
+    ${socialRow ? `<table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px;"><tbody>${socialRow}</tbody></table>` : ''}
   </td></tr>
 </table>`;
     }
@@ -403,25 +412,28 @@ const TEMPLATES = {
     render(data, style) {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
+      const photo = this._photoTile(data, photoRadius, 70);
+      const socialIcons = this._socialRowLarge(data, iconStyle, primaryColor);
+      const contactLine = this._contactLine(data, fontFamily, ' \u00b7 ');
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; text-align: center;">
   ${this._logoRow(data, primaryColor, 'center')}
-  <tr><td style="padding-bottom: 10px;">
-    ${this._photoTile(data, photoRadius, 70)}
-  </td></tr>
+  ${photo ? `<tr><td style="padding-bottom: 10px;">
+    ${photo}
+  </td></tr>` : ''}
   <tr><td style="padding-bottom: 4px;">
     ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}
   </td></tr>
-  <tr><td style="padding-bottom: 8px;">
+  ${data.title || data.company ? `<tr><td style="padding-bottom: 8px;">
     ${data.title ? `<span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.title)}</span>` : ''}
     ${data.company ? `${data.title ? '<br/>' : ''}<span style="font-size: 12px; color: #6e6e73; font-family: ${fontFamily};">${this.escapeAttr(data.company)}</span>` : ''}
-  </td></tr>
-  <tr><td style="padding-bottom: 6px;">
-    ${this._socialRowLarge(data, iconStyle, primaryColor)}
-  </td></tr>
-  <tr><td style="font-size: 12px; color: #6e6e73; font-family: ${fontFamily};">
-    ${this._contactLine(data, fontFamily, ' \u00b7 ')}
-  </td></tr>
+  </td></tr>` : ''}
+  ${socialIcons ? `<tr><td style="padding-bottom: 6px;">
+    ${socialIcons}
+  </td></tr>` : ''}
+  ${contactLine ? `<tr><td style="font-size: 12px; color: #6e6e73; font-family: ${fontFamily};">
+    ${contactLine}
+  </td></tr>` : ''}
 </table>`;
     }
   },
@@ -479,10 +491,12 @@ const TEMPLATES = {
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
       const cta = data.ctaText || ctaText || 'Learn More';
       const ctaLink = this.escapeUrl(data.ctaUrl || ctaUrl, 'href');
+      const photoCell = this._photoCell(data, photoRadius);
+      const hasPhoto = !!photoCell;
 
       return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
   <tr>
-    ${this._photoCell(data, photoRadius)}
+    ${photoCell}
     <td style="vertical-align: top;">
       <table cellpadding="0" cellspacing="0" border="0">
         ${this._logoRow(data, primaryColor)}
@@ -498,7 +512,7 @@ const TEMPLATES = {
       </table>
     </td>
   </tr>
-  ${ctaLink ? `<tr><td colspan="2" style="padding-top: 12px;">
+  ${ctaLink ? `<tr><td colspan="${hasPhoto ? 2 : 1}" style="padding-top: 12px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: ${primaryColor}; border-radius: 6px;">
       <tr><td bgcolor="${primaryColor}" style="padding: 12px 18px; color: #fff; font-size: 13px; font-family: ${fontFamily}; background-color: ${primaryColor}; border-radius: 6px;">
         <a href="${ctaLink}" target="_blank" style="color: #fff; text-decoration: none; font-weight: 700; font-size: 13px; font-family: ${fontFamily};">${this.escapeAttr(cta)} &rarr;</a>
@@ -601,24 +615,28 @@ const TEMPLATES = {
       const { primaryColor, textColor, fontFamily, photoShape, iconStyle } = style;
       const photoRadius = photoShape === 'circle' ? '50%' : photoShape === 'rounded' ? '10px' : '0';
 
-      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5; border-left: 5px solid ${primaryColor}; padding-left: 14px;">
-  ${this._logoRow(data, primaryColor, 'left')}
-  <tr><td>
-    <table cellpadding="0" cellspacing="0" border="0"><tr>
-      ${this._photoCellCustom(data, photoRadius, 65, 'vertical-align: middle; padding-right: 14px;')}
-      <td style="vertical-align: middle;">
-        ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title ? `<br/>
-        <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 700;">${this.escapeAttr(data.title)}</span>` : ''}
-        ${data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.company)}</span>` : ''}
-      </td>
-    </tr></table>
+      return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+  <tr><td style="border-left: 5px solid ${primaryColor}; padding-left: 14px;">
+    <table cellpadding="0" cellspacing="0" border="0" style="font-family: ${fontFamily}; font-size: 13px; color: ${textColor}; line-height: 1.5;">
+      ${this._logoRow(data, primaryColor, 'left')}
+      <tr><td>
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          ${this._photoCellCustom(data, photoRadius, 65, 'vertical-align: middle; padding-right: 14px;')}
+          <td style="vertical-align: middle;">
+            ${this._nameHtml(data, this.escapeAttr(data.fullName), `font-size: 16px; color: ${textColor}; font-family: ${fontFamily};`)}${data.title ? `<br/>
+            <span style="font-size: 13px; color: ${primaryColor}; font-family: ${fontFamily}; font-weight: 700;">${this.escapeAttr(data.title)}</span>` : ''}
+            ${data.company ? `<br/><span style="font-size: 13px; color: #55555a; font-family: ${fontFamily}; font-weight: 600;">${this.escapeAttr(data.company)}</span>` : ''}
+          </td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding-top: 8px; font-size: 13px; color: #55555a; font-family: ${fontFamily};">
+        ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a><br/>` : ''}
+        ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>` : ''}
+        ${data.website && this.escapeUrl(data.website, 'href') ? `${data.email ? '<br/>' : ''}<strong style="color: ${textColor};">Web:</strong> <a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>` : ''}
+      </td></tr>
+      ${this._socialRow(data, iconStyle, primaryColor, 8)}
+    </table>
   </td></tr>
-  <tr><td style="padding-top: 8px; font-size: 13px; color: #55555a; font-family: ${fontFamily};">
-    ${data.phone ? `<strong style="color: ${textColor};">Call:</strong> <a href="${this.escapeAttr('tel:' + String(data.phone).replace(/\s/g,''))}" style="color: #55555a; text-decoration: none; white-space: nowrap; font-family: ${fontFamily};">${this.escapeAttr(data.phone)}</a><br/>` : ''}
-    ${data.email ? `<strong style="color: ${textColor};">Email:</strong> <a href="${this.escapeAttr('mailto:' + String(data.email))}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(data.email)}</a>` : ''}
-    ${data.website && this.escapeUrl(data.website, 'href') ? `${data.email ? '<br/>' : ''}<strong style="color: ${textColor};">Web:</strong> <a href="${this.escapeUrl(data.website, 'href')}" style="color: #55555a; text-decoration: none; font-family: ${fontFamily};">${this.escapeAttr(String(data.website).replace(/^https?:\/\//, ''))}</a>` : ''}
-  </td></tr>
-  ${this._socialRow(data, iconStyle, primaryColor, 8)}
 </table>`;
     }
   },
@@ -723,6 +741,10 @@ const TEMPLATES = {
       const ctaLink = this.escapeUrl(data.ctaUrl || style.ctaUrl, 'href');
       const role = [data.title, data.company].filter(Boolean).map(v => this.escapeAttr(v)).join(', ');
       const photo = this._photoTile(data, photoRadius, 64);
+      const socialIcons = this._socialRowLarge(data, iconStyle, primaryColor)
+        .replace(/width="30" height="30"/g, 'width="18" height="18"')
+        .replace(/width: 30px; height: 30px/g, 'width: 18px; height: 18px');
+      const hasFooter = !!(socialIcons || (cta && ctaLink));
 
       // border-radius is ignored by classic Outlook, which renders this as a plain
       // square-cornered card. That degrades cleanly, so it is left in for the
@@ -745,17 +767,17 @@ const TEMPLATES = {
           </table>
         </td>
       </tr>
-      <tr><td colspan="${photo ? 3 : 1}" style="padding-top: 16px;">
+      ${hasFooter ? `<tr><td colspan="${photo ? 3 : 1}" style="padding-top: 16px;">
         <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
           <td style="border-top: 1px solid #e6e8eb; font-size: 1px; line-height: 1px; height: 1px;">&nbsp;</td>
         </tr></table>
       </td></tr>
       <tr><td colspan="${photo ? 3 : 1}" style="padding-top: 14px;">
         <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-          <td style="vertical-align: middle;">${this._socialRowLarge(data, iconStyle, primaryColor).replace(/width="30" height="30"/g, 'width="18" height="18"').replace(/width: 30px; height: 30px/g, 'width: 18px; height: 18px')}</td>
-          ${cta && ctaLink ? `<td align="right" style="vertical-align: middle;"><a href="${ctaLink}" target="_blank" style="font-size: 12px; font-weight: 700; color: ${accent}; text-decoration: none; letter-spacing: 0.3px; font-family: ${fontFamily};">${this.escapeAttr(cta)} &rarr;</a></td>` : ''}
+          ${socialIcons ? `<td style="vertical-align: middle;">${socialIcons}</td>` : ''}
+          ${cta && ctaLink ? `<td align="${socialIcons ? 'right' : 'left'}" style="vertical-align: middle;"><a href="${ctaLink}" target="_blank" style="font-size: 12px; font-weight: 700; color: ${accent}; text-decoration: none; letter-spacing: 0.3px; font-family: ${fontFamily};">${this.escapeAttr(cta)} &rarr;</a></td>` : ''}
         </tr></table>
-      </td></tr>
+      </td></tr>` : ''}
     </table>
   </td></tr>
 </table>`;
@@ -781,10 +803,10 @@ const TEMPLATES = {
 
       return `<table cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color: #ffffff; font-family: ${fontFamily}; font-size: 13px; color: ${ink}; line-height: 1.5; border-collapse: collapse;">
   <tr>
-    ${hasPhoto ? `<td width="72" style="width: 72px; vertical-align: top;">
-      <table cellpadding="0" cellspacing="0" border="0" width="72" height="90" style="width: 72px; height: 90px; border-collapse: collapse;"><tr>
-        <td width="72" height="90" bgcolor="#eef1f4" align="center" style="width: 72px; height: 90px; background-color: #eef1f4;">
-          <img src="${this.escapeUrl(data.photoUrl, 'src')}" alt="${initials}" width="72" height="90" style="display: block; width: 72px; height: 90px; object-fit: cover; border: 0; font-family: ${fontFamily}; font-size: 24px; font-weight: 700; color: #6e6e73; text-align: center; line-height: 90px;" />
+    ${hasPhoto ? `<td width="80" style="width: 80px; vertical-align: top;">
+      <table cellpadding="0" cellspacing="0" border="0" width="80" height="80" style="width: 80px; height: 80px; border-collapse: collapse;"><tr>
+        <td width="80" height="80" bgcolor="#eef1f4" align="center" style="width: 80px; height: 80px; background-color: #eef1f4;">
+          <img src="${this.escapeUrl(data.photoUrl, 'src')}" alt="${initials}" width="80" height="80" style="display: block; width: 80px; height: 80px; object-fit: cover; border: 0; font-family: ${fontFamily}; font-size: 24px; font-weight: 700; color: #6e6e73; text-align: center; line-height: 80px;" />
         </td>
       </tr></table>
     </td>
@@ -930,7 +952,7 @@ const TEMPLATES = {
       ${socials ? `<table cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-top: 10px;">${socials}</td></tr></table>` : ''}
     </td>
   </tr>
-  ${logo ? `<tr><td colspan="2" style="padding-top: 16px;">
+  ${logo ? `<tr><td colspan="${photo ? 2 : 1}" style="padding-top: 16px;">
     <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td style="border-top: 1px solid #e5e5ea; padding-top: 12px;">${logo}</td></tr></table>
   </td></tr>` : ''}
 </table>`;
@@ -1068,38 +1090,77 @@ const _helpers = {
       .replace(/>/g, '&gt;');
   },
 
-  // Blocks javascript:, vbscript:, file: schemes in href/src attributes.
-  // For src context, also permits data:image/* (used by logo/photo file upload
-  // previews) while rejecting data:text/html and other dangerous data: types.
-  // Returns an HTML-escaped URL or '' when the input is unsafe.
-  //
-  // In href context a value typed without a scheme (`acme.com`,
-  // `linkedin.com/in/jane`) gains `https://`: left alone it is a relative link,
-  // which a recipient's mail client resolves against nothing. Values that can
-  // only ever be relative (`/about`, `#top`) cannot be made to work and return
-  // ''. Image sources pass through unchanged, so hosted image URLs are emitted
-  // exactly as stored.
+  // Allowlist-based URL sanitiser for href/src attributes.
+  // - href: allows https:, http:, mailto:, tel:, protocol-relative //host, and
+  //   bare public domains (prefixed with https://). Rejects everything else
+  //   (javascript:, vbscript:, file:, data:, blob:, ftp:, ms-msdt:, intent:, etc.).
+  // - src: allows https:, http:, and raster data:image/(png|jpeg|webp|gif);base64,
+  //   (rejecting data:image/svg+xml and all other schemes).
+  // Strips ASCII control characters from the emitted URL as well as the check copy.
   escapeUrl(url, context) {
-    const raw = String(url == null ? '' : url).trim();
-    if (!raw) return '';
-    // Browsers drop tabs, newlines and other control characters when parsing a
-    // scheme, so `java\tscript:` still runs. Check the scheme without them.
-    const lower = raw.replace(/[\u0000-\u0020]/g, '').toLowerCase();
-    if (/^(javascript|vbscript|file):/.test(lower)) return '';
-    if (lower.startsWith('data:')) {
-      if (context !== 'src' || !lower.startsWith('data:image/')) return '';
+    const cleaned = String(url == null ? '' : url).replace(/[\u0000-\u001f\u007f]/g, '').trim();
+    if (!cleaned) return '';
+    // Browsers drop whitespace/control characters when parsing a scheme, so
+    // check the scheme on a space-stripped copy too.
+    const compact = cleaned.replace(/[\u0000-\u0020]/g, '').toLowerCase();
+
+    if (context === 'src') {
+      if (/^https?:\/\//i.test(cleaned)) {
+        try {
+          const parsed = new URL(cleaned);
+          if ((parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.hostname) {
+            return this.escapeAttr(cleaned);
+          }
+        } catch {}
+        return '';
+      }
+      if (/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(cleaned)) {
+        return this.escapeAttr(cleaned);
+      }
+      return '';
     }
-    if (context === 'href') return this._absoluteHref(raw, lower);
-    return this.escapeAttr(raw);
+
+    if (context === 'href') return this._absoluteHref(cleaned, compact);
+
+    if (/^https?:\/\//i.test(cleaned)) {
+      try {
+        const parsed = new URL(cleaned);
+        if ((parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.hostname) {
+          return this.escapeAttr(cleaned);
+        }
+      } catch {}
+    }
+    return '';
   },
 
   // A scheme is letters before a colon with no dot in them, so `mailto:`,
-  // `tel:` and `https:` are kept while `acme.com:8080` is read as host and port.
-  _absoluteHref(raw, lower) {
-    if (lower.startsWith('//')) return this.escapeAttr('https:' + raw);
-    const scheme = /^([a-z][a-z0-9+.-]*):/.exec(lower);
-    if (scheme && !scheme[1].includes('.')) return this.escapeAttr(raw);
-    if (/^[/?#.\\@]/.test(lower)) return '';
+  // `tel:` and `https:` are checked against the explicit allowlist while
+  // `acme.com:8080` is read as host and port.
+  _absoluteHref(raw, compact) {
+    if (compact.startsWith('//')) {
+      try {
+        const parsed = new URL('https:' + raw);
+        if (!parsed.hostname.includes('.') || parsed.username || parsed.password) return '';
+      } catch { return ''; }
+      return this.escapeAttr('https:' + raw);
+    }
+    const scheme = /^([a-z][a-z0-9+.-]*):/.exec(compact);
+    if (scheme && !scheme[1].includes('.')) {
+      const proto = scheme[1];
+      if (proto === 'https' || proto === 'http') {
+        if (!/^https?:\/\//i.test(raw)) return '';
+        try {
+          const parsed = new URL(raw);
+          if (!parsed.hostname) return '';
+        } catch { return ''; }
+        return this.escapeAttr(raw);
+      }
+      if ((proto === 'mailto' || proto === 'tel') && /^(?:mailto|tel):/i.test(raw)) {
+        return this.escapeAttr(raw);
+      }
+      return '';
+    }
+    if (/^[/?#.\\@]/.test(compact)) return '';
     try {
       const parsed = new URL('https://' + raw);
       if (!parsed.hostname.includes('.') || parsed.username || parsed.password) return '';
@@ -1187,9 +1248,10 @@ const _helpers = {
       .split(/\s+/)
       .filter(Boolean);
     if (!words.length) return '·';
+    const first = word => Array.from(word)[0] || '';
     const letters = words.length === 1
-      ? words[0].slice(0, 1)
-      : words[0].slice(0, 1) + words[words.length - 1].slice(0, 1);
+      ? first(words[0])
+      : first(words[0]) + first(words[words.length - 1]);
     return letters.toUpperCase();
   },
 

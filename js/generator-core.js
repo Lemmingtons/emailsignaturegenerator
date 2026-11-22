@@ -169,6 +169,14 @@
     return { fields: filledFields, disclaimer };
   }
 
+  function safeDarkModeColor(hex) {
+    if (!hex) return hex;
+    const h = String(hex).trim().toLowerCase();
+    if (h === '#000' || h === '#000000' || h === 'black') return '#111111';
+    if (h === '#fff' || h === '#ffffff' || h === 'white') return '#fefefe';
+    return hex;
+  }
+
   // Signatures carry no branding footer. With a single paid plan there is no free
   // tier to distinguish, so every exported signature is clean.
   function buildSignatureHtml({ template, data, style, compliance }) {
@@ -177,6 +185,13 @@
     }
 
     const safeStyle = createStyle(style);
+    const normalizeColor = typeof template._safeColor === 'function'
+      ? (c) => template._safeColor(c)
+      : safeDarkModeColor;
+    safeStyle.primaryColor = normalizeColor(safeStyle.primaryColor);
+    safeStyle.secondaryColor = normalizeColor(safeStyle.secondaryColor);
+    safeStyle.textColor = normalizeColor(safeStyle.textColor);
+
     let inner = template.render(data || {}, safeStyle);
 
     if (compliance && typeof template._complianceBlock === 'function') {

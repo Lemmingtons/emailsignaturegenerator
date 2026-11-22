@@ -436,7 +436,7 @@
         const r = c.run(ctx);
         return Object.assign({ id: c.id, label: c.label }, r);
       } catch (err) {
-        return { id: c.id, label: c.label, severity: 'info', message: 'Check could not run: ' + err.message };
+        return { id: c.id, label: c.label, severity: 'info', message: 'Check could not run: ' + escapeHtml(err && err.message ? err.message : String(err)) };
       }
     });
 
@@ -535,10 +535,39 @@
     const sorted = result.results.slice().sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
     issueList.innerHTML = sorted.map(renderIssue).join('');
     resultsSection.hidden = false;
-    resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    resultsSection.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+
+  function setUploadError(message) {
+    let errEl = document.getElementById('fileUploadError');
+    if (!message) {
+      if (errEl) {
+        errEl.textContent = '';
+        errEl.hidden = true;
+      }
+      return;
+    }
+    if (!errEl && input && input.parentNode) {
+      errEl = document.createElement('p');
+      errEl.id = 'fileUploadError';
+      errEl.setAttribute('role', 'alert');
+      errEl.setAttribute('aria-live', 'assertive');
+      errEl.style.color = '#b91c1c';
+      errEl.style.fontSize = '0.9rem';
+      errEl.style.marginTop = '8px';
+      input.parentNode.insertBefore(errEl, input);
+    }
+    if (errEl) {
+      errEl.textContent = message;
+      errEl.hidden = false;
+    }
   }
 
   runBtn.addEventListener('click', function () {
+    setUploadError('');
     const result = runAudit(input.value);
     if (!result) {
       input.focus();
@@ -548,11 +577,13 @@
   });
 
   rerunBtn && rerunBtn.addEventListener('click', function () {
+    setUploadError('');
     const result = runAudit(input.value);
     render(result);
   });
 
   clearBtn.addEventListener('click', function () {
+    setUploadError('');
     input.value = '';
     resultsSection.hidden = true;
     input.focus();
@@ -561,6 +592,12 @@
   fileInput.addEventListener('change', function (e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+    if (f.size > MAX_UPLOAD_BYTES) {
+      fileInput.value = '';
+      setUploadError('File is too large (max 2 MB). Paste just the signature HTML instead.');
+      return;
+    }
+    setUploadError('');
     const reader = new FileReader();
     reader.onload = function () {
       let text = String(reader.result || '');
