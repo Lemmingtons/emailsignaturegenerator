@@ -54,9 +54,31 @@
   // Set while /api/verify-token is answering, so an early Copy waits for it
   // instead of showing a returning buyer the paywall.
   let proCheck = null;
+  // Active preview-image hosting uploads, awaited by copyHTML so an immediate
+  // Copy click after checkout unlock does not trigger a false preview-only prompt.
+  let logoUploadPromise = null;
+  let photoUploadPromise = null;
   // True when this page load carried a token in its address (checkout return
   // or an access link), which is the only time the welcome is shown.
   let tokenFromAddress = false;
+  // Candidate token stripped synchronously from window.location at script init.
+  // Held in memory until /api/verify-token confirms it, so an untrusted link
+  // never overwrites an existing stored Pro token before verification.
+  let pendingAddressToken = '';
+  let hadInitialAddressToken = false;
+
+  (function stripInitialAddressToken() {
+    const initParams = new URLSearchParams(window.location.search);
+    const initHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    if (initParams.has('token') || initHash.has('token')) {
+      hadInitialAddressToken = true;
+      pendingAddressToken = takeTokenFromAddress(initParams);
+    }
+  })();
+
+  function scrollBehavior() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  }
 
   // Back from checkout can restore the live page without DOMContentLoaded.
   // Keep that form and discard the older snapshot before a later reload.
@@ -70,10 +92,12 @@
   window.addEventListener('hashchange', function() {
     if (!/(?:^#|&)token=/.test(window.location.hash)) return;
     const token = takeTokenFromAddress(new URLSearchParams(window.location.search));
-    if (!token || (isPro && token === getProToken())) return;
-    setProToken(token);
-    tokenFromAddress = true;
-    checkProStatus();
+    if (!token) {
+      setExportStatus('That access link is not valid. Check that you copied the whole link.', 'error');
+      return;
+    }
+    if (isPro && token === getProToken()) return;
+    handleIncomingAddressToken(token, { checkExistingFallback: !isPro });
   });
 
   function updateLiveStatus(el, text, kind) {
@@ -82,7 +106,7 @@
     el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
     el.setAttribute('aria-atomic', 'true');
     el.textContent = text;
-    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+    el.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#047857' : '';
   }
 
   // Compliance state — populated after compliance.json loads
@@ -115,26 +139,29 @@
     initCompliance();
     renderPreview();
 
-    // Read every URL param up front: handling the Pro token rewrites the query
-    // string, which would otherwise discard a saved-signature id in the same link.
+    // Read every URL param up front: any ?token= / #token= was already stripped
+    // synchronously at script startup into pendingAddressToken.
     const params = new URLSearchParams(window.location.search);
-    const token = takeTokenFromAddress(params);
+    const token = pendingAddressToken || takeTokenFromAddress(params);
+    const hadMalformedAddressToken = hadInitialAddressToken && !token;
+    pendingAddressToken = '';
+    hadInitialAddressToken = false;
     const savedSignatureId = params.get('s');
     const brandSite = params.get('site');
     const teamParam = params.get('team');
 
-    if (token) {
-      setProToken(token);
-      tokenFromAddress = true;
-    }
-
     // Restore the draft before verification can start hosting its images. The
     // token check starts at once, so an early Copy waits instead of paywalling.
     const restoring = restoreCheckoutDraft(params, !!token);
-    const checking = checkProStatus(restoring);
+    const checking = token
+      ? handleIncomingAddressToken(token, { ready: restoring, checkExistingFallback: true })
+      : checkProStatus(restoring);
+    if (hadMalformedAddressToken) {
+      setExportStatus('That access link is not valid. Check that you copied the whole link.', 'error');
+    }
     const restoredCheckout = await restoring;
     // Back from a paid checkout with the draft: land where Copy is one click away.
-    if (restoredCheckout && tokenFromAddress) checking.then(function() { if (isPro) showUnlockedReturn(); });
+    if (restoredCheckout && token) checking.then(function() { if (isPro && tokenFromAddress) showUnlockedReturn(); });
 
     // Reopening a saved signature is independent of Pro status — the link itself
     // is the credential.
@@ -195,6 +222,15 @@
   function renderCategoryTabs() {
     const container = document.getElementById('category-tabs');
     if (!container) return;
+    const existing = container.querySelectorAll('.category-tab');
+    if (existing.length === CATEGORIES.length) {
+      existing.forEach(btn => {
+        const active = btn.dataset.category === currentCategory;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      return;
+    }
     container.innerHTML = CATEGORIES.map(cat =>
       `<button type="button" class="category-tab${cat.id === currentCategory ? ' active' : ''}" data-category="${cat.id}" aria-pressed="${cat.id === currentCategory}">${cat.name}</button>`
     ).join('');
@@ -216,6 +252,18 @@
     const entries = Object.entries(TEMPLATES).filter(([, t]) =>
       currentCategory === 'all' || t.category === currentCategory
     );
+
+    const existing = container.querySelectorAll('.template-card');
+    const sameSet = existing.length === entries.length &&
+      entries.every(([id], idx) => existing[idx] && existing[idx].dataset.template === id);
+    if (sameSet) {
+      existing.forEach(card => {
+        const active = card.dataset.template === currentTemplate;
+        card.classList.toggle('active', active);
+        card.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      return;
+    }
 
     const previewStyle = CORE.previewStyle;
 
@@ -342,18 +390,39 @@
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    container.querySelectorAll('.toggle-option').forEach(opt => {
+    const options = Array.from(container.querySelectorAll('.toggle-option'));
+    function selectOption(target, moveFocus) {
+      options.forEach(o => {
+        const active = o === target;
+        o.classList.toggle('active', active);
+        o.setAttribute('aria-checked', active ? 'true' : 'false');
+        o.tabIndex = active ? 0 : -1;
+      });
+      if (moveFocus) target.focus();
+      style[styleKey] = target.dataset.value;
+      renderPreview();
+      if (styleKey === 'photoShape') schedulePhotoRebuild('shape');
+      if (styleKey === 'dividerStyle') scheduleDividerRebuild();
+    }
+
+    options.forEach(o => {
+      const active = o.getAttribute('aria-checked') === 'true' || o.classList.contains('active');
+      o.tabIndex = active ? 0 : -1;
+    });
+
+    options.forEach((opt, i) => {
       opt.addEventListener('click', function() {
-        container.querySelectorAll('.toggle-option').forEach(o => {
-          o.classList.remove('active');
-          o.setAttribute('aria-checked', 'false');
-        });
-        this.classList.add('active');
-        this.setAttribute('aria-checked', 'true');
-        style[styleKey] = this.dataset.value;
-        renderPreview();
-        if (styleKey === 'photoShape') schedulePhotoRebuild('shape');
-        if (styleKey === 'dividerStyle') scheduleDividerRebuild();
+        selectOption(this, false);
+      });
+      opt.addEventListener('keydown', function(e) {
+        let nextIndex = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextIndex = (i + 1) % options.length;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') nextIndex = (i - 1 + options.length) % options.length;
+        else if (e.key === 'Home') nextIndex = 0;
+        else if (e.key === 'End') nextIndex = options.length - 1;
+        if (nextIndex < 0) return;
+        e.preventDefault();
+        selectOption(options[nextIndex], true);
       });
     });
   }
@@ -404,12 +473,12 @@
 
     if (mobilePreviewFab) {
       mobilePreviewFab.addEventListener('click', () => {
-        document.querySelector('.preview-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector('.preview-column').scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
       });
     }
     if (mobileBackToForm) {
       mobileBackToForm.addEventListener('click', () => {
-        document.querySelector('.controls-column').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.querySelector('.controls-column').scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
       });
     }
   }
@@ -608,7 +677,7 @@
     }
     restoringCheckout = true;
     try {
-      applySignatureState(draft.signature);
+      applySignatureState(draft.signature, { fromLocalDraft: true });
       const recovery = draft.recovery;
       editedColors.clear();
       (Array.isArray(recovery.editedColors) ? recovery.editedColors : []).forEach(key => {
@@ -1087,7 +1156,12 @@
     if (!thumb) return null;
 
     const canvas = logoCanvasFromImage(img);
-    const dataUri = canvas.toDataURL('image/png');
+    let dataUri;
+    try {
+      dataUri = canvas.toDataURL('image/png');
+    } catch {
+      return null;
+    }
 
     const preview = document.createElement('img');
     preview.src = dataUri;
@@ -1120,26 +1194,30 @@
   // Hosts the preview-only logo for Pro buyers. Also runs when Pro unlocks after
   // a logo was already added (a website import can finish before the token
   // check does). If the logo is replaced or removed mid-upload, the result is dropped.
-  async function hostPreviewLogo() {
+  function hostPreviewLogo() {
     const thumb = document.getElementById('logoPreviewThumb');
     const pending = thumb && thumb.dataset.previewOnly;
-    if (!pending || !isPro || !getProToken()) return;
+    if (!pending || !isPro || !getProToken()) return Promise.resolve();
 
-    setLogoStatus('Uploading hosted logo...');
-    try {
-      const binary = atob(pending.split(',')[1]);
-      const bytes = Uint8Array.from(binary, function(c) { return c.charCodeAt(0); });
-      const blob = new Blob([bytes], { type: 'image/png' });
-      const url = await uploadImageBlob(blob, 'logo');
-      if (thumb.dataset.previewOnly !== pending) return;
-      document.getElementById('logoUrl').value = url;
-      delete thumb.dataset.previewOnly;
-      if (logoDims.src === pending) logoDims.src = url;
-      setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
-      renderPreview();
-    } catch (err) {
-      if (thumb.dataset.previewOnly === pending) setLogoStatus(CORE.describeUploadError(err.message), 'error');
-    }
+    const task = (async function() {
+      setLogoStatus('Uploading hosted logo...');
+      try {
+        const binary = atob(pending.split(',')[1]);
+        const bytes = Uint8Array.from(binary, function(c) { return c.charCodeAt(0); });
+        const blob = new Blob([bytes], { type: 'image/png' });
+        const url = await uploadImageBlob(blob, 'logo');
+        if (thumb.dataset.previewOnly !== pending) return;
+        document.getElementById('logoUrl').value = url;
+        delete thumb.dataset.previewOnly;
+        if (logoDims.src === pending) logoDims.src = url;
+        setLogoStatus('Hosted logo ready for Gmail and Outlook.', 'success');
+        renderPreview();
+      } catch (err) {
+        if (thumb.dataset.previewOnly === pending) setLogoStatus(CORE.describeUploadError(err.message), 'error');
+      }
+    })();
+    logoUploadPromise = task.finally(function() { if (logoUploadPromise === task) logoUploadPromise = null; });
+    return logoUploadPromise;
   }
 
   function handleLogoUpload(input) {
@@ -1153,7 +1231,7 @@
 
     img.onload = function() {
       URL.revokeObjectURL(blobUrl);
-      applyLogoImage(img);
+      if (!applyLogoImage(img)) setLogoStatus('That image could not be processed. Try a PNG, JPG, or WebP file.', 'error');
     };
 
     img.onerror = function() {
@@ -1334,11 +1412,13 @@
       const img = await loadBrandLogo(data.logo);
       if (img) {
         const canvas = applyLogoImage(img);
-        if (canvas) thumb.dataset.fromSite = 'true';
-        openOptionalSection('logo');
-        added.unshift('your logo');
-        // No colours on the site itself: borrow the logo's strongest colour.
-        if (!colorAdded && canvas) colorAdded = setBrandColor('primaryColor', dominantColor(canvas));
+        if (canvas) {
+          thumb.dataset.fromSite = 'true';
+          openOptionalSection('logo');
+          added.unshift('your logo');
+          // No colours on the site itself: borrow the logo's strongest colour.
+          if (!colorAdded) colorAdded = setBrandColor('primaryColor', dominantColor(canvas));
+        }
       }
     }
     if (colorAdded) added.push('brand colours');
@@ -1615,8 +1695,9 @@
   function monogramRgba(size) {
     const name = (document.getElementById('fullName') || {}).value || '';
     const words = String(name).trim().split(/\s+/).filter(Boolean);
+    const firstChar = word => Array.from(word)[0] || '';
     const initials = (words.length
-      ? (words.length === 1 ? words[0].slice(0, 1) : words[0].slice(0, 1) + words[words.length - 1].slice(0, 1))
+      ? (words.length === 1 ? firstChar(words[0]) : firstChar(words[0]) + firstChar(words[words.length - 1]))
       : '·').toUpperCase();
 
     const canvas = document.createElement('canvas');
@@ -1696,18 +1777,23 @@
   // Hosts a photo added before Pro unlocked, the counterpart of hostPreviewLogo.
   // With the crop canvas at hand the normal pipeline rebuilds it (animation
   // included); otherwise the preview image itself is uploaded.
-  async function hostPreviewPhoto() {
+  function hostPreviewPhoto() {
     const thumb = document.getElementById('photoPreviewThumb');
     const pending = thumb && thumb.dataset.previewOnly;
-    if (!pending || !isPro || !getProToken()) return;
-    if (photoState.primaryCanvas) {
-      await regeneratePhotoAsset();
-      return;
-    }
-    const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(pending);
-    if (!match) return;
-    const bytes = Uint8Array.from(atob(match[2]), c => c.charCodeAt(0));
-    await uploadPhotoBlob(new Blob([bytes], { type: match[1] }), 'Hosted photo ready for Gmail and Outlook.');
+    if (!pending || !isPro || !getProToken()) return Promise.resolve();
+
+    const task = (async function() {
+      if (photoState.primaryCanvas) {
+        await regeneratePhotoAsset();
+        return;
+      }
+      const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(pending);
+      if (!match) return;
+      const bytes = Uint8Array.from(atob(match[2]), c => c.charCodeAt(0));
+      await uploadPhotoBlob(new Blob([bytes], { type: match[1] }), 'Hosted photo ready for Gmail and Outlook.');
+    })();
+    photoUploadPromise = task.finally(function() { if (photoUploadPromise === task) photoUploadPromise = null; });
+    return photoUploadPromise;
   }
 
   async function regeneratePhotoAsset() {
@@ -1792,6 +1878,7 @@
   });
 
   const ctaState = { url: '', width: 0, height: 0 };
+  let ctaGen = 0;
 
   // Pixel size of the current logo and the src it belongs to. Templates turn it
   // into explicit width/height attributes, because classic Outlook ignores CSS
@@ -1849,6 +1936,7 @@
   }
 
   function clearCtaImage() {
+    ctaGen++;
     ctaState.url = '';
     ctaState.width = 0;
     ctaState.height = 0;
@@ -1856,6 +1944,7 @@
   }
 
   async function regenerateCtaAnimation() {
+    const gen = ++ctaGen;
     const label = (style.ctaText || '').trim();
 
     if (!ctaAnimationEnabled() || !label) {
@@ -1875,6 +1964,7 @@
 
     setCtaStatus('Building button animation...');
     await new Promise((resolve) => setTimeout(resolve, 0));
+    if (gen !== ctaGen) return;
 
     let blob;
     let cssWidth;
@@ -1903,18 +1993,21 @@
       cssWidth = Math.round(canvas.width / CTA_STYLE.scale);
       cssHeight = Math.round(canvas.height / CTA_STYLE.scale);
     } catch (err) {
+      if (gen !== ctaGen) return;
       setCtaStatus('Could not build the button animation.', 'error');
       return;
     }
 
     try {
       const url = await uploadImageBlob(blob, 'cta');
+      if (gen !== ctaGen || !ctaAnimationEnabled()) return;
       ctaState.url = url;
       ctaState.width = cssWidth;
       ctaState.height = cssHeight;
       renderPreview();
       setCtaStatus(`Animated button ready (${Math.round(blob.size / 1024)} KB).`, 'success');
     } catch (err) {
+      if (gen !== ctaGen) return;
       clearCtaImage();
       setCtaStatus(CORE.describeUploadError(err.message), 'error');
     }
@@ -1955,6 +2048,7 @@
   });
 
   const dividerState = { url: '', height: 0 };
+  let dividerGen = 0;
 
   // The published card page, when the customer has opted into having one. `slug`
   // is kept so a second publish updates the same page instead of stranding the
@@ -1986,12 +2080,14 @@
   }
 
   function clearDividerImage() {
+    dividerGen++;
     dividerState.url = '';
     dividerState.height = 0;
     renderPreview();
   }
 
   async function regenerateDividerAnimation() {
+    const gen = ++dividerGen;
     if (!dividerAnimationEnabled()) {
       clearDividerImage();
       setDividerStatus('');
@@ -2015,6 +2111,7 @@
 
     setDividerStatus('Building divider animation...');
     await new Promise((resolve) => setTimeout(resolve, 0));
+    if (gen !== dividerGen) return;
 
     let blob;
     let cssHeight;
@@ -2058,17 +2155,20 @@
       blob = new Blob([bytes], { type: 'image/gif' });
       cssHeight = Math.round(canvas.height / DIVIDER_STYLE.scale);
     } catch (err) {
+      if (gen !== dividerGen) return;
       setDividerStatus('Could not build the divider animation.', 'error');
       return;
     }
 
     try {
       const url = await uploadImageBlob(blob, 'divider');
+      if (gen !== dividerGen || !dividerAnimationEnabled()) return;
       dividerState.url = url;
       dividerState.height = cssHeight;
       renderPreview();
       setDividerStatus(`Animated divider ready (${Math.round(blob.size / 1024)} KB).`, 'success');
     } catch (err) {
+      if (gen !== dividerGen) return;
       clearDividerImage();
       setDividerStatus(CORE.describeUploadError(err.message), 'error');
     }
@@ -2105,6 +2205,7 @@
   // product allows exactly one. Turning something on turns the others off.
   function claimAnimationSlot(claimed) {
     if (claimed !== 'photo') {
+      clearTimeout(animatedRebuildTimer);
       const select = document.getElementById('photoEffect');
       if (select && select.value !== 'none') {
         select.value = 'none';
@@ -2115,6 +2216,8 @@
     }
 
     if (claimed !== 'cta') {
+      clearTimeout(ctaRebuildTimer);
+      ctaGen++;
       const toggle = document.getElementById('ctaAnimate');
       if (toggle && toggle.checked) {
         toggle.checked = false;
@@ -2124,6 +2227,8 @@
     }
 
     if (claimed !== 'divider') {
+      clearTimeout(dividerRebuildTimer);
+      dividerGen++;
       const toggle = document.getElementById('dividerAnimate');
       if (toggle && toggle.checked) {
         toggle.checked = false;
@@ -2423,7 +2528,7 @@
     }
     if (opts.scroll) {
       const nav = document.querySelector('.builder-steps');
-      if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     }
   }
 
@@ -2450,8 +2555,7 @@
     if (next) next.addEventListener('click', () => step(1));
 
     const installCopy = document.getElementById('installCopyBtn');
-    const copyHtmlBtn = document.getElementById('copyHtmlBtn');
-    if (installCopy && copyHtmlBtn) installCopy.addEventListener('click', () => copyHtmlBtn.click());
+    if (installCopy) installCopy.addEventListener('click', function() { copyHTML(this); });
 
     goToStep(currentStep);
   }
@@ -2597,7 +2701,7 @@
     const mirror = document.getElementById('installStatusHint');
     if (mirror) {
       mirror.textContent = text;
-      mirror.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#059669' : '';
+      mirror.style.color = kind === 'error' ? '#b91c1c' : kind === 'success' ? '#047857' : '';
     }
   }
 
@@ -2901,6 +3005,10 @@
     if (!validateForExport()) return;
     await settleProCheck();
     if (!requireProForExport(btn)) return;
+    if (logoUploadPromise || photoUploadPromise) {
+      setExportStatus('Finishing image upload\u2026');
+      await Promise.all([logoUploadPromise, photoUploadPromise].filter(Boolean));
+    }
     let data = getFormData();
 
     // Never let a preview-only inline image reach the clipboard — it would paste as a
@@ -2960,7 +3068,7 @@
 
   function showCopied(btn) {
     btn.classList.add('copied');
-    if (btn.id === 'copyHtmlBtn') setExportStatus('HTML signature copied to the clipboard.', 'success');
+    if (btn.id === 'copyHtmlBtn' || btn.id === 'installCopyBtn') setExportStatus('HTML signature copied to the clipboard.', 'success');
     if (btn.id === 'copyTextBtn') setExportStatus('Plain-text signature copied to the clipboard.', 'success');
     setTimeout(() => btn.classList.remove('copied'), 2000);
   }
@@ -3055,8 +3163,28 @@
     }
   }
 
-  function applySignatureState(state) {
+  const RESTORABLE_DATA_FIELDS = [
+    'fullName', 'title', 'company', 'phone', 'email', 'website',
+    'linkedin', 'instagram', 'facebook', 'google', 'photoUrl', 'logoUrl',
+  ];
+
+  function isSafePreviewImageUrl(url) {
+    const cleaned = String(url == null ? '' : url).replace(/[\u0000-\u001f\u007f]/g, '').trim();
+    if (!cleaned) return false;
+    if (/^https?:\/\//i.test(cleaned)) {
+      try {
+        const parsed = new URL(cleaned);
+        return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && !!parsed.hostname;
+      } catch {
+        return false;
+      }
+    }
+    return /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(cleaned);
+  }
+
+  function applySignatureState(state, options) {
     if (!state || typeof state !== 'object') return;
+    const opts = Object.assign({ fromLocalDraft: false }, options || {});
 
     if (state.style && typeof state.style === 'object') {
       // Saved links are shareable, so the stored style is untrusted input:
@@ -3070,27 +3198,41 @@
     }
 
     if (state.data && typeof state.data === 'object') {
-      Object.keys(state.data).forEach(function(key) {
+      RESTORABLE_DATA_FIELDS.forEach(function(key) {
         const el = document.getElementById(key);
-        if (el) el.value = state.data[key] || '';
+        if (!el) return;
+        const raw = typeof state.data[key] === 'string' ? state.data[key] : '';
+        if ((key === 'photoUrl' || key === 'logoUrl') && raw && !isSafePreviewImageUrl(raw)) {
+          el.value = '';
+          return;
+        }
+        el.value = raw;
       });
       const savedW = parseInt(state.data.logoWidth, 10);
       const savedH = parseInt(state.data.logoHeight, 10);
-      logoDims.src = state.data.logoUrl && savedW > 0 && savedH > 0 ? String(state.data.logoUrl) : '';
+      const safeLogoUrl = isSafePreviewImageUrl(state.data.logoUrl) ? String(state.data.logoUrl).replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
+      logoDims.src = safeLogoUrl && savedW > 0 && savedH > 0 ? safeLogoUrl : '';
       logoDims.width = logoDims.src ? savedW : 0;
       logoDims.height = logoDims.src ? savedH : 0;
       // Hosted photos and logos come back as plain URLs, so show them as such.
       ['photo', 'logo'].forEach(function(slot) {
-        const url = state.data[slot + 'Url'];
+        const rawUrl = state.data[slot + 'Url'];
+        const safeUrl = isSafePreviewImageUrl(rawUrl) ? String(rawUrl).replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
         const thumb = document.getElementById(slot + 'PreviewThumb');
         if (!thumb) return;
         delete thumb.dataset.previewOnly;
         delete thumb.dataset.fromSite;
-        if (url) {
-          thumb.innerHTML = `<img src="${escapeAttr(url)}" alt="${slot} preview">`;
+        const removeBtn = document.getElementById(slot + 'RemoveBtn');
+        if (safeUrl) {
+          const img = document.createElement('img');
+          img.src = safeUrl;
+          img.alt = slot + ' preview';
+          thumb.replaceChildren(img);
           thumb.classList.add('has-' + slot);
-          const removeBtn = document.getElementById(slot + 'RemoveBtn');
           if (removeBtn) removeBtn.style.display = '';
+        } else {
+          thumb.classList.remove('has-' + slot);
+          if (removeBtn) removeBtn.style.display = 'none';
         }
       });
     }
@@ -3100,7 +3242,7 @@
       renderTemplateGrid();
     }
 
-    restoreNameLinkState(state);
+    restoreNameLinkState(state, opts);
     restoreAnimationState(state);
     applyComplianceSelection(state.compliance, true);
     openOptionalSectionsWithContent();
@@ -3110,7 +3252,8 @@
   // Signatures saved before name links existed have no `nameLink` block, so the
   // control is left at its default rather than being reset to something the
   // customer never chose.
-  function restoreNameLinkState(state) {
+  function restoreNameLinkState(state, options) {
+    const fromLocalDraft = !!(options && options.fromLocalDraft === true);
     const saved = state && state.nameLink;
     if (!saved || typeof saved !== 'object') return;
 
@@ -3122,9 +3265,11 @@
     if (saved.cardSlug && /^[a-z0-9-]{1,64}$/.test(saved.cardSlug)) {
       cardState.slug = saved.cardSlug;
       cardState.url = `${window.location.origin}/c/${saved.cardSlug}`;
-      storageSet('local', CARD_SLUG_STORAGE_KEY, saved.cardSlug);
-      const consent = document.getElementById('cardPageConsent');
-      if (consent) consent.checked = true;
+      if (fromLocalDraft) {
+        storageSet('local', CARD_SLUG_STORAGE_KEY, saved.cardSlug);
+        const consent = document.getElementById('cardPageConsent');
+        if (consent) consent.checked = true;
+      }
     }
     syncCardControls();
   }
@@ -3207,6 +3352,7 @@
           const active = opt.dataset.value === style[pair[1]];
           opt.classList.toggle('active', active);
           opt.setAttribute('aria-checked', active ? 'true' : 'false');
+          opt.tabIndex = active ? 0 : -1;
         });
       });
 
@@ -3224,6 +3370,65 @@
   const BROKEN_TOKEN_REASONS = ['malformed', 'invalid_signature', 'malformed_payload', 'invalid_expiry', 'bad_subject', 'expired'];
 
   const PRO_VERIFIED_STORAGE_KEY = FACTS.proTokenStorageKey + ':verified';
+
+  function handleIncomingAddressToken(incomingToken, options) {
+    proCheck = runIncomingTokenCheck(incomingToken, options).finally(function() { proCheck = null; });
+    return proCheck;
+  }
+
+  async function runIncomingTokenCheck(incomingToken, options) {
+    const opts = options || {};
+    const existingToken = getProToken();
+    const result = await verifyToken(incomingToken);
+    if (opts.ready) {
+      try { await opts.ready; } catch {}
+    }
+
+    if (!result.valid) {
+      const msg = result.unreachable
+        ? 'Could not verify that access link right now. Try again in a moment.'
+        : existingToken
+          ? 'That access link is not valid or has expired. Your existing Pro access was kept unchanged.'
+          : 'That access link is not valid or has expired.';
+      setExportStatus(msg, 'error');
+      if (existingToken && !isPro && opts.checkExistingFallback) {
+        await runProCheck(existingToken);
+      }
+      return;
+    }
+
+    if (existingToken && existingToken !== incomingToken) {
+      let existingValid = isPro;
+      let existingResult = null;
+      if (!existingValid) {
+        existingResult = await verifyToken(existingToken);
+        existingValid = !!(
+          existingResult.valid ||
+          (existingResult.unreachable && storageGet('local', PRO_VERIFIED_STORAGE_KEY) === existingToken)
+        );
+      }
+      if (existingValid) {
+        const replace = typeof confirm === 'function'
+          ? confirm('This browser already has an active Pro access token. Replace it with the access link you just opened?')
+          : false;
+        if (!replace) {
+          if (!isPro) {
+            storageSet('local', PRO_VERIFIED_STORAGE_KEY, existingToken);
+            unlockPro({ welcome: false });
+            if (existingResult && existingResult.plan === 'team') showTeamOwnerPanel();
+          }
+          setExportStatus('Kept your existing Pro access on this browser.');
+          return;
+        }
+      }
+    }
+
+    setProToken(incomingToken);
+    storageSet('local', PRO_VERIFIED_STORAGE_KEY, incomingToken);
+    tokenFromAddress = true;
+    unlockPro({ welcome: true });
+    if (result.plan === 'team') showTeamOwnerPanel();
+  }
 
   // `ready` is a promise the unlock waits for (the checkout-draft restore), so
   // hosting a restored photo or logo starts only once it is back in the form.
@@ -3316,7 +3521,7 @@
     var toast = document.createElement('div');
     toast.setAttribute('role', 'status');
     toast.textContent = 'Pro unlocked on this browser. You can copy your signature, host images and save an edit link.';
-    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;background:#059669;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
+    toast.style.cssText = 'position:fixed;top:16px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;background:#047857;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;transition:opacity 0.5s ease;';
     document.body.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; }, 3000);
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3500);
@@ -3352,8 +3557,9 @@
     });
     const thumb = document.getElementById('photoPreviewThumb');
     if (thumb) {
-      thumb.innerHTML = '';
+      thumb.innerHTML = '<span class="photo-placeholder">No photo</span>';
       thumb.classList.remove('has-photo');
+      delete thumb.dataset.previewOnly;
     }
     const removeBtn = document.getElementById('photoRemoveBtn');
     if (removeBtn) removeBtn.style.display = 'none';
@@ -3500,7 +3706,7 @@
       banner.style.animation = 'none';
       banner.offsetHeight; // trigger reflow
       banner.style.animation = 'pulse 0.5s ease';
-      banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      banner.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
     }
   }
 
