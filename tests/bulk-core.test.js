@@ -36,6 +36,8 @@ assert.deepEqual(quoted.rowNumbers, [2, 4]);
 assert.deepEqual(quoted.ignored, ['Notes']);
 assert.equal(bulk.employeesFromGrid(bulk.parseDelimited('Full Name\tEmail\nAlex\talex@example.com')).employees[0].email, 'alex@example.com');
 assert.equal(bulk.employeesFromGrid(bulk.parseDelimited('Full Name;Email\nAlex;alex@example.com')).employees[0].email, 'alex@example.com');
+assert.equal(bulk.employeesFromGrid(bulk.parseDelimited('\n  \r\nFull Name;Email\nAlex;alex@example.com')).employees[0].email, 'alex@example.com', 'leading blank lines still detect semicolon delimiter');
+assert.equal(bulk.employeesFromGrid(bulk.parseDelimited('\r\n\nFull Name\tEmail\nAlex\talex@example.com')).employees[0].email, 'alex@example.com', 'leading blank lines still detect tab delimiter');
 assert.equal(bulk.parseDelimited('Full Name,Job Title\nAlex,"A\nB"')[1][1], 'A\nB');
 assert.throws(() => bulk.parseDelimited('Full Name\n"Alex'), /closing/);
 assert.throws(() => bulk.parseDelimited('Full Name\n"Alex"junk'), /quotation/);
@@ -92,6 +94,40 @@ assert.equal(bulk.generateBatch({ employees: [{ fullName: 'No optional fields' }
 assert.equal(bulk.generateBatch({ employees: [{ fullName: 'Too long'.repeat(50) }] }).results[0].html, '');
 assert.throws(() => bulk.checkXlsxArchive(new ArrayBuffer(0)), /valid/);
 assert.throws(() => bulk.checkXlsxArchive(new ArrayBuffer(facts.bulkMaxSpreadsheetBytes + 1)), /500 KB/);
+
+// Synthetic ZIP archive builder for checkXlsxArchive edge-case coverage.
+function makeZipArchive({ entries = 1, uncompressedSize = 100, flags = 0, diskNumber = 0, cdDisk = 0 } = {}) {
+  const nameBytes = new TextEncoder().encode('a.xml');
+  const cdEntryLen = 46 + nameBytes.length;
+  const cdSize = entries * cdEntryLen;
+  const buf = new ArrayBuffer(cdSize + 22);
+  const bytes = new Uint8Array(buf);
+  const view = new DataView(buf);
+  let off = 0;
+  for (let i = 0; i < entries; i++) {
+    view.setUint32(off, 0x02014b50, true);
+    view.setUint16(off + 8, flags, true);
+    view.setUint32(off + 24, uncompressedSize, true);
+    view.setUint16(off + 28, nameBytes.length, true);
+    bytes.set(nameBytes, off + 46);
+    off += cdEntryLen;
+  }
+  const end = cdSize;
+  view.setUint32(end, 0x06054b50, true);
+  view.setUint16(end + 4, diskNumber, true);
+  view.setUint16(end + 6, cdDisk, true);
+  view.setUint16(end + 8, entries, true);
+  view.setUint16(end + 10, entries, true);
+  view.setUint32(end + 12, cdSize, true);
+  view.setUint32(end + 16, 0, true);
+  return buf;
+}
+assert.doesNotThrow(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 3, uncompressedSize: 1024 })), 'valid minimal zip passes checkXlsxArchive');
+assert.throws(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 2, uncompressedSize: 4_000_001 })), /expanded workbook is too large/, 'zip bomb exceeding 8 MB is rejected');
+assert.throws(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 1, flags: 1 })), /unencrypted/, 'encrypted zip entry is rejected');
+assert.throws(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 1, diskNumber: 1 })), /valid, unencrypted/, 'multi-disk archive (diskNumber) is rejected');
+assert.throws(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 1, cdDisk: 1 })), /valid, unencrypted/, 'multi-disk archive (cdDisk) is rejected');
+assert.throws(() => bulk.checkXlsxArchive(makeZipArchive({ entries: 257, uncompressedSize: 10 })), /too complex/, 'archive with > 256 entries is rejected');
 const draftPayload = { template: 'classic', defaults: { company: 'Example' }, employees: quoted.employees };
 const draftNow = Date.now();
 const draft = bulk.encodeBulkCheckoutDraft(draftPayload, quoted, draftNow);

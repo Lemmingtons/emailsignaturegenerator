@@ -95,6 +95,7 @@
 .bulk-agent-actions button:disabled { opacity: .45; cursor: not-allowed; }
 #agent-key-result label { display: block; font-size: 12px; margin: 14px 0 6px; }
 #agent-key { width: 100%; min-height: 44px; border: 1px solid var(--field-border); border-radius: 8px; padding: 10px; font-size: 12px; }
+.bulk-agent-key-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
 .bulk-agent-setup { font-size: 13px; }
 .bulk-agent-setup code { font-size: 11px; overflow-wrap: anywhere; }
 .bulk-agent-setup pre { white-space: pre-wrap; padding: 12px; background: var(--surface-soft); border-radius: 8px; font-size: 11px; margin-bottom: 12px; }

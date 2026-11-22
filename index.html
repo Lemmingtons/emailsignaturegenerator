@@ -41,7 +41,7 @@
       "Custom colour picker with hex code input",
       "9 email-safe fonts",
       "Photo upload with circle, rounded, and square shapes",
-      "Social icons for LinkedIn, Instagram, Facebook, website",
+      "Social icons for LinkedIn, Instagram, Facebook, and Google in mono, colour, or circle styles",
       "Call-to-action buttons",
       "One-click copy for Gmail and Outlook",
       "Compatible with Gmail, Outlook, Apple Mail, Yahoo Mail, and other major email clients",
@@ -135,7 +135,7 @@
         "name": "Do I need to create an account?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there."
+          "text": "No. The generator works in your browser with no account, no login, and no ad trackers or cookies. We use cookieless Cloudflare Web Analytics and anonymous buy-button click counts (no IP addresses or personal IDs). Your details stay on your device unless you choose to host images, save an edit link, or publish a card page. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there."
         }
       },
       {
@@ -318,7 +318,7 @@
          ANTI-SUBSCRIPTION BANNER
          ══════════════════════════════════════ -->
     <section class="anti-sub-banner" aria-label="Why no subscription">
-      <h3>Why pay $108/year for something you set up once?</h3>
+      <h2>Why pay $108/year for something you set up once?</h2>
       <p>WiseStamp's entry plan is $9 a month, billed yearly: $108 a year. Here you pay $9 once. <a href="/seo/wisestamp-alternative">See the full comparison</a>.</p>
       <div class="comparison" data-reveal>
         <div class="comp-card them">
@@ -416,7 +416,7 @@
         </div>
         <div class="showcase-card" data-reveal>
           <h3>Social Icons</h3>
-          <p>Website, LinkedIn, Instagram, Facebook. Two icon styles: mono or colour.</p>
+          <p>LinkedIn, Instagram, Facebook, and Google. Three icon styles: mono, colour, or circle.</p>
         </div>
         <div class="showcase-card" data-reveal>
           <h3>CTA Buttons</h3>
@@ -527,7 +527,7 @@
             <p class="pricing-try-note">Or <a href="/generator">try the builder first</a> — free, no account.</p>
           </div>
 
-          <!-- Shown only when SiteFacts.teamPaymentLink is set (see script below). -->
+          <!-- Shown only when SiteFacts.teamPaymentLink is set (see js/home.js). -->
           <div class="pricing-card team-card" id="teamOffer" hidden>
             <h3>Team</h3>
             <div class="price" data-team-price></div>
@@ -595,7 +595,7 @@
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>Do I need to create an account?</summary>
-          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">No. The generator works entirely in your browser. No account, no login, no tracking. Your details stay on your device unless you choose to host a photo or save an edit link. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there.</p>
+          <p style="padding: 0 0 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">No. The generator works in your browser with no account, no login, and no ad trackers or cookies. We use cookieless Cloudflare Web Analytics and anonymous buy-button click counts (no IP addresses or personal IDs). Your details stay on your device unless you choose to host images, save an edit link, or publish a card page. If you purchase Pro, the unlock is stored in your browser. To use Pro in another browser or on another device, copy your access link in the builder and open it there.</p>
         </details>
         <details class="instructions" style="border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px;">
           <summary>What if I need to update my signature later?</summary>
@@ -644,250 +644,7 @@
 
   <script src="js/site-facts.js"></script>
   <script src="js/templates.js"></script>
-  <script>
-  (function () {
-    // The hero box shows "https://" beside the field, so drop a scheme the
-    // visitor pastes or autofills rather than showing it twice.
-    var heroSite = document.getElementById('heroSite');
-    if (heroSite) {
-      heroSite.addEventListener('input', function () {
-        var bare = heroSite.value.replace(/^\s*https?:\/\//i, '');
-        if (bare !== heroSite.value) heroSite.value = bare;
-      });
-    }
-
-    // Records a real buy-button click before it leaves for Stripe, so abandoned
-    // Stripe sessions can be told apart from link previews. Never blocks checkout.
-    function trackCheckoutClick(placement) {
-      try { navigator.sendBeacon('/api/checkout-click', JSON.stringify({ placement: placement })); } catch (e) { /* best effort */ }
-    }
-    // A middle-click opens Stripe in a new tab and fires auxclick, not click.
-    function trackCheckoutLink(link, placement) {
-      link.addEventListener('click', function () { trackCheckoutClick(placement); });
-      link.addEventListener('auxclick', function (event) { if (event.button === 1) trackCheckoutClick(placement); });
-    }
-
-    var checkoutButton = document.getElementById('checkoutBtn');
-    if (checkoutButton && window.SiteFacts) {
-      checkoutButton.href = window.SiteFacts.paymentLink;
-      trackCheckoutLink(checkoutButton, 'home-pro');
-    }
-
-    // The team pack shows only once its Stripe link exists.
-    var teamOffer = document.getElementById('teamOffer');
-    if (teamOffer && window.SiteFacts && window.SiteFacts.teamPaymentLink) {
-      var facts = window.SiteFacts;
-      document.getElementById('teamOfferLink').href = facts.teamPaymentLink;
-      trackCheckoutLink(document.getElementById('teamOfferLink'), 'home-team');
-      teamOffer.querySelectorAll('[data-team-price]').forEach(function (el) { el.textContent = facts.teamPrice.display; });
-      teamOffer.querySelectorAll('[data-team-seats]').forEach(function (el) { el.textContent = String(facts.teamSeats); });
-      teamOffer.querySelectorAll('[data-team-threshold]').forEach(function (el) { el.textContent = String(facts.bulkIndividualMaxRows + 1); });
-      teamOffer.querySelectorAll('[data-bulk-limit]').forEach(function (el) { el.textContent = String(facts.bulkMaxRows); });
-      document.getElementById('teamOfferLink').setAttribute('aria-label', 'Buy the team pack for ' + facts.teamPrice.display);
-      document.getElementById('pricingGrid').classList.remove('pricing-grid-single');
-      teamOffer.hidden = false;
-    }
-
-    if (window.SiteFacts && window.SiteFacts.contactEmail) {
-      document.querySelectorAll('[data-contact-email]').forEach(function (el) {
-        el.href = 'mailto:' + window.SiteFacts.contactEmail;
-        el.textContent = window.SiteFacts.contactEmail;
-      });
-    }
-
-    var D = {
-      fullName: 'Sarah Mitchell',
-      title: 'Senior Account Manager',
-      company: 'Acme Corporation',
-      phone: '+1 555 012 3456',
-      email: 'sarah@acmecorp.com',
-      website: 'https://acmecorp.com',
-      photoUrl: 'assets/sample-headshot.jpg',
-      linkedin: 'https://linkedin.com/in/sarahmitchell',
-      instagram: 'https://instagram.com/sarahmitchell',
-      facebook: '',
-    };
-
-    // Each slide demonstrates one animation, matching the shipped rule of a single
-    // moving element per signature. The ring bakes its accent into the pixels so it
-    // needs a colour-matched file; the shine sweep only lightens, so one file serves
-    // every slide. Regenerate with: node scripts/build-demo-animations.js
-    var RING_TEAL = 'assets/demo-photo-ring-0891B2.gif';
-    var RING_PINE = 'assets/demo-photo-ring-0D9488.gif';
-    var SWEEP = 'assets/demo-photo-sweep.gif';
-
-    var SLIDES = [
-      {
-        id: 'classic', category: 'Professional', name: 'Classic',
-        effect: 'Ring orbit', photo: RING_TEAL,
-        desc: 'Clean and corporate-safe. Works perfectly in Gmail, Outlook, and every major client.',
-        style: { primaryColor: '#0891B2', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
-      },
-      {
-        id: 'bold', category: 'Creative', name: 'Bold',
-        effect: 'Shine sweep', photo: SWEEP,
-        desc: 'Bold colours and modern typography. Stand out in every inbox.',
-        style: { primaryColor: '#0F766E', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
-      },
-      {
-        id: 'gradient', category: 'Creative', name: 'Gradient',
-        effect: 'Shine sweep', photo: SWEEP,
-        desc: 'Gradient accents and bold colour. Makes a strong impression without sacrificing professionalism.',
-        style: { primaryColor: '#7C3AED', secondaryColor: '#EC4899', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'color' }
-      },
-      {
-        id: 'creator', category: 'Social', name: 'Creator',
-        effect: 'Shine sweep', photo: SWEEP,
-        desc: 'Social icons front and centre. Perfect for influencers and content creators.',
-        style: { primaryColor: '#22C55E', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'none', photoShape: 'circle', iconStyle: 'color' }
-      },
-      {
-        // ctabox rather than meetinglink: meetinglink renders its call to action as
-        // a text link, and a sheen needs a filled shape to travel across. The photo
-        // stays still here so this slide demonstrates exactly one moving element.
-        id: 'ctabox', category: 'Sales / CTA', name: 'CTA Box',
-        effect: 'Button sheen',
-        ctaImage: { url: 'assets/demo-cta-EA580C.gif', width: 129, height: 32 },
-        desc: 'Drive meetings and demos with a call-to-action button that catches the eye.',
-        style: { primaryColor: '#EA580C', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
-      },
-      {
-        id: 'consultant', category: 'Industry', name: 'Consultant',
-        effect: 'Ring orbit', photo: RING_PINE,
-        desc: 'Purpose-built for consulting and professional services. Tailored layout for your field.',
-        style: { primaryColor: '#0D9488', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono' }
-      },
-    ];
-
-    var track = document.getElementById('sigCarouselTrack');
-    var dotsContainer = document.getElementById('sigDots');
-    var carousel = document.getElementById('sigCarousel');
-    var carouselSection = document.querySelector('.sig-carousel-section');
-    var rotationToggle = document.getElementById('sigCarouselToggle');
-    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    var current = 0;
-    var timer = null;
-    var rotationPaused = reducedMotion.matches;
-    var pointerInside = false;
-    var focusInside = false;
-
-    // Build slides and dots
-    SLIDES.forEach(function (s, i) {
-      var data = Object.assign({}, D, { photoUrl: s.photo || D.photoUrl });
-      if (s.ctaImage) {
-        data.ctaImageUrl = s.ctaImage.url;
-        data.ctaImageWidth = s.ctaImage.width;
-        data.ctaImageHeight = s.ctaImage.height;
-      }
-      var html = TEMPLATES[s.id].render(data, s.style);
-      var badge = '<span class="showcase-badge animated">' + s.effect + '</span>';
-
-      var slide = document.createElement('div');
-      slide.className = 'sig-carousel-slide';
-      slide.setAttribute('aria-label', s.category + ' template');
-      slide.setAttribute('aria-hidden', i === 0 ? 'false' : 'true');
-      slide.inert = i !== 0;
-      slide.innerHTML =
-        '<div class="sig-slide-meta">' +
-          '<span class="sig-category-label">' + s.category +
-            '<span class="sig-template-name">\u2014 ' + s.name + '</span>' +
-          '</span>' + badge +
-        '</div>' +
-        '<div class="sig-preview-frame">' + html + '</div>' +
-        '<div class="sig-slide-footer">' + s.desc + '</div>';
-      track.appendChild(slide);
-
-      var dot = document.createElement('button');
-      dot.type = 'button';
-      dot.className = 'sig-dot' + (i === 0 ? ' active' : '');
-      dot.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
-      dot.setAttribute('aria-label', 'Slide ' + (i + 1) + ': ' + s.category);
-      dot.addEventListener('click', function (idx) {
-        return function () { goTo(idx, true); restartAuto(); };
-      }(i));
-      dotsContainer.appendChild(dot);
-    });
-
-    var dots = dotsContainer.querySelectorAll('.sig-dot');
-    var slides = track.querySelectorAll('.sig-carousel-slide');
-
-    function goTo(idx, announce) {
-      current = (idx + SLIDES.length) % SLIDES.length;
-      carousel.setAttribute('aria-live', announce || rotationPaused ? 'polite' : 'off');
-      track.style.transform = 'translateX(-' + (current * 100) + '%)';
-      dots.forEach(function (d, i) {
-        d.classList.toggle('active', i === current);
-        d.setAttribute('aria-pressed', i === current ? 'true' : 'false');
-      });
-      slides.forEach(function (slide, i) {
-        slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
-        slide.inert = i !== current;
-      });
-    }
-
-    function stopAuto() {
-      if (timer !== null) clearInterval(timer);
-      timer = null;
-    }
-
-    function startAuto(ignoreInteractionPause) {
-      stopAuto();
-      if (rotationPaused || reducedMotion.matches || (!ignoreInteractionPause && (pointerInside || focusInside))) return;
-      carousel.setAttribute('aria-live', 'off');
-      timer = setInterval(function () { goTo(current + 1, false); }, 4000);
-    }
-
-    function restartAuto() {
-      startAuto();
-    }
-
-    function syncRotationControl() {
-      var stopped = rotationPaused || reducedMotion.matches;
-      rotationToggle.textContent = stopped ? 'Play carousel' : 'Pause carousel';
-      rotationToggle.setAttribute('aria-pressed', stopped ? 'true' : 'false');
-      rotationToggle.disabled = reducedMotion.matches;
-      carousel.setAttribute('aria-live', stopped ? 'polite' : 'off');
-    }
-
-    document.getElementById('sigPrev').addEventListener('click', function () { goTo(current - 1, true); restartAuto(); });
-    document.getElementById('sigNext').addEventListener('click', function () { goTo(current + 1, true); restartAuto(); });
-    rotationToggle.addEventListener('click', function () {
-      rotationPaused = !rotationPaused;
-      syncRotationControl();
-      if (rotationPaused) stopAuto(); else startAuto(true);
-    });
-
-    carouselSection.addEventListener('mouseenter', function () { pointerInside = true; stopAuto(); });
-    carouselSection.addEventListener('mouseleave', function () { pointerInside = false; startAuto(); });
-    carouselSection.addEventListener('focusin', function () { focusInside = true; stopAuto(); });
-    carouselSection.addEventListener('focusout', function (e) {
-      if (carouselSection.contains(e.relatedTarget)) return;
-      focusInside = false;
-      startAuto();
-    });
-
-    // Touch swipe
-    var touchStartX = 0;
-    carousel.addEventListener('touchstart', function (e) { touchStartX = e.touches[0].clientX; }, { passive: true });
-    carousel.addEventListener('touchend', function (e) {
-      var diff = touchStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 40) { goTo(current + (diff > 0 ? 1 : -1), true); restartAuto(); }
-    }, { passive: true });
-
-    function handleReducedMotion() {
-      track.style.transition = reducedMotion.matches ? 'none' : '';
-      if (reducedMotion.matches) {
-        rotationPaused = true;
-        stopAuto();
-      }
-      syncRotationControl();
-      if (!reducedMotion.matches) startAuto();
-    }
-    if (reducedMotion.addEventListener) reducedMotion.addEventListener('change', handleReducedMotion);
-    else reducedMotion.addListener(handleReducedMotion);
-    handleReducedMotion();
-  })();
-  </script>
+  <script src="js/home.js" defer></script>
   <script src="js/motion.js" defer></script>
 </body>
 </html>

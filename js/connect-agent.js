@@ -22,33 +22,61 @@
     showError('This link is missing a valid connection request. Ask your assistant to start a new connection.');
     return;
   }
-  try {
-    const response = await api('preview', { request_token: requestToken });
-    if (!response.ok) throw new Error('This request has expired or could not be verified. Ask your assistant to start a new connection.');
-    const request = await response.json();
-    $('agent-name').textContent = request.agent_name;
-    $('connection-details').hidden = false;
-    $('connection-status').textContent = 'Review the permissions below before continuing.';
-    try { purchaseToken = localStorage.getItem(window.SiteFacts.proTokenStorageKey) || ''; } catch { /* Show the purchase recovery path below. */ }
-    const purchase = purchaseToken ? await fetch('/api/v1/access-key', { headers: { Authorization: 'Bearer ' + purchaseToken }, credentials: 'omit', cache: 'no-store' }) : null;
-    // Only a missing or refused purchase needs the recovery steps; a busy or
-    // unavailable server says so instead of implying the purchase is gone.
-    if (purchase && !purchase.ok && ![401, 403].includes(purchase.status)) {
-      $('purchase-status').textContent = 'Could not check your purchase just now. Reload this page in a minute to try again.';
-      return;
+  const retryPurchaseButton = $('retry-purchase');
+  let checkingPurchase = false;
+  async function checkPurchase() {
+    if (checkingPurchase) return;
+    checkingPurchase = true;
+    retryPurchaseButton.hidden = true;
+    retryPurchaseButton.disabled = true;
+    $('purchase-help').hidden = true;
+    $('approve-connection').disabled = true;
+    $('purchase-status').textContent = 'Checking your purchase…';
+    try {
+      try { purchaseToken = localStorage.getItem(window.SiteFacts.proTokenStorageKey) || ''; } catch { purchaseToken = ''; /* Show the purchase recovery path below. */ }
+      if (!purchaseToken) {
+        $('purchase-status').textContent = 'Your original purchase access is needed.';
+        $('purchase-help').hidden = false;
+        return;
+      }
+      let purchase = null;
+      try {
+        purchase = await fetch('/api/v1/access-key', { headers: { Authorization: 'Bearer ' + purchaseToken }, credentials: 'omit', cache: 'no-store' });
+      } catch {
+        $('purchase-status').textContent = 'Could not check your purchase just now. Check your connection and try again.';
+        retryPurchaseButton.hidden = false;
+        retryPurchaseButton.disabled = false;
+        return;
+      }
+      // Only a missing or refused purchase needs the recovery steps; a busy or
+      // unavailable server says so instead of implying the purchase is gone.
+      if (!purchase.ok && ![401, 403].includes(purchase.status)) {
+        $('purchase-status').textContent = purchase.status === 429
+          ? 'Too many purchase checks were made just now. Wait a minute, then try again.'
+          : 'Could not check your purchase just now. Try again in a moment.';
+        retryPurchaseButton.hidden = false;
+        retryPurchaseButton.disabled = false;
+        return;
+      }
+      if (!purchase.ok) {
+        $('purchase-status').textContent = 'Your original purchase access is needed.';
+        $('purchase-help').hidden = false;
+        return;
+      }
+      const paid = await purchase.json().catch(() => null);
+      if (!paid || !Number.isInteger(paid.maxRows)) {
+        $('purchase-status').textContent = 'Could not check your purchase just now. Try again in a moment.';
+        retryPurchaseButton.hidden = false;
+        retryPurchaseButton.disabled = false;
+        return;
+      }
+      $('purchase-status').textContent = `${paid.plan === 'team' ? 'Team' : 'Individual'} access · up to ${paid.maxRows} signatures per batch.`;
+      $('approve-connection').disabled = false;
+    } finally {
+      checkingPurchase = false;
     }
-    if (!purchase?.ok) {
-      $('purchase-status').textContent = 'Your original purchase access is needed.';
-      $('purchase-help').hidden = false;
-      return;
-    }
-    const paid = await purchase.json();
-    $('purchase-status').textContent = `${paid.plan === 'team' ? 'Team' : 'Individual'} access · up to ${paid.maxRows} signatures per batch.`;
-    $('approve-connection').disabled = false;
-  } catch (err) {
-    $('connection-status').textContent = 'Connection unavailable';
-    showError(err.message || 'Could not load this request. Try again shortly.');
   }
+  retryPurchaseButton.addEventListener('click', checkPurchase);
   $('approve-agent').addEventListener('submit', async (event) => {
     event.preventDefault();
     const button = $('approve-connection');
@@ -59,7 +87,7 @@
     try {
       const response = await api('approve', { request_token: requestToken, user_code: $('agent-code').value.trim() }, purchaseToken);
       if (!response.ok) {
-        const result = await response.json();
+        const result = await response.json().catch(() => ({}));
         throw new Error(result.code === 'invalid_code' ? 'That code does not match. Check the code shown by your assistant.' : result.code === 'already_approved' ? 'This connection was already approved. Return to your assistant.' : result.code === 'rate_limited' ? 'Please wait a minute before trying again.' : 'Could not approve this connection. Check your purchase access or ask your assistant for a new request.');
       }
       purchaseToken = '';
@@ -72,4 +100,27 @@
       button.textContent = 'Allow access for 24 hours';
     }
   });
+  try {
+    const response = await api('preview', { request_token: requestToken });
+    if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error('Too many requests right now. Wait a minute and try opening your assistant’s connection link again.');
+      }
+      if (response.status >= 500) {
+        throw new Error('This service is temporarily unavailable. Wait a moment and try opening your assistant’s connection link again.');
+      }
+      throw new Error('This request has expired or could not be verified. Ask your assistant to start a new connection.');
+    }
+    const request = await response.json().catch(() => null);
+    if (!request || typeof request.agent_name !== 'string') {
+      throw new Error('This service is temporarily unavailable. Wait a moment and try opening your assistant’s connection link again.');
+    }
+    $('agent-name').textContent = request.agent_name;
+    $('connection-details').hidden = false;
+    $('connection-status').textContent = 'Review the permissions below before continuing.';
+    await checkPurchase();
+  } catch (err) {
+    $('connection-status').textContent = 'Connection unavailable';
+    showError(err.message || 'Could not load this request. Try again shortly.');
+  }
 }());
