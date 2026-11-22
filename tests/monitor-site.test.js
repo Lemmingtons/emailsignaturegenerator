@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 const path = require('path');
 const { monitor } = require('../scripts/monitor-site');
 
@@ -28,10 +29,10 @@ function serve(overrides) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-async function run(overrides) {
+async function run(overrides, options) {
   const server = await serve(overrides);
   try {
-    return await monitor(`http://127.0.0.1:${server.address().port}`);
+    return await monitor(`http://127.0.0.1:${server.address().port}`, undefined, options);
   } finally {
     server.close();
   }
@@ -73,15 +74,22 @@ async function run(overrides) {
   const gptBlocked = await run({ '/robots.txt': () => [200, read('robots.txt').replace(/User-agent: GPTBot\s+Allow: \//, 'User-agent: GPTBot\nDisallow: /')] });
   assert.ok(gptBlocked.some((f) => f.includes('GPTBot')), 'monitor missed GPTBot being blocked');
 
-  // A page committed to blog/ must be expected live even when the committed
-  // sitemap forgot it; the sitemap in the repo is not the inventory.
-  const orphan = path.join(ROOT, 'blog', 'zz-monitor-orphan-test.html');
-  fs.writeFileSync(orphan, '<!doctype html>');
+  // Pages committed to blog/ or email-signature-templates/ must be expected
+  // live even when the committed sitemap forgot them; test in an isolated temp
+  // directory so the live checkout is never mutated.
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'monitor-site-test-'));
   try {
-    const unlisted = await run({});
-    assert.ok(unlisted.some((f) => f.includes('/blog/zz-monitor-orphan-test')), 'monitor trusted a sitemap that omits a committed page');
+    fs.writeFileSync(path.join(fixtureRoot, 'sitemap.xml'), read('sitemap.xml'));
+    fs.mkdirSync(path.join(fixtureRoot, 'blog'), { recursive: true });
+    fs.mkdirSync(path.join(fixtureRoot, 'seo'), { recursive: true });
+    fs.mkdirSync(path.join(fixtureRoot, 'email-signature-templates'), { recursive: true });
+    fs.writeFileSync(path.join(fixtureRoot, 'blog', 'zz-monitor-orphan-test.html'), '<!doctype html>');
+    fs.writeFileSync(path.join(fixtureRoot, 'email-signature-templates', 'zz-monitor-template-orphan.html'), '<!doctype html>');
+    const unlisted = await run({}, { rootDir: fixtureRoot });
+    assert.ok(unlisted.some((f) => f.includes('/blog/zz-monitor-orphan-test')), 'monitor trusted a sitemap that omits a committed blog page');
+    assert.ok(unlisted.some((f) => f.includes('/email-signature-templates/zz-monitor-template-orphan')), 'monitor trusted a sitemap that omits a committed template page');
   } finally {
-    fs.unlinkSync(orphan);
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
   }
 
   console.log('Site monitor checks passed');

@@ -33,7 +33,7 @@ No subscription. No recurring charges. No account needed.
 - 28 signature templates across 6 categories: Professional, Creative, Minimal, Social-First, Sales/CTA, Industry
 - Full colour customisation (primary, secondary, text colours via hex codes or colour picker)
 - 9 email-safe fonts: Modern (Segoe UI / San Francisco), Arial, Georgia, Verdana, Trebuchet, Tahoma, Courier, Times New Roman, Lucida
-- Photo support: circle, rounded, or square shape; upload for preview or paste hosted URL for email
+- Photo and logo support: circle, rounded, or square photo shapes; preview uploads free, paste a hosted URL, or unlock Pro for hosted photos, hosted logos, and animated photo effects
 - Social icon links: LinkedIn, Instagram, Facebook, Google reviews — 3 icon styles (mono, colour, circle); the website is written out as a link
 - CTA buttons: customisable text and URL (e.g. "Book a Meeting")
 - One-click copy: rich HTML for Gmail / plain text for any client

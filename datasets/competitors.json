@@ -55,7 +55,7 @@
       },
       {
         "feature": "Team management and analytics",
-        "us": "Not offered.",
+        "us": "Team pack ({{teamPrice}} once for {{teamSeats}} seats) and the Teams and bulk page build signatures for several people at once. No central admin console, banner campaigns or click analytics.",
         "them": "Business plans add central management, banner campaigns and analytics."
       }
     ],
