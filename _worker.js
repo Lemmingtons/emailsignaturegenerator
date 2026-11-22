@@ -29,6 +29,11 @@ const SEO_REPLACEMENT_REDIRECTS = Object.freeze({
   '/seo/email-signature-checker': '/health-check',
   '/seo/email-signature-checker.html': '/health-check',
 });
+const SHORTCUT_REDIRECTS = Object.freeze({
+  '/app': '/generator',
+  '/create': '/generator',
+  '/generate': '/generator',
+});
 const REMOVED_SEO_PATH = /^\/seo\/(?:email-signature-for-[a-z0-9-]+|email-signature-generator-for-yahoo-mail)(?:\.html)?$/;
 
 // ── JWT Helpers (Web Crypto API) ─────────────────────────────────────────────
@@ -164,9 +169,10 @@ function sniffImage(buf) {
 const ICON_PLATFORMS = ['website', 'linkedin', 'instagram', 'facebook', 'google'];
 const ICON_SIZE = ICON_MASK_SIZE;
 
-// Image slots a Pro user may occupy. One stored file per slot per user.
+// Image slots a Pro user may occupy. Each slot keeps at most one file per
+// extension so format changes (e.g. photo.jpg -> photo.gif) do not break images
+// in already-sent emails.
 const IMAGE_SLOTS = ['photo', 'logo', 'cta', 'divider'];
-const IMAGE_EXTS = ['jpg', 'png', 'webp', 'gif'];
 
 // Server-side failures are logged by code only, so Workers Logs can alert on
 // them without ever recording tokens, customer ids, or request bodies.
@@ -211,6 +217,8 @@ async function readRequestBytes(request, maxBytes) {
     }
   } catch {
     return { error: apiError(400, 'invalid_body') };
+  } finally {
+    reader.releaseLock();
   }
   const bytes = new Uint8Array(size);
   let offset = 0;
@@ -283,11 +291,19 @@ async function readJsonObject(bucket, key) {
 }
 
 async function isEntitlementRevoked(bucket, id) {
-  const [refund, dispute] = await Promise.all([
+  const [refund, disputeObj] = await Promise.all([
     bucket.get(revocationKey(id, 'refund')),
     bucket.get(revocationKey(id, 'dispute')),
   ]);
-  return Boolean(refund || dispute);
+  if (refund) return true;
+  if (!disputeObj) return false;
+  try {
+    const dispute = JSON.parse(await disputeObj.text());
+    if (dispute && dispute.status === 'restored') return false;
+  } catch {
+    // Fail closed on unparseable/legacy dispute tombstones.
+  }
+  return true;
 }
 
 async function storeActiveEntitlement(env, stripeResult, source) {
@@ -337,13 +353,53 @@ async function revokeEntitlement(env, paymentIntentId, reason, event) {
   const bucket = uploadBucket(env);
   if (!bucket || !env.PRO_SIGNING_SECRET) return false;
   const id = await entitlementId(paymentIntentId, env.PRO_SIGNING_SECRET);
+  const eventCreated = Number.isInteger(event && event.created) ? event.created : 0;
+  if (reason === 'dispute') {
+    const disputeObj = event && event.data && event.data.object;
+    const disputeId = typeof (disputeObj && disputeObj.id) === 'string' ? disputeObj.id : '';
+    const key = revocationKey(id, 'dispute');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const current = await bucket.get(key);
+      let existing = null;
+      if (current) {
+        try { existing = JSON.parse(await current.text()); } catch { existing = null; }
+      }
+      if (existing && Number.isInteger(existing.eventCreated)) {
+        if (eventCreated < existing.eventCreated) return true;
+        if (
+          eventCreated === existing.eventCreated &&
+          existing.status === 'restored' &&
+          disputeId &&
+          existing.disputeId === disputeId
+        ) {
+          return true;
+        }
+      }
+      const record = {
+        version: 1,
+        entitlementId: id,
+        status: 'revoked',
+        reason: 'dispute',
+        disputeId,
+        eventId: event.id,
+        eventCreated,
+        revokedAt: Date.now(),
+      };
+      const written = await bucket.put(key, JSON.stringify(record), {
+        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+        onlyIf: current ? (current.etag ? { etagMatches: current.etag } : undefined) : { etagDoesNotMatch: '*' },
+      });
+      if (written !== null) return true;
+    }
+    return false;
+  }
   const tombstone = {
     version: 1,
     entitlementId: id,
     status: 'revoked',
     reason,
     eventId: event.id,
-    eventCreated: event.created,
+    eventCreated,
     revokedAt: Date.now(),
   };
   // The separate tombstone means a late checkout retry cannot overwrite a
@@ -354,12 +410,41 @@ async function revokeEntitlement(env, paymentIntentId, reason, event) {
   return true;
 }
 
-async function restoreDisputedEntitlement(env, paymentIntentId) {
+async function restoreDisputedEntitlement(env, paymentIntentId, event) {
   const bucket = uploadBucket(env);
   if (!bucket || !env.PRO_SIGNING_SECRET) return false;
   const id = await entitlementId(paymentIntentId, env.PRO_SIGNING_SECRET);
-  await bucket.delete(revocationKey(id, 'dispute'));
-  return true;
+  const eventCreated = Number.isInteger(event && event.created) ? event.created : 0;
+  const disputeObj = event && event.data && event.data.object;
+  const disputeId = typeof (disputeObj && disputeObj.id) === 'string' ? disputeObj.id : '';
+  const key = revocationKey(id, 'dispute');
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await bucket.get(key);
+    let existing = null;
+    if (current) {
+      try { existing = JSON.parse(await current.text()); } catch { existing = null; }
+    }
+    if (existing && Number.isInteger(existing.eventCreated) && eventCreated < existing.eventCreated) {
+      return true;
+    }
+    const record = {
+      version: 1,
+      entitlementId: id,
+      status: 'restored',
+      reason: 'dispute',
+      disputeId,
+      eventId: event && event.id ? event.id : '',
+      eventCreated,
+      revokedAt: existing && existing.revokedAt ? existing.revokedAt : null,
+      restoredAt: Date.now(),
+    };
+    const written = await bucket.put(key, JSON.stringify(record), {
+      httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+      onlyIf: current ? (current.etag ? { etagMatches: current.etag } : undefined) : { etagDoesNotMatch: '*' },
+    });
+    if (written !== null) return true;
+  }
+  return false;
 }
 
 function stripeResultFromSession(session, env) {
@@ -428,9 +513,11 @@ async function redeemCheckoutSession(sessionId, env) {
 }
 
 // The Stripe return page retries while the signed webhook is still on its way,
-// counting attempts in the URL so it cannot loop forever.
-const PAYMENT_PENDING_ATTEMPTS = 30;
-const PAYMENT_PENDING_RETRY_SECONDS = 2;
+// counting attempts in the URL so it cannot loop forever. 20 attempts at 3s
+// keeps a full 60s wait safely inside the 25/min IP rate limit (including an
+// emailed fragment restore hop).
+const PAYMENT_PENDING_ATTEMPTS = 20;
+const PAYMENT_PENDING_RETRY_SECONDS = 3;
 
 // Small branded pages for the payment return. They never contain the token or
 // any Stripe id: the retry uses a Refresh header, not a link in the body.
@@ -468,8 +555,10 @@ function paymentConfirmationPendingResponse(url) {
     ], { script, action: '<p style="margin-top:32px"><button type="button" id="check-again" class="btn btn-primary">Check again</button></p>' });
     return new Response(html, { status: 202, headers: paymentPageHeaders() });
   }
-  const next = new URL(url);
-  next.searchParams.set('attempt', String(done + 1));
+  const nextParams = new URLSearchParams();
+  const sessionId = url.searchParams.get('session_id') || '';
+  if (sessionId) nextParams.set('session_id', sessionId);
+  nextParams.set('attempt', String(done + 1));
   const html = paymentPageHtml('Confirming your payment…', [
     'Stripe is confirming your purchase. This page checks again automatically every few seconds.',
   ]);
@@ -477,7 +566,7 @@ function paymentConfirmationPendingResponse(url) {
     status: 202,
     headers: paymentPageHeaders({
       'Retry-After': String(PAYMENT_PENDING_RETRY_SECONDS),
-      Refresh: `${PAYMENT_PENDING_RETRY_SECONDS};url=${next.pathname}${next.search}`,
+      Refresh: `${PAYMENT_PENDING_RETRY_SECONDS};url=${url.pathname}?${nextParams.toString()}`,
     }),
   });
 }
@@ -827,7 +916,10 @@ async function teamResponse(request, env, url) {
   if (!match[2]) {
     if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
     const team = await readJsonObject(bucket, teamKey(id));
-    if (!team) return apiError(404, 'not_found');
+    if (!team || !validProSubject(team.owner || '') || !String(team.owner).startsWith('ent_')) {
+      return apiError(404, 'not_found');
+    }
+    if (await isEntitlementRevoked(bucket, team.owner)) return apiError(403, 'team_inactive');
     return jsonResponse({ design: team.design, seats: team.seats, members: team.members });
   }
 
@@ -853,26 +945,28 @@ async function teamResponse(request, env, url) {
   }
   const claimHash = claim ? await teamClaimHash(claim) : '';
 
-  const object = await bucket.get(teamKey(id));
-  if (!object) return apiError(404, 'not_found');
-  let team;
-  try {
-    team = JSON.parse(await object.text());
-  } catch {
-    return apiError(404, 'not_found');
-  }
-  if (!team || !validProSubject(team.owner || '') || !String(team.owner).startsWith('ent_')) {
-    return apiError(404, 'not_found');
-  }
-  if (await isEntitlementRevoked(bucket, team.owner)) return apiError(403, 'team_inactive');
-  const entitlement = await readJsonObject(bucket, entitlementKey(team.owner));
-  if (!entitlement || entitlement.status !== 'active' || entitlement.plan !== 'team') {
-    return apiError(403, 'team_inactive');
-  }
-  const claims = teamClaims(team);
-  const members = Number.isInteger(team.members) ? team.members : 0;
-  let member = claimHash && Number.isInteger(claims[claimHash]) ? claims[claimHash] : 0;
-  if (!member) {
+  let team = null;
+  let member = 0;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const object = await bucket.get(teamKey(id));
+    if (!object) return apiError(404, 'not_found');
+    try {
+      team = JSON.parse(await object.text());
+    } catch {
+      return apiError(404, 'not_found');
+    }
+    if (!team || !validProSubject(team.owner || '') || !String(team.owner).startsWith('ent_')) {
+      return apiError(404, 'not_found');
+    }
+    if (await isEntitlementRevoked(bucket, team.owner)) return apiError(403, 'team_inactive');
+    const entitlement = await readJsonObject(bucket, entitlementKey(team.owner));
+    if (!entitlement || entitlement.status !== 'active' || entitlement.plan !== 'team') {
+      return apiError(403, 'team_inactive');
+    }
+    const claims = teamClaims(team);
+    const members = Number.isInteger(team.members) ? team.members : 0;
+    member = claimHash && Number.isInteger(claims[claimHash]) ? claims[claimHash] : 0;
+    if (member) break;
     // The buyer uses one of the pack's seats themselves.
     if (members >= team.seats - 1) return apiError(409, 'team_full', String(team.seats));
     member = members + 1;
@@ -883,8 +977,10 @@ async function teamResponse(request, env, url) {
       httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
       onlyIf: object.etag ? { etagMatches: object.etag } : undefined,
     });
-    if (written === null) return apiError(409, 'team_busy');
+    if (written !== null) break;
+    member = 0;
   }
+  if (!member) return apiError(409, 'team_busy');
 
   const now = Math.floor(Date.now() / 1000);
   const hundredYears = 100 * 365 * 24 * 60 * 60;
@@ -905,7 +1001,7 @@ function proAuthError(result) {
 // static.cloudflareinsights.com and reports to /cdn-cgi/rum on this origin
 // ('self'), or to cloudflareinsights.com when the zone is not proxied. Keep
 // `_headers` in step: Wrangler applies it to static asset responses.
-const PAGE_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; img-src 'self' data: blob: https:; connect-src 'self' https://cloudflareinsights.com";
+const PAGE_CSP = "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'none'; img-src 'self' data: blob: https:; connect-src 'self' https://cloudflareinsights.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
 // One year, this host only: no includeSubDomains or preload, which are hard to
 // undo and would bind every subdomain to HTTPS.
@@ -919,16 +1015,22 @@ function withTransportSecurity(response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-function addSecurityHeaders(response, bulk = false) {
+function addSecurityHeaders(response, options = {}) {
+  const opts = typeof options === 'boolean' ? { bulk: options, noReferrer: options } : options;
+  const bulk = Boolean(opts.bulk);
+  const noReferrer = Boolean(opts.noReferrer || bulk);
+  const scriptSrcNone = Boolean(opts.scriptSrcNone);
   const newHeaders = new Headers(response.headers);
   newHeaders.set('X-Frame-Options', 'DENY');
   newHeaders.set('X-Content-Type-Options', 'nosniff');
-  newHeaders.set('Referrer-Policy', bulk ? 'no-referrer' : 'strict-origin-when-cross-origin');
+  newHeaders.set('Referrer-Policy', noReferrer ? 'no-referrer' : 'strict-origin-when-cross-origin');
   newHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  newHeaders.set(
-    'Content-Security-Policy',
-    PAGE_CSP + (bulk ? "; worker-src 'self' blob:" : '')
-  );
+  let csp = PAGE_CSP;
+  if (scriptSrcNone) {
+    csp = csp.replace("script-src 'self' https://static.cloudflareinsights.com", "script-src 'none'");
+  }
+  if (bulk) csp += "; worker-src 'self' blob:";
+  newHeaders.set('Content-Security-Policy', csp);
   return newHeaders;
 }
 
@@ -983,6 +1085,7 @@ const PUBLIC_CLIENT_SCRIPTS = new Set([
   '/js/generator-core.js',
   '/js/gif-encoder.js',
   '/js/health-check.js',
+  '/js/home.js',
   '/js/motion.js',
   '/js/photo-animator.js',
   '/js/site-facts.js',
@@ -1062,13 +1165,17 @@ async function readCapped(response, max) {
   const reader = response.body.getReader();
   const chunks = [];
   let total = 0;
-  while (total < max) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    total += value.byteLength;
+  try {
+    while (total <= max) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* already closed */ }
+    reader.releaseLock();
   }
-  try { await reader.cancel(); } catch { /* already closed */ }
   const out = new Uint8Array(Math.min(total, max));
   let offset = 0;
   for (const chunk of chunks) {
@@ -1094,11 +1201,15 @@ async function brandFetch(target, accept, max, timeoutMs) {
       });
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get('Location');
+        try { await response.body?.cancel(); } catch { /* already closed */ }
         if (!location) return null;
         url = new URL(location, url);
         continue;
       }
-      if (!response.ok) return null;
+      if (!response.ok) {
+        try { await response.body?.cancel(); } catch { /* already closed */ }
+        return null;
+      }
       const body = await readCapped(response, max);
       if (!body) return null;
       return { url, contentType: (response.headers.get('Content-Type') || '').toLowerCase(), ...body };
@@ -1118,8 +1229,25 @@ function sniffLogoType(bytes) {
   if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
   if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image/gif';
   if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
-  const head = new TextDecoder().decode(b.subarray(0, 1024)).replace(/^﻿/, '').trimStart();
-  if (head.startsWith('<') && /<svg[\s>]/i.test(head)) return 'image/svg+xml';
+  let rest = new TextDecoder().decode(b.subarray(0, 1024)).replace(/^\uFEFF/, '').trimStart();
+  for (let i = 0; i < 16; i++) {
+    if (rest.startsWith('<?')) {
+      const end = rest.indexOf('?>');
+      if (end < 0) return '';
+      rest = rest.slice(end + 2).trimStart();
+    } else if (rest.startsWith('<!--')) {
+      const end = rest.indexOf('-->');
+      if (end < 0) return '';
+      rest = rest.slice(end + 3).trimStart();
+    } else if (/^<!doctype\s+svg\b/i.test(rest)) {
+      const end = rest.indexOf('>');
+      if (end < 0) return '';
+      rest = rest.slice(end + 1).trimStart();
+    } else {
+      break;
+    }
+  }
+  if (/^<svg(?:\s|>|\/)/i.test(rest)) return 'image/svg+xml';
   return '';
 }
 
@@ -1151,6 +1279,8 @@ async function fetchBrandLogo(candidates, deadline) {
 // POST { url } from the generator; GET ?url= for quick checks from a browser.
 async function brandResponse(request, env, url) {
   if (request.method !== 'POST' && request.method !== 'GET') return apiError(405, 'method_not_allowed');
+  const origin = request.headers.get('Origin');
+  if (origin !== null && origin !== url.origin) return apiError(403, 'invalid_origin');
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
   const limited = await enforceRateLimit(env, `brand:${ip}`);
   if (limited) return limited;
@@ -1210,19 +1340,31 @@ async function brandResponse(request, env, url) {
 // ── Main Worker ──────────────────────────────────────────────────────────────
 
 export default {
-  async fetch(request, env) {
-    return withTransportSecurity(await handleUnsafely(request, env));
+  async fetch(request, env, ctx) {
+    return withTransportSecurity(await handleUnsafely(request, env, ctx));
   },
 };
 
-async function handleUnsafely(request, env) {
+async function handleUnsafely(request, env, ctx) {
     try {
-      return await handleRequest(request, env);
+      return await handleRequest(request, env, ctx);
     } catch (err) {
       const pathname = new URL(request.url).pathname;
       // Route and error name only: paths and R2 messages can carry saved-signature
       // ids, legacy customer ids, and storage keys.
       logServerError('unhandled_error', { route: routeLabel(pathname), error: (err && err.name) || 'Error' });
+      if (pathname === '/mcp') {
+        return new Response(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32603, message: 'Internal error' } }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
+      if (pathname === '/a2a' || pathname.startsWith('/a2a/')) {
+        return new Response(JSON.stringify({ error: { code: 500, status: 'INTERNAL', message: 'Internal error' } }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/a2a+json; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
       if (pathname.startsWith('/api/')) {
         return new Response(JSON.stringify({ error: 'server_error', code: 'server_error' }), {
           status: 500,
@@ -1322,7 +1464,7 @@ async function healthResponse(env) {
   });
 }
 
-async function handleRequest(request, env) {
+async function handleRequest(request, env, ctx) {
     const url = new URL(request.url);
 
     const discovery = await agentDiscoveryResponse(request);
@@ -1345,7 +1487,7 @@ async function handleRequest(request, env) {
       });
     }
 
-    const replacementPath = SEO_REPLACEMENT_REDIRECTS[url.pathname];
+    const replacementPath = SEO_REPLACEMENT_REDIRECTS[url.pathname] || SHORTCUT_REDIRECTS[url.pathname];
     if (replacementPath) return permanentRedirect(url, replacementPath);
 
     if (REMOVED_SEO_PATH.test(url.pathname)) return notFoundResponse();
@@ -1365,6 +1507,19 @@ async function handleRequest(request, env) {
     // ── API: Verify Payment (Stripe redirect landing) ────────────────────────
     if (url.pathname === '/api/verify-payment') {
       if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const limited = await enforceRateLimit(env, `verify-payment:${ip}`);
+      if (limited) {
+        if (limited.status === 429) {
+          const script = `<script>document.getElementById('check-again').addEventListener('click',function(){var u=new URL(location.href);u.searchParams.delete('attempt');location.replace(u.pathname+u.search);});</script>`;
+          const html = paymentPageHtml('Please wait a moment', [
+            'Too many confirmation checks happened in a short time. Your payment is safe and you do not need to pay again.',
+            'Wait a few seconds, then check again to finish unlocking your purchase.',
+          ], { script, action: '<p style="margin-top:32px"><button type="button" id="check-again" class="btn btn-primary">Check again</button></p>' });
+          return new Response(html, { status: 429, headers: paymentPageHeaders({ 'Retry-After': '5' }) });
+        }
+        return paymentProblemResponse('server_misconfiguration');
+      }
       const sessionId = url.searchParams.get('session_id');
 
       // No query: the emailed link, whose session id is in the fragment.
@@ -1470,22 +1625,35 @@ async function handleRequest(request, env) {
         if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'refund', event);
       } else if (event.type === 'charge.dispute.created') {
         const paymentIntent = stripeId(object.payment_intent, 'pi');
-        if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'dispute', event);
+        if (paymentIntent && !await revokeEntitlement(env, paymentIntent, 'dispute', event)) {
+          return apiError(503, 'entitlement_update_busy');
+        }
       } else if (
         event.type === 'charge.dispute.closed' &&
         (object.status === 'won' || object.status === 'warning_closed')
       ) {
         const paymentIntent = stripeId(object.payment_intent, 'pi');
-        if (paymentIntent) await restoreDisputedEntitlement(env, paymentIntent);
+        if (paymentIntent && !await restoreDisputedEntitlement(env, paymentIntent, event)) {
+          return apiError(503, 'entitlement_update_busy');
+        }
       }
 
-      // Access is durable before email delivery. A failed send returns 503 so
-      // Stripe retries, while the buyer can still finish the checkout redirect.
-      // Without PURCHASE_EMAILS_FROM and RESEND_API_KEY this does nothing.
+      // Access is durable before email delivery. Retryable delivery errors return
+      // 503 so Stripe retries; permanent/reconciliation errors log and return 200
+      // so Stripe does not retry endlessly.
       try {
-        await PURCHASE_EMAILS.handle(event, env, emailPurchase);
-      } catch {
-        return apiError(503, 'purchase_email_delivery_failed');
+        await PURCHASE_EMAILS.handle(event, env, emailPurchase, url.origin);
+      } catch (err) {
+        const retryable = err && typeof err.retryable === 'boolean' ? err.retryable : true;
+        const reason = (err && typeof err.code === 'string' && err.code) || (err && err.name) || 'PurchaseEmailDeliveryFailed';
+        const providerStatus = err && Number.isInteger(err.providerStatus) ? err.providerStatus : null;
+        logServerError('purchase_email_error', {
+          eventId: typeof event.id === 'string' ? event.id : '',
+          eventType: typeof event.type === 'string' ? event.type : '',
+          reason,
+          providerStatus,
+        });
+        if (retryable) return apiError(503, 'purchase_email_delivery_failed');
       }
 
       return new Response(JSON.stringify({ received: true }), {
@@ -1579,14 +1747,9 @@ async function handleRequest(request, env) {
 
       // Team colleagues share the buyer's entitlement, so each gets their own
       // folder; a buyer's id is unchanged, so existing image links keep working.
+      // Keep other-extension siblings intact (bounded at 4 slots x 4 extensions)
+      // so switching e.g. photo.jpg -> photo.gif never breaks already-sent emails.
       const uploadId = await publicUploadId(cardOwnerId(verified.payload), env.PRO_SIGNING_SECRET);
-
-      // Best-effort delete other-extension siblings so each slot holds at most one file
-      await Promise.all(
-        IMAGE_EXTS
-          .filter((e) => e !== sniffed.ext)
-          .map((e) => bucket.delete(`users/${uploadId}/${imageType}.${e}`).catch(() => {}))
-      );
 
       // Store
       const key = `users/${uploadId}/${imageType}.${sniffed.ext}`;
@@ -1620,6 +1783,19 @@ async function handleRequest(request, env) {
       const [, platform, hex, circle] = match;
       if (!ICON_PLATFORMS.includes(platform)) return notFoundResponse();
 
+      const edgeCache = typeof caches !== 'undefined' && caches && caches.default ? caches.default : null;
+      const cacheKey = edgeCache ? new Request(`${url.origin}${url.pathname}`, { method: 'GET' }) : null;
+      if (edgeCache && (request.method === 'GET' || request.method === 'HEAD')) {
+        try {
+          const cached = await edgeCache.match(cacheKey);
+          if (cached) {
+            return request.method === 'HEAD'
+              ? new Response(null, { status: cached.status, headers: cached.headers })
+              : cached;
+          }
+        } catch { /* fall through to render */ }
+      }
+
       const mask = decodeMask(platform);
       if (!mask || mask.length !== ICON_SIZE * ICON_SIZE) return notFoundResponse();
 
@@ -1636,7 +1812,7 @@ async function handleRequest(request, env) {
         ICON_SIZE
       );
 
-      return new Response(png, {
+      const response = new Response(png, {
         headers: {
           'Content-Type': 'image/png',
           'Cache-Control': 'public, max-age=31536000, immutable',
@@ -1644,6 +1820,12 @@ async function handleRequest(request, env) {
           'X-Content-Type-Options': 'nosniff',
         },
       });
+      if (edgeCache && request.method === 'GET') {
+        const putPromise = edgeCache.put(cacheKey, response.clone()).catch(() => {});
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(putPromise);
+        else await putPromise;
+      }
+      return response;
     }
 
     // ── Public: Serve uploaded image ─────────────────────────────────────────
@@ -1787,6 +1969,7 @@ async function handleRequest(request, env) {
       }
 
       const card = normaliseCard(parsed);
+      if (!card.fullName) return apiError(400, 'name_required');
       const ownerPrefix = await cardOwnerPrefix(sub, env.PRO_SIGNING_SECRET);
 
       // Reusing a slug replaces that page, so the link already pasted into a
@@ -1806,29 +1989,49 @@ async function handleRequest(request, env) {
         // Cards published before the ledger existed join it here, best effort:
         // they already exist, so the cap does not apply to replacing them.
         await updateCardLedger(bucket, ownerPrefix, (slugs) => (slugs.includes(slug) ? null : [...slugs, slug]));
+        await bucket.put(`${ownerPrefix}${slug}`, '', {
+          httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
+        });
+        await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: ownerId, updatedAt: Date.now() }), {
+          httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+          // Lets the cards sitemap skip thin cards without reading every card body.
+          customMetadata: { indexable: isThinCard(card) ? '0' : '1' },
+        });
       } else {
-        slug = `${slugifyName(card.fullName)}-${randomSuffix()}`;
-        const reserved = await updateCardLedger(bucket, ownerPrefix, (slugs) => (
-          slugs.length >= MAX_CARDS_PER_BUYER ? 'card_limit_reached' : [...slugs, slug]
-        ));
-        if (reserved === 'card_limit_reached') {
-          return apiError(409, 'card_limit_reached', String(MAX_CARDS_PER_BUYER));
+        // The ledger and index entry go first, so a failed card write can only over-count
+        // (and a DELETE of that slug clears it), never leave a live uncounted page.
+        // Conditional write prevents a random-suffix collision overwriting another buyer's card.
+        let created = false;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          slug = `${slugifyName(card.fullName)}-${randomSuffix()}`;
+          const reserved = await updateCardLedger(bucket, ownerPrefix, (slugs) => (
+            slugs.includes(slug) ? 'slug_taken' : slugs.length >= MAX_CARDS_PER_BUYER ? 'card_limit_reached' : [...slugs, slug]
+          ));
+          if (reserved === 'slug_taken') continue;
+          if (reserved === 'card_limit_reached') {
+            return apiError(409, 'card_limit_reached', String(MAX_CARDS_PER_BUYER));
+          }
+          if (reserved !== 'ok') return apiError(409, 'card_busy');
+          await bucket.put(`${ownerPrefix}${slug}`, '', {
+            httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
+          });
+          const written = await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: ownerId, updatedAt: Date.now() }), {
+            httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+            customMetadata: { indexable: isThinCard(card) ? '0' : '1' },
+            onlyIf: { etagDoesNotMatch: '*' },
+          });
+          if (written !== null) {
+            created = true;
+            break;
+          }
+          // Collision with an existing card: release the reserved slug and retry.
+          await bucket.delete(`${ownerPrefix}${slug}`).catch(() => {});
+          await updateCardLedger(bucket, ownerPrefix, (slugs) => (
+            slugs.includes(slug) ? slugs.filter((s) => s !== slug) : null
+          ));
         }
-        if (reserved !== 'ok') return apiError(409, 'card_busy');
+        if (!created) return apiError(409, 'card_busy');
       }
-
-      // The ledger and index entry go first, so a failed card write can only over-count
-      // (and a DELETE of that slug clears it), never leave a live uncounted page.
-      // Written on every publish, so cards published before the index existed
-      // join it the next time their owner republishes them.
-      await bucket.put(`${ownerPrefix}${slug}`, '', {
-        httpMetadata: { contentType: 'text/plain', cacheControl: 'no-store' },
-      });
-      await bucket.put(`cards/${slug}.json`, JSON.stringify({ ...card, owner: ownerId, updatedAt: Date.now() }), {
-        httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-        // Lets the cards sitemap skip thin cards without reading every card body.
-        customMetadata: { indexable: isThinCard(card) ? '0' : '1' },
-      });
 
       return new Response(
         JSON.stringify({ slug, url: `${url.origin}/c/${slug}` }),
@@ -1851,6 +2054,9 @@ async function handleRequest(request, env) {
       const verified = await verifyProAccess(token, env);
       if (!verified.valid) return proAuthError(verified);
       const sub = verified.payload && verified.payload.sub;
+      if (!validProSubject(sub || '')) return apiError(401, 'invalid_token', 'bad_subject');
+      const cardLimited = await enforceRateLimit(env, `card:${sub}`);
+      if (cardLimited) return cardLimited;
 
       // The index entry lives under the caller's own prefix, so clearing it is
       // safe even when the card is already gone. That way a retry after a
@@ -1873,7 +2079,10 @@ async function handleRequest(request, env) {
       } catch {
         owner = null;
       }
-      if (owner !== cardOwnerId(verified.payload)) return apiError(403, 'not_your_card');
+      const callerOwnerId = cardOwnerId(verified.payload);
+      const canDelete = owner === callerOwnerId ||
+        (teamOwnerPlan(verified) && typeof owner === 'string' && owner.startsWith(`${sub}:m`));
+      if (!canDelete) return apiError(403, 'not_your_card');
 
       await bucket.delete(`cards/${match[1]}.json`);
       await releaseSlot();
@@ -1917,7 +2126,7 @@ async function handleRequest(request, env) {
           // Short, because a customer republishing should see the change quickly.
           'Cache-Control': 'public, max-age=300',
         },
-      }));
+      }), { scriptSrcNone: true });
       if (isThinCard(card)) headers.set('X-Robots-Tag', 'noindex, follow');
       return new Response(html, { headers });
     }
@@ -1926,8 +2135,25 @@ async function handleRequest(request, env) {
     // Kept separate from the static sitemap because this set changes whenever a
     // customer publishes, and the static one is generated at build time.
     if (url.pathname === '/sitemap-cards.xml') {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const limited = await enforceRateLimit(env, `sitemap:${ip}`);
+      if (limited) return limited;
+
       const bucket = uploadBucket(env);
       if (!bucket) return notFoundResponse();
+
+      const edgeCache = typeof caches !== 'undefined' && caches && caches.default ? caches.default : null;
+      const cacheKey = edgeCache ? new Request(`${url.origin}/sitemap-cards.xml`, { method: 'GET' }) : null;
+      if (edgeCache && (request.method === 'GET' || request.method === 'HEAD')) {
+        try {
+          const cached = await edgeCache.match(cacheKey);
+          if (cached) {
+            return request.method === 'HEAD'
+              ? new Response(null, { status: cached.status, headers: cached.headers })
+              : cached;
+          }
+        } catch { /* fall through to rebuild */ }
+      }
 
       // R2 returns at most 1000 keys per call. Listing only the first page would
       // silently cap the feature's whole point once more than 1000 cards exist,
@@ -1959,10 +2185,16 @@ async function handleRequest(request, env) {
         urls = `  <url><loc>${url.origin}${generatorPath}</loc></url>`;
       }
 
-      return new Response(
+      const response = new Response(
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
         { headers: { 'Content-Type': 'application/xml', 'Cache-Control': 'public, max-age=3600' } }
       );
+      if (edgeCache && request.method === 'GET') {
+        const putPromise = edgeCache.put(cacheKey, response.clone()).catch(() => {});
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(putPromise);
+        else await putPromise;
+      }
+      return response;
     }
 
     if (request.method === 'POST' && url.pathname === '/api/upload') {
@@ -2001,7 +2233,9 @@ async function handleRequest(request, env) {
     if (response.status === 404) response = notFoundResponse();
 
     // Add security headers to all responses
-    const newHeaders = addSecurityHeaders(response, ['/bulk', '/bulk.html', '/connect-agent', '/connect-agent.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname));
+    const isBulkWorker = ['/bulk', '/bulk.html', '/connect-agent', '/connect-agent.html', '/js/bulk-spreadsheet-worker.js'].includes(url.pathname);
+    const noReferrer = isBulkWorker || ['/generator', '/generator.html'].includes(url.pathname);
+    const newHeaders = addSecurityHeaders(response, { bulk: isBulkWorker, noReferrer });
     if (['/connect-agent', '/connect-agent.html'].includes(url.pathname)) {
       newHeaders.set('Cache-Control', 'no-store, private');
       newHeaders.set('X-Robots-Tag', 'noindex, nofollow');
@@ -2051,18 +2285,32 @@ function safeHttpUrl(value) {
   }
 }
 
+function cleanCardText(value, max) {
+  return String(value == null ? '' : value)
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
+function cleanCardEmail(value) {
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw || raw.length > 160 || /[\u0000-\u001f\u007f\s?&<>]/.test(raw)) return '';
+  if (!/^[^\s@<>?&]+@[^\s@<>?&]+\.[^\s@<>?&]+$/.test(raw)) return '';
+  return raw;
+}
+
 // Accepts only the fields a card page renders, each clamped to a sane length, so
 // an oversized or unexpected key can never reach storage or the rendered page.
 function normaliseCard(input) {
   const out = {};
   for (const field of CARD_TEXT_FIELDS) {
-    out[field] = String(input[field] == null ? '' : input[field]).trim().slice(0, 120);
+    out[field] = cleanCardText(input[field], 120);
   }
   for (const field of CARD_LINK_FIELDS) {
     out[field] = safeHttpUrl(input[field]).slice(0, 300);
   }
-  out.email = String(input.email == null ? '' : input.email).trim().slice(0, 160);
-  out.phone = String(input.phone == null ? '' : input.phone).trim().slice(0, 40);
+  out.email = cleanCardEmail(input.email);
+  out.phone = cleanCardText(input.phone, 40);
   out.photoUrl = safeHttpUrl(input.photoUrl).slice(0, 300);
   return out;
 }
@@ -2105,7 +2353,7 @@ async function readCard(env, slug) {
 function vcardEscape(value) {
   return String(value == null ? '' : value)
     .replace(/\\/g, '\\\\')
-    .replace(/\n/g, '\\n')
+    .replace(/\r\n|\r|\n/g, '\\n')
     .replace(/,/g, '\\,')
     .replace(/;/g, '\\;');
 }

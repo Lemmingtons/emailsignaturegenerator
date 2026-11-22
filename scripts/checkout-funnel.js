@@ -38,6 +38,9 @@ function paymentLinkPlans() {
   return plans;
 }
 
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_STRIPE_PAGES = 200;
+
 // Pairs each session with the closest unused click of the same plan inside
 // the window. Pure, so tests can drive it with fixtures.
 function matchSessions(sessions, clicks) {
@@ -48,7 +51,7 @@ function matchSessions(sessions, clicks) {
     clicks.forEach((click, i) => {
       if (used.has(i) || click.plan !== session.plan) return;
       const lead = session.created - click.at;
-      if (lead > MATCH_BEFORE_MS || lead < -MATCH_AFTER_MS) return;
+      if (!Number.isFinite(lead) || lead > MATCH_BEFORE_MS || lead < -MATCH_AFTER_MS) return;
       if (best === -1 || Math.abs(lead) < Math.abs(session.created - clicks[best].at)) best = i;
     });
     if (best !== -1) used.add(best);
@@ -80,11 +83,17 @@ async function fetchClicks(sinceMs) {
   const account = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN;
   if (!account || !token) throw new Error('Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN (Account Analytics: Read).');
+  if (!/^[0-9a-f]{32}$/i.test(account)) {
+    throw new Error('CLOUDFLARE_ACCOUNT_ID must be a 32-character hexadecimal ID.');
+  }
   const since = new Date(sinceMs).toISOString().replace('T', ' ').slice(0, 19);
   const sql = `SELECT timestamp, blob1 AS placement, blob2 AS plan, blob3 AS country, blob4 AS agent, _sample_interval AS weight
     FROM checkout_clicks WHERE timestamp >= toDateTime('${since}') ORDER BY timestamp FORMAT JSON`;
   const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/analytics_engine/sql`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: sql,
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: sql,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   const text = await response.text();
   // A dataset nobody has written to yet does not exist.
@@ -104,31 +113,50 @@ function stripePage(sinceSec, startingAfter) {
   const params = { limit: '100', 'created[gte]': String(sinceSec) };
   if (startingAfter) params.starting_after = startingAfter;
   if (process.env.STRIPE_API_KEY) {
+    if (!startingAfter && /^(?:sk|rk)_test_/.test(process.env.STRIPE_API_KEY)) {
+      console.warn('Warning: STRIPE_API_KEY appears to be a test-mode key; checkout funnel expects live sessions.');
+    }
     const query = new URLSearchParams(params).toString();
     return fetch(`https://api.stripe.com/v1/checkout/sessions?${query}`, {
       headers: { Authorization: `Bearer ${process.env.STRIPE_API_KEY}` },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     }).then(async (r) => {
       if (!r.ok) throw new Error(`Stripe request failed: HTTP ${r.status}`);
       return r.json();
     });
   }
   const args = ['checkout', 'sessions', 'list', '--live', ...Object.entries(params).flatMap(([k, v]) => ['-d', `${k}=${v}`])];
-  const out = execFileSync('stripe', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  const out = execFileSync('stripe', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: REQUEST_TIMEOUT_MS,
+  });
   // The CLI prints an account banner before the JSON.
-  return Promise.resolve(JSON.parse(out.slice(out.indexOf('{'))));
+  const jsonStart = out.indexOf('{');
+  if (jsonStart === -1) {
+    throw new Error(`Stripe CLI returned non-JSON output: ${out.slice(0, 200)}`);
+  }
+  return Promise.resolve(JSON.parse(out.slice(jsonStart)));
 }
 
 async function fetchSessions(sinceMs, plans) {
   const sessions = [];
   let after;
-  for (;;) {
+  for (let pageIndex = 0; pageIndex < MAX_STRIPE_PAGES; pageIndex++) {
     const page = await stripePage(Math.floor(sinceMs / 1000), after);
+    if (!page || !Array.isArray(page.data)) {
+      throw new Error('Stripe response missing data array.');
+    }
     for (const s of page.data) {
       const plan = plans[s.payment_link];
       if (!plan) continue;
       sessions.push({ id: s.id, created: s.created * 1000, plan, paid: s.payment_status === 'paid', status: s.status });
     }
     if (!page.has_more || !page.data.length) break;
+    if (pageIndex === MAX_STRIPE_PAGES - 1) {
+      console.warn(`Stripe pagination stopped at ${MAX_STRIPE_PAGES}-page cap; results may be incomplete.`);
+      break;
+    }
     after = page.data[page.data.length - 1].id;
   }
   return sessions;
@@ -165,7 +193,11 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((error) => { console.error(error.message); process.exit(1); });
+  main().catch((error) => {
+    console.error(error.message);
+    if (error && error.stderr) console.error(String(error.stderr).trim());
+    process.exit(1);
+  });
 }
 
-module.exports = { matchSessions, summarise, paymentLinkPlans, fetchSessions, fetchClicks, MATCH_BEFORE_MS, MATCH_AFTER_MS };
+module.exports = { matchSessions, summarise, paymentLinkPlans, fetchSessions, fetchClicks, MATCH_BEFORE_MS, MATCH_AFTER_MS, MAX_STRIPE_PAGES };

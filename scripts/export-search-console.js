@@ -25,6 +25,8 @@ const SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const DEFAULT_SITES = ['sc-domain:emailsignaturegenerator.ai', 'https://emailsignaturegenerator.ai/'];
 const ROW_LIMIT = 25000;
+const MAX_START_ROW = 250_000;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 const base64url = (input) => Buffer.from(input).toString('base64url');
 
@@ -42,27 +44,37 @@ async function accessToken(key) {
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion: `${header}.${claims}.${signature}`,
     }),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`token request failed: HTTP ${res.status}`);
-  return (await res.json()).access_token;
+  const data = await res.json();
+  if (!data || typeof data.access_token !== 'string' || !data.access_token.trim()) {
+    throw new Error('token response missing access_token');
+  }
+  return data.access_token;
 }
 
 // The API returns at most 25,000 rows per request and pages with startRow.
 async function queryAll(token, site, body) {
   const rows = [];
-  for (let startRow = 0; ; startRow += ROW_LIMIT) {
+  for (let startRow = 0; startRow <= MAX_START_ROW; startRow += ROW_LIMIT) {
     const page = await query(token, site, { ...body, rowLimit: ROW_LIMIT, startRow });
-    rows.push(...page);
+    for (const r of page) rows.push(r);
     if (page.length < ROW_LIMIT) return rows;
   }
+  return rows;
 }
 
 async function query(token, site, body) {
+  if (typeof token !== 'string' || !token.trim()) {
+    throw new Error('access_token must be a non-empty string');
+  }
   const url = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(site)}/searchAnalytics/query`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
     const err = new Error(`searchAnalytics query failed for ${site}: HTTP ${res.status}`);
@@ -126,8 +138,20 @@ async function main() {
   console.log(`Wrote ${file}: ${t.clicks} clicks, ${t.impressions} impressions, ${report.query.length} queries, ${report.page.length} pages`);
 }
 
-main().catch((err) => {
-  // Never print the key or token; messages above only name the property and status.
-  console.error(err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    // Never print the key or token; messages above only name the property and status.
+    console.error(err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  accessToken,
+  dateWindow,
+  query,
+  queryAll,
+  tidy,
+  ROW_LIMIT,
+  MAX_START_ROW,
+};

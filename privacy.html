@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy & Terms — Email Signature Generator</title>
-  <meta name="description" content="How emailsignaturegenerator.ai handles your data, including hosted Pro photo uploads.">
+  <meta name="description" content="How emailsignaturegenerator.ai handles your data across the signature builder, hosted images, saved links, card pages, team packs, bulk API/MCP, and analytics.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="canonical" href="https://emailsignaturegenerator.ai/privacy">
@@ -35,37 +35,59 @@
   <main id="privacy-main" style="max-width: 760px; margin: 40px auto; padding: 0 24px; line-height: 1.7; color: var(--text-primary, #1f2937);">
 
     <h1 style="font-size: 32px; margin-bottom: 8px;">Privacy &amp; Terms</h1>
-    <p style="color: var(--text-secondary, #6b7280); margin-top: 0;">Last updated: 10 November 2026</p>
+    <p style="color: var(--text-secondary, #6b7280); margin-top: 0;">Last updated: 22 November 2026</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">What we store</h2>
-    <p>The signature generator runs entirely in your browser. We do not have user accounts. The form fields you fill in (name, title, contact details, social links, colour preferences) stay on your device unless you take one of two actions: uploading an image, or saving your signature to a link. Both are Pro features, both are explicitly initiated by you, and both are described below.</p>
+    <p>The signature generator runs in your browser and we do not have user accounts. The form fields you fill in (name, title, contact details, social links, colour preferences) stay on your device unless you explicitly choose a server-backed feature: uploading hosted images, saving a signature to an edit link, publishing a public card page, sharing a team pack, generating a bulk ZIP or API/MCP/A2A batch, or running a website brand lookup. Each is described below.</p>
 
-    <h2 style="font-size: 22px; margin-top: 32px;">Pro purchases</h2>
-    <p>Pro is sold as a one-time payment via Stripe. We receive a Stripe checkout session ID and your Stripe customer ID, which we use to issue a signed access token (JWT) that is stored in your browser's <code>localStorage</code>. We do not see or store your card details — Stripe handles all payment information.</p>
-    <p><strong>Purchase confirmation email.</strong> When we email you a purchase confirmation, we store the checkout email address, purchased plan, payment amount, Stripe receipt link and email delivery status on Cloudflare R2. Resend processes the recipient address and the email to deliver your receipt and a private purchase-access link. Keep that email private: its access link restores the paid purchase on another device. It does not restore an unsaved signature draft. These records are used for transactional delivery and support, not marketing.</p>
+    <h2 style="font-size: 22px; margin-top: 32px;">Pro &amp; Team purchases</h2>
+    <p>Individual Pro and Team packs are sold as one-time payments via Stripe. When Stripe notifies us of a completed checkout, we derive an opaque entitlement ID (prefixed <code>ent_</code>) from the Stripe payment intent — not your Stripe customer ID — and issue a signed access token (JWT) stored in your browser's <code>localStorage</code>. We do not see or store your card details; Stripe handles all payment information.</p>
+    <p><strong>Purchase confirmation email.</strong> When transactional confirmation emails are enabled, Resend processes your checkout email address and the confirmation message to deliver your receipt and private purchase-access link. After the confirmation email is sent, the temporary email/receipt draft record is deleted from Cloudflare R2 and only a minimal delivery marker is kept to prevent duplicate sends. Keep that email private: its access link restores your paid purchase on another device (it does not restore an unsaved signature draft). These records are used for transactional delivery and support, not marketing.</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">Hosted images (Pro)</h2>
-    <p>Pro lets you host two images with us: a profile photo and a company logo. We store them on Cloudflare R2 and serve them from <code>emailsignaturegenerator.ai/u/&hellip;</code>. The identifier in that URL is an opaque random-looking value; it is not your Stripe customer ID, your email address, or anything else that identifies you.</p>
+    <p>Pro lets you host up to four image slots with us: a profile photo (<code>photo</code>), a company logo (<code>logo</code>), an animated call-to-action button (<code>cta</code>), and an animated divider (<code>divider</code>). We store them on Cloudflare R2 and serve them from <code>emailsignaturegenerator.ai/u/&hellip;</code>. The identifier in that URL is an opaque value derived from your entitlement — it is not your Stripe customer ID, your email address, or anything else that identifies you.</p>
     <p>Your browser prepares every image before it is sent, and re-encoding through the browser's canvas removes EXIF metadata (including any embedded location data):</p>
     <ul>
       <li><strong>Still photos</strong> are cropped and resized to 400&times;400 pixels and encoded as JPEG.</li>
-      <li><strong>Animated photos</strong> are rendered to a 160&times;160 pixel animated GIF. The animation is built in your browser — the image is not processed on our servers.</li>
+      <li><strong>Animated photos</strong> are rendered to a 200&times;200 pixel animated GIF in your browser — the image is not processed on our servers.</li>
       <li><strong>Logos</strong> are resized so the longest edge is at most 400 pixels and encoded as PNG.</li>
+      <li><strong>Animated CTA buttons and dividers</strong> are rendered as animated GIFs in your browser before upload.</li>
     </ul>
-    <p>Each slot keeps only your most recent file — re-uploading a photo replaces the previous photo, and the same for a logo. Hosted images are publicly accessible to anyone with the URL. This is intentional and unavoidable: your recipients' email clients must be able to fetch the image for your signature to display.</p>
+    <p>Re-uploading to a slot in the same format replaces the previous file for that format. When you switch a slot to a different format (for example, turning a JPEG headshot into an animated GIF), the earlier format stays hosted so signatures already sitting in other people's inboxes do not show a broken image. Hosted images are publicly accessible to anyone with the URL. This is intentional and unavoidable: your recipients' email clients must be able to fetch the image for your signature to display.</p>
     <p>We keep hosted images for as long as you may be using them. Because a signature you have already sent points at these URLs, deleting them would break the appearance of email that is already in other people's inboxes, so we do not expire them automatically.</p>
     <p><strong>Acceptable use.</strong> Uploaded images must be your own content or content you are licensed to use. Prohibited content — illegal material, content that infringes others' rights, or child sexual abuse material (CSAM) — will be removed and the associated Pro access may be terminated without refund. We may report illegal content to law enforcement.</p>
-    <p><strong>Deletion.</strong> To delete a hosted image, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> from the address associated with your Stripe purchase, or simply re-upload to overwrite the previous file. Note that deleting an image will stop it displaying in signatures you have already sent.</p>
+    <p><strong>Deletion.</strong> To delete all hosted images (including earlier formats), email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> from the address associated with your Stripe purchase. Re-uploading in the same format overwrites that format's file. Note that deleting an image will stop it displaying in signatures you have already sent.</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">Saved signatures (Pro)</h2>
-    <p>Pro includes a "Save &amp; get link" option. If you use it, we store a copy of your signature on Cloudflare R2 so you can reopen and edit it later on another device. Unlike everything else in the generator, this <em>does</em> place the details you entered — including your name, email address, phone number and social links — on our servers.</p>
+    <p>Pro includes a "Save &amp; get link" option. If you use it, we store a copy of your signature on Cloudflare R2 so you can reopen and edit it later on another device. Unlike local editing in the generator, this <em>does</em> place the details you entered — including your name, email address, phone number and social links — on our servers.</p>
     <p><strong>The link is the key.</strong> Each saved signature gets a long random web address. Anyone who has that address can open your saved signature and see the details in it, without signing in. There is no password on it. Treat the link like a private document: share it only with people you are happy to show those details to, and avoid posting it anywhere public.</p>
     <p>Saved signatures are never listed publicly, are not indexed by search engines, and are not sent to any third party.</p>
     <p><strong>Retention.</strong> We delete saved signatures 12 months after they are created. Losing one costs you nothing beyond re-entering your details — signatures you have already copied into your email client keep working, and hosted images are unaffected.</p>
     <p><strong>Deletion.</strong> To delete a saved signature before then, email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> with the link.</p>
 
-    <h2 style="font-size: 22px; margin-top: 32px;">Cookies and analytics</h2>
-    <p>We use only first-party storage (<code>localStorage</code>) to remember your Pro access token. We use Cloudflare Web Analytics, which our host Cloudflare runs without cookies or cross-site tracking, to count page views and measure page speed. We do not run advertising trackers.</p>
+    <h2 style="font-size: 22px; margin-top: 32px;">Public card pages (Pro)</h2>
+    <p>If you explicitly choose to publish a card page (<code>/api/card</code>), we store the contact details you submit — name, job title, company, email address, phone number, photo URL, website, and social links — on Cloudflare R2 and serve them publicly at <code>/c/{slug}</code> along with a downloadable vCard contact file (<code>/c/{slug}.vcf</code>).</p>
+    <p><strong>Public and search-indexed.</strong> Unlike saved edit links, published card pages are deliberately public. Cards that include a job title or company and a website or profile link are listed in <code>/sitemap-cards.xml</code> so search engines can index them. Only publish details you want publicly visible online.</p>
+    <p><strong>Self-service deletion.</strong> You can unpublish your card page at any time directly from the generator using the "Unpublish" button, which deletes the card record from Cloudflare R2 and removes it from <code>/c/{slug}</code> and <code>/sitemap-cards.xml</code>. You can also email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> with your card URL.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Team packs, Bulk downloads, API, MCP &amp; A2A</h2>
+    <p><strong>Team packs (<code>/api/team</code>).</strong> When a team buyer creates a shared team link, we store the shared template, brand style, company defaults, and seat-claim counts on Cloudflare R2 so up to the plan's seat limit of colleagues can join and build their own signatures.</p>
+    <p><strong>Bulk downloads, API, MCP &amp; A2A.</strong> When you generate batch signatures via <code>/bulk</code>, the HTTP API (<code>/api/v1/signatures/batch</code>), MCP (<code>/mcp</code>), or A2A (<code>/a2a/&hellip;</code>), employee details are processed in memory to build the HTML/ZIP response and are <strong>not stored</strong> on our servers.</p>
+    <p><strong>Agent keys &amp; assistant connections.</strong> To manage API/MCP keys (<code>/api/v1/access-key</code>) and temporary 24-hour assistant registration grants (<code>/api/v1/agent/&hellip;</code>), we store key-version metadata and short-lived registration grant metadata in Cloudflare R2. Raw API keys and employee batch inputs are never persisted.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Website brand lookup</h2>
+    <p>When you enter a website address in the generator or on <code>/brand-extractor</code>, our server (<code>/api/brand</code>) makes a stateless request to that public website to read its logo, brand colours, company name, phone number, and social links. Lookup requests are IP rate-limited to prevent abuse and the results are not stored on our servers.</p>
+
+    <h2 style="font-size: 22px; margin-top: 32px;">Browser storage, analytics &amp; third-party resources</h2>
+    <p><strong>Browser storage (no tracking cookies).</strong> We do not set advertising or cross-site tracking cookies. We use first-party browser storage only for product functionality:</p>
+    <ul>
+      <li><code>localStorage</code>: <code>sig_pro_token</code> (your signed purchase access token), <code>sig_pro_token:verified</code> (recent token verification timestamp), <code>esg_card_slug</code> (your published card page slug for self-service editing/unpublishing), and <code>sig_team_claim:*</code> (team seat claim tokens).</li>
+      <li><code>sessionStorage</code>: temporary checkout drafts (<code>sig_checkout_draft</code> and <code>sig_bulk_checkout_draft</code>) that keep your signature or staff list intact in your tab while you complete Stripe checkout, then clear automatically once checkout settles.</li>
+    </ul>
+    <p><strong>Cloudflare Web Analytics.</strong> Our host Cloudflare runs cookieless Web Analytics without cross-site tracking to count page views and measure page speed.</p>
+    <p><strong>Checkout-click telemetry.</strong> When you click a buy button, your browser sends a lightweight beacon to <code>/api/checkout-click</code>, which writes an anonymous event to Cloudflare Workers Analytics Engine recording only the button placement, plan, country code, and whether the client appears to be a browser or automated preview. It does <strong>not</strong> record IP addresses, user-agent strings, cookies, or personal/session IDs.</p>
+    <p><strong>Google Fonts.</strong> Our stylesheet loads the Geist and Geist Mono typefaces from Google Fonts (<code>fonts.googleapis.com</code> and <code>fonts.gstatic.com</code>). Your browser makes standard font requests to Google's servers to display those fonts.</p>
+    <p>We do not run advertising trackers or sell personal data.</p>
 
     <h2 style="font-size: 22px; margin-top: 32px;">Refunds</h2>
     <p>Because Pro is a one-time digital purchase that grants immediate access to all templates and hosted photo storage, refunds are handled case-by-case. Email <a href="mailto:info@emailsignaturegenerator.ai">info@emailsignaturegenerator.ai</a> within 14 days of purchase if Pro doesn't work for you.</p>

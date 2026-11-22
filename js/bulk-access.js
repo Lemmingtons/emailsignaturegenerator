@@ -3,7 +3,10 @@ import './site-facts.js';
 const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store, private', Vary: 'Authorization', 'X-Content-Type-Options': 'nosniff' };
 const PREFIX = 'esg_bulk_';
 const json = (value, status = 200, headers = {}) => new Response(JSON.stringify(value), { status, headers: { ...HEADERS, ...headers } });
-const failure = (status, code) => json({ error: code, code }, status, status === 401 ? { 'WWW-Authenticate': 'Bearer' } : {});
+const failure = (status, code) => {
+  if (status >= 500) console.error(JSON.stringify({ event: 'bulk_access_error', status, code }));
+  return json({ error: code, code }, status, status === 401 ? { 'WWW-Authenticate': 'Bearer' } : {});
+};
 const bearer = (request) => /^Bearer (\S{1,4096})$/i.exec(request.headers.get('Authorization') || '')?.[1] || '';
 const encode = (value) => new TextEncoder().encode(value);
 
@@ -74,7 +77,8 @@ export function createBulkAccess({ verifyProAccess, verifyJwt, signJwt, readJson
       const state = await readJsonObject(bucket, path);
       return json({ active: true, plan: paid.plan, maxRows: paid.maxRows, hasKey: state?.active === true });
     }
-    if ((request.headers.get('Content-Type') || '').split(';')[0] !== 'application/json') return failure(415, 'json_required');
+    if ((request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'application/json') return failure(415, 'json_required');
+    if (request.headers.has('Content-Encoding') && request.headers.get('Content-Encoding').trim().toLowerCase() !== 'identity') return failure(415, 'unsupported_encoding');
     const reader = request.body?.getReader();
     if (!reader) return failure(400, 'invalid_action');
     let bytes = 0, body = '';

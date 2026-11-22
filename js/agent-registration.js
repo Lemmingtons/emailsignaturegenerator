@@ -5,7 +5,10 @@ const LIFETIME = 24 * 60 * 60;
 const SCOPES = ['templates:read', 'signatures:generate'];
 const HEADERS = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store, private', Vary: 'Authorization', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' };
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: HEADERS });
-const error = (status, code) => json({ error: code, code }, status);
+const error = (status, code) => {
+  if (status >= 500) console.error(JSON.stringify({ event: 'agent_registration_error', status, code }));
+  return json({ error: code, code }, status);
+};
 const now = () => Math.floor(Date.now() / 1000);
 const hex = (bytes) => Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 const random = (length) => hex(crypto.getRandomValues(new Uint8Array(length)));
@@ -23,11 +26,20 @@ export function createAgentRegistration({ signJwt, verifyJwt, bulkAccess, upload
       Number.isInteger(p.iat) && p.iat <= now() && p.exp - p.iat === WINDOW ? p : null;
   }
 
-  async function limited(request, env) {
+  async function checkLimit(env, key) {
     if (typeof env.RATE_LIMIT?.limit !== 'function') return error(503, 'rate_limit_unavailable');
-    const ip = request.headers.get('CF-Connecting-IP') || 'local';
-    const result = await env.RATE_LIMIT.limit({ key: `agent-registration:${await hash(ip)}` });
+    let result;
+    try {
+      result = await env.RATE_LIMIT.limit({ key });
+    } catch {
+      return error(503, 'rate_limit_unavailable');
+    }
     return result?.success === true ? null : error(result?.success === false ? 429 : 503, result?.success === false ? 'rate_limited' : 'rate_limit_unavailable');
+  }
+
+  async function limitedByIp(request, env, scope) {
+    const ip = request.headers.get('CF-Connecting-IP') || 'local';
+    return checkLimit(env, `agent-registration:${scope}:${await hash(ip)}`);
   }
 
   async function handle(request, env) {
@@ -40,10 +52,20 @@ export function createAgentRegistration({ signJwt, verifyJwt, bulkAccess, upload
     if ((request.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase() !== 'application/json' ||
         (request.headers.has('Content-Encoding') && request.headers.get('Content-Encoding').toLowerCase() !== 'identity')) return error(415, 'json_required');
     if (!env.PRO_SIGNING_SECRET || !uploadBucket(env)) return error(503, 'registration_unavailable');
-    const limit = await limited(request, env);
-    if (limit) return limit;
+    if (action !== 'token') {
+      const limit = await limitedByIp(request, env, action);
+      if (limit) return limit;
+    } else if (typeof env.RATE_LIMIT?.limit !== 'function') {
+      return error(503, 'rate_limit_unavailable');
+    }
     const parsed = await readBulkJson(request, 8192);
-    if (parsed instanceof Response) return parsed;
+    if (parsed instanceof Response) {
+      if (action === 'token') {
+        const limit = await limitedByIp(request, env, 'token-unverified');
+        if (limit) return limit;
+      }
+      return parsed;
+    }
     const input = parsed.value;
     if (action === 'register') {
       if (!fields(input, ['agent_name']) || typeof input.agent_name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$/.test(input.agent_name)) return error(400, 'invalid_agent_name');
@@ -52,8 +74,9 @@ export function createAgentRegistration({ signJwt, verifyJwt, bulkAccess, upload
       const common = { rid, iat: issued, exp: issued + WINDOW };
       const requestToken = await signJwt({ ...common, aud: 'signature-agent-request-v1', agent: input.agent_name, codeHash: await hash(code), proofHash: await hash(secret) }, `signature-agent-request-v1:${env.PRO_SIGNING_SECRET}`);
       const claimToken = await signJwt({ ...common, aud: 'signature-agent-claim-v1', proof: secret }, `signature-agent-claim-v1:${env.PRO_SIGNING_SECRET}`);
+      const verificationOrigin = env.SANDBOX_MODE === 'true' ? url.origin : globalThis.SiteFacts.origin;
       return json({ registration_id: rid, claim_token: claimToken, scopes: SCOPES, claim: {
-        verification_uri: `${globalThis.SiteFacts.origin}/connect-agent?request=${encodeURIComponent(requestToken)}`,
+        verification_uri: `${verificationOrigin}/connect-agent?request=${encodeURIComponent(requestToken)}`,
         user_code: code.slice(0, 4) + '-' + code.slice(4), expires_in: WINDOW, interval: 5,
       } });
     }
@@ -82,9 +105,19 @@ export function createAgentRegistration({ signJwt, verifyJwt, bulkAccess, upload
       });
       return written === null ? error(409, 'already_approved') : json({ approved: true, scopes: SCOPES, expires_in: LIFETIME, maxRows: paid.maxRows });
     }
-    if (!fields(input, ['claim_token'])) return error(400, 'invalid_request');
+    if (!fields(input, ['claim_token'])) {
+      const limit = await limitedByIp(request, env, 'token-unverified');
+      if (limit) return limit;
+      return error(400, 'invalid_request');
+    }
     const p = await verified(input.claim_token, 'claim', env);
-    if (!p || !/^[a-f0-9]{64}$/.test(p.proof)) return error(400, 'invalid_or_expired_claim');
+    if (!p || !/^[a-f0-9]{64}$/.test(p.proof)) {
+      const limit = await limitedByIp(request, env, 'token-unverified');
+      if (limit) return limit;
+      return error(400, 'invalid_or_expired_claim');
+    }
+    const tokenLimit = await checkLimit(env, `agent-registration:token:${p.rid}`);
+    if (tokenLimit) return tokenLimit;
     const bucket = uploadBucket(env);
     const path = `bulk-api/registrations/${p.rid}.json`;
     const object = await bucket.get(path);
@@ -105,6 +138,9 @@ export function createAgentRegistration({ signJwt, verifyJwt, bulkAccess, upload
 
   return async (request, env) => {
     try { return await handle(request, env); }
-    catch { return error(503, 'registration_unavailable'); }
+    catch (err) {
+      console.error(JSON.stringify({ event: 'agent_registration_error', status: 503, code: 'registration_unavailable', error: (err && err.name) || 'Error' }));
+      return json({ error: 'registration_unavailable', code: 'registration_unavailable' }, 503);
+    }
   };
 }

@@ -199,6 +199,8 @@ assert.equal((await manage(env, individual.token, 'unknown')).status, 400);
 assert.equal((await manage(env, individual.token, 'create', { body: '{' })).status, 400);
 assert.equal((await manage(env, individual.token, 'create', { body: JSON.stringify({ action: 'create', extra: true }) })).status, 400);
 assert.equal((await manage(env, individual.token, 'create', { headers: { 'Content-Type': 'text/plain' } })).status, 415);
+assert.equal((await manage(env, individual.token, 'create', { headers: { 'Content-Type': ' APPLICATION/JSON ; charset=utf-8 ' } })).status, 200, 'Content-Type is trimmed and lowercased');
+assert.equal((await manage(env, individual.token, 'create', { headers: { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip' } })).status, 415, 'encoded access-key requests are rejected');
 let cancelled = false;
 const oversized = new ReadableStream({
   pull(controller) { controller.enqueue(new Uint8Array(256)); },

@@ -87,7 +87,6 @@ function checkWorkerBehavior() {
     "const env = { PRO_SIGNING_SECRET: 'test-secret', STRIPE_WEBHOOK_SECRET: 'whsec_test', STRIPE_PAYMENT_LINK_ID: 'plink_TEST', STRIPE_LIVEMODE: 'false', UPLOADS: bucket, RATE_LIMIT: { limit: async ({ key }) => { limiterKeys.push(key); return { success: true }; } }, ASSETS: { fetch: async (request) => {",
     "  const pathname = new URL(request.url).pathname;",
     "  assetRequests.push(pathname);",
-    "  if (['/app', '/create', '/generate'].includes(pathname)) return Response.redirect('https://example.com/generator.html', 301);",
     "  if (publicAssets.has(pathname)) return new Response('public asset', { status: 200 });",
     "  return new Response('missing', { status: 404 });",
     "} } };",
@@ -143,7 +142,7 @@ function checkWorkerBehavior() {
     "if (crashed.status !== 500 || (await crashed.json()).code !== 'server_error') throw new Error('unhandled exception did not return a clean 500');",
     // New Stripe purchases use opaque, durable entitlements and can be revoked.
     "const pendingPurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
-    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '2') throw new Error('checkout redirect did not wait safely for its signed webhook');",
+    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '3') throw new Error('checkout redirect did not wait safely for its signed webhook');",
     "const purchaseSession = { id: 'cs_test_PURCHASE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_PURCHASE' };",
     "const purchaseWebhook = await postStripeEvent({ id: 'evt_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: purchaseSession } });",
     "if (purchaseWebhook.status !== 200) throw new Error('paid checkout webhook returned ' + purchaseWebhook.status);",
@@ -243,9 +242,17 @@ function checkWorkerBehavior() {
     "const gifServed = await worker.default.fetch(new Request(gifUploaded.url), env);",
     "if (gifServed.status !== 200) throw new Error('served gif returned ' + gifServed.status);",
     "if (gifServed.headers.get('Content-Type') !== 'image/gif') throw new Error('served gif content type mismatch');",
-    // Uploading a GIF into the photo slot must evict the previous jpg for that slot.
-    "const evictedJpg = await worker.default.fetch(new Request(uploaded.url), env);",
-    "if (evictedJpg.status !== 404) throw new Error('same-slot different-extension file was not evicted');",
+    // Uploading a GIF into the photo slot preserves the earlier jpg so emails already sent keep displaying.
+    "const preservedJpg = await worker.default.fetch(new Request(uploaded.url), env);",
+    "if (preservedJpg.status !== 200) throw new Error('same-slot different-extension file was broken for existing sent emails');",
+    // WebP sniffing, cta/divider slots, and non-image 415 rejection.
+    "const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]);",
+    "const ctaUp = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/webp', 'X-Image-Type': 'cta' }, body: webp }), env);",
+    "if (ctaUp.status !== 200 || !(await ctaUp.json()).url.includes('/cta.webp')) throw new Error('cta webp upload failed');",
+    "const divUp = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/gif', 'X-Image-Type': 'divider' }, body: gif }), env);",
+    "if (divUp.status !== 200 || !(await divUp.json()).url.includes('/divider.gif')) throw new Error('divider gif upload failed');",
+    "const badImg = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/png', 'X-Image-Type': 'photo' }, body: '<html>not an image</html>' }), env);",
+    "if (badImg.status !== 415) throw new Error('non-image upload returned ' + badImg.status);",
     // Unknown slots are rejected outright.
     "const badSlot = await worker.default.fetch(new Request('https://example.com/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'image/png', 'X-Image-Type': 'banner' }, body: png }), env);",
     "if (badSlot.status !== 400) throw new Error('unknown image slot returned ' + badSlot.status);",
@@ -414,8 +421,18 @@ function checkWorkerBehavior() {
     "}",
     "for (const pathname of ['/app', '/create', '/generate']) {",
     "  const redirect = await worker.default.fetch(new Request('https://example.com' + pathname), env);",
-    "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator.html') throw new Error('public redirect failed: ' + pathname);",
+    "  if (redirect.status !== 301 || redirect.headers.get('Location') !== 'https://example.com/generator') throw new Error('public redirect failed: ' + pathname);",
     "}",
+    // Exercise R2 list() cursor pagination (truncated: true) on /sitemap-cards.xml.
+    "const pagedListBucket = { ...bucket, list: async ({ prefix, cursor, include = [] }) => {",
+    "  const all = [...stored.keys()].filter((k) => k.startsWith(prefix));",
+    "  const start = cursor ? parseInt(cursor, 10) : 0;",
+    "  const page = all.slice(start, start + 1);",
+    "  const next = start + page.length;",
+    "  return { objects: page.map((key) => (include.includes('customMetadata') ? { key, customMetadata: stored.get(key).customMetadata } : { key })), truncated: next < all.length, cursor: String(next) };",
+    "} };",
+    "const pagedSitemap = await worker.default.fetch(new Request('https://example.com/sitemap-cards.xml'), { ...env, UPLOADS: pagedListBucket });",
+    "if (pagedSitemap.status !== 200 || !(await pagedSitemap.text()).includes('/c/' + card.slug)) throw new Error('paginated cards sitemap missed a card across cursor pages');",
     "for (const [clean, html] of [['/generator', '/generator.html'], ['/blog/email-signature-best-practices', '/blog/email-signature-best-practices.html'], ['/seo/email-signature-generator-for-gmail', '/seo/email-signature-generator-for-gmail.html']]) {",
     "  const before = assetRequests.length;",
     "  const cleanAsset = await worker.default.fetch(new Request('https://example.com' + clean), env);",
@@ -480,9 +497,19 @@ checkSyntax('js/photo-animator.js');
 checkSyntax('js/sweep-animator.js');
 checkSyntax('js/motion.js');
 checkSyntax('js/app.js');
+checkSyntax('js/home.js');
 checkSyntax('js/health-check.js');
+checkSyntax('js/brand-tool.js');
+checkSyntax('js/bulk.js');
+checkSyntax('js/bulk-core.js');
+checkSyntax('js/bulk-spreadsheet-worker.js');
+checkSyntax('js/connect-agent.js');
 checkSyntax('generate-pages.js');
 checkSyntax('update-sitemap.js');
+checkSyntax('scripts/checkout-funnel.js');
+checkSyntax('scripts/export-search-console.js');
+checkSyntax('scripts/monitor-site.js');
+checkSyntax('scripts/build-demo-animations.js');
 checkSyntax('automation/send-email.js');
 checkSyntax('_worker.js', 'module');
 
@@ -567,8 +594,10 @@ assert(facts.proPrice.amount === 9, 'Canonical Pro price must remain 9');
 assert(facts.proPrice.currency === 'USD', 'Canonical Pro price currency must be USD');
 assert(facts.proPrice.displayWithCurrency === 'US$9', 'Canonical Pro price label must identify US dollars');
 assert(!facts.paymentLink.includes('/test_'), 'Non-browser validation must resolve the live payment link');
+const homeJs = fs.readFileSync(fromRoot('js/home.js'), 'utf8');
 assert(landingHtml.includes('<script src="js/site-facts.js"></script>'), 'Landing page must load canonical site facts');
-assert(landingHtml.includes("checkoutButton.href = window.SiteFacts.paymentLink"), 'Landing checkout must use the environment-aware canonical payment link');
+assert(landingHtml.includes('<script src="js/home.js" defer></script>'), 'Landing page must load js/home.js');
+assert(homeJs.includes("checkoutButton.href = window.SiteFacts.paymentLink"), 'Landing checkout must use the environment-aware canonical payment link');
 assert(!landingHtml.includes('buy.stripe.com'), 'Landing HTML must not hardcode an environment-specific payment link');
 assert(landingHtml.includes('"priceCurrency": "USD"'), 'Landing structured data must use the canonical USD currency');
 assert(!landingHtml.includes('$9 AUD'), 'Landing copy must not retain the retired AUD price');
@@ -636,7 +665,7 @@ for (const [label, text] of [['title', landingTitle], ['description', landingDes
     'Examples page must target examples without mislabelling them as product templates');
 }
 assert(!examplesHtml.includes('52 Professional Templates'),
-  'Examples page must not conflate 52 examples with the canonical 24 product templates');
+  `Examples page must not conflate 52 examples with the canonical ${facts.templateCount} product templates`);
 for (const officialSource of ['support.google.com/mail/answer/8395', 'support.microsoft.com/', 'support.apple.com/guide/mail/mail11943/mac']) {
   assert(examplesHtml.includes(officialSource), `Examples page must retain official source: ${officialSource}`);
 }
@@ -1137,7 +1166,7 @@ assert(/^bucket_name\s*=\s*["']email-sig-photos-sandbox["']$/m.test(sandboxWrang
 assert(/^SANDBOX_MODE\s*=\s*["']true["']$/m.test(sandboxWrangler),
   'Sandbox Worker must emit noindex headers');
 const assetsIgnore = read('.assetsignore');
-for (const privateAsset of ['datasets/competitors.json', 'datasets/templates.json', 'datasets/professions.json', 'datasets/generators.json', '.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js']) {
+for (const privateAsset of ['datasets/competitors.json', 'datasets/templates.json', 'datasets/professions.json', 'datasets/generators.json', '.dev.vars*', 'wrangler*.toml', 'tests/**', 'js/png-encoder.js', 'js/icon-masks.js', 'js/brand-extract.js', 'docs', 'docs/**']) {
   assert(assetsIgnore.split(/\r?\n/).includes(privateAsset), `.assetsignore must exclude ${privateAsset}`);
 }
 checkWorkerBehavior();
@@ -1212,6 +1241,8 @@ for (const file of internalLinkFiles) {
   }
   const hub = read('email-signature-templates.html');
   for (const [id] of templates) assert(hub.includes(`href="/email-signature-templates/${id}"`), `Template gallery must link ${id}`);
+  assert(hub.includes('/assets/sample-headshot.jpg'), 'Template gallery specimens must retain their sample headshot');
+  assert(read('email-signature-templates/branded.html').includes('/assets/sample-logo.svg'), 'Branded template specimen must retain its sample logo');
 
   const navFiles = [
     ...fs.readdirSync(root).filter(f => f.endsWith('.html') && !/^(?:test|googlee[0-9a-f]+)\.html$/.test(f)),
@@ -1242,7 +1273,7 @@ assert(read('sitemap.xml').includes(`<loc>${facts.origin}/bulk</loc>`), 'sitemap
   assert(landingHtml.includes('Secure checkout by Stripe. One-time payment, no subscription. Prices in USD, tax included.'), 'Homepage pricing must carry the Stripe/one-time/tax-included reassurance line');
   assert(landingHtml.includes(`within 14 days of purchase.</p>`) && landingHtml.includes('Refunds are handled case by case: email <a href="mailto:' + facts.contactEmail + '"'), 'Homepage pricing must carry the refund line with the canonical contact email');
   assert(/<summary>Is tax included\?<\/summary>/.test(landingHtml) && landingHtml.includes('"name": "Is tax included?"'), 'Homepage FAQ and FAQPage data must both answer "Is tax included?"');
-  assert(landingHtml.includes('id="teamOffer" hidden') && landingHtml.includes('window.SiteFacts.teamPaymentLink'), 'Homepage team card must stay hidden until SiteFacts.teamPaymentLink is set');
+  assert(landingHtml.includes('id="teamOffer" hidden') && homeJs.includes('window.SiteFacts.teamPaymentLink'), 'Homepage team card must stay hidden until SiteFacts.teamPaymentLink is set');
   assert((landingHtml.match(/copy your access link in the builder/g) || []).length >= 2, 'Homepage account FAQ must explain the access link in both the visible list and FAQPage data');
   assert(!/purchase (?:confirmation )?email|we(?:'ll| will) email you/i.test(landingHtml + llmsText), 'Do not promise a purchase email until it is switched on');
 }

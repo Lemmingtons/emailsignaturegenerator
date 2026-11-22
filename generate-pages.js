@@ -29,6 +29,10 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
+function safeJsonLd(obj) {
+  return JSON.stringify(obj, null, 2).replace(/</g, '\\u003c');
+}
+
 // "2026-10-09" -> "9 October 2026", matching the blog's byline format.
 function formatLongDate(isoDate) {
   const [year, month, day] = isoDate.split('-').map(Number);
@@ -38,8 +42,12 @@ function formatLongDate(isoDate) {
 
 const SEO_DIR = path.join(__dirname, 'seo');
 const SITE_URL = SITE_FACTS.origin;
+// socialImageUrl carries a cache-busting version once site-facts defines it.
+const SOCIAL_IMAGE = SITE_FACTS.socialImageUrl || `${SITE_URL}/assets/og-image.png`;
 const PRICE = SITE_FACTS.proPrice.displayWithCurrency;
 const PRICE_SHORT = SITE_FACTS.proPrice.display;
+const TEAM_PRICE = SITE_FACTS.teamPrice.displayWithCurrency;
+const TEAM_SEATS = SITE_FACTS.teamSeats;
 const TEMPLATE_COUNT = SITE_FACTS.templateCount;
 const FONT_COUNT = require('./js/generator-core').fontFamilies.length;
 
@@ -84,7 +92,7 @@ function platformPageHTML({
 }) {
   const url = `${SITE_URL}/seo/email-signature-generator-for-${slug}`;
   const title = seoTitle || `Email Signature Generator for ${label} — Free Builder`;
-  const metaDesc = metaDescription || `Build a professional ${label} email signature in under 2 minutes. Free to build with all ${TEMPLATE_COUNT} templates, $9 once to use it. Works perfectly in ${label}.`;
+  const metaDesc = metaDescription || `Build a professional ${label} email signature in under 2 minutes. Free to build with all ${TEMPLATE_COUNT} templates, ${PRICE_SHORT} once to use it. Works perfectly in ${label}.`;
   const h1 = heading || `Email Signature Generator for ${label}`;
 
   return pageHTML({
@@ -119,7 +127,11 @@ function platformPageHTML({
 
 function fillFacts(value) {
   if (typeof value === 'string') {
-    return value.replace(/\{\{price\}\}/g, PRICE).replace(/\{\{templates\}\}/g, String(TEMPLATE_COUNT));
+    return value
+      .replace(/\{\{price\}\}/g, PRICE)
+      .replace(/\{\{teamPrice\}\}/g, TEAM_PRICE)
+      .replace(/\{\{teamSeats\}\}/g, String(TEAM_SEATS))
+      .replace(/\{\{templates\}\}/g, String(TEMPLATE_COUNT));
   }
   if (Array.isArray(value)) return value.map(fillFacts);
   if (value && typeof value === 'object') {
@@ -211,7 +223,7 @@ function comparisonPageHTML(entry, allCompetitors = [entry]) {
 }
 
 function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePublished, dateModified, keywords, ctaText, seoLabel, faqs, installInstructions, guideSections, troubleshooting, relatedLinks, otherComparisons, comparison, brandForm, breadcrumbParent }) {
-  const faqSchema = JSON.stringify({
+  const faqSchema = safeJsonLd({
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": faqs.map(f => ({
@@ -219,31 +231,31 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
       "name": f.q,
       "acceptedAnswer": { "@type": "Answer", "text": f.a }
     }))
-  }, null, 2);
+  });
 
-  const articleSchema = JSON.stringify({
+  const articleSchema = safeJsonLd({
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": h1,
     "description": metaDesc,
     "datePublished": datePublished,
     "dateModified": dateModified,
-    "image": `${SITE_URL}/assets/og-image.png`,
+    "image": SOCIAL_IMAGE,
     "author": { "@type": "Organization", "name": "Email Signature Generator", "url": `${SITE_URL}/` },
     "publisher": { "@type": "Organization", "name": "Email Signature Generator", "url": `${SITE_URL}/` },
     "mainEntityOfPage": { "@type": "WebPage", "@id": url },
     "inLanguage": "en"
-  }, null, 2);
+  });
 
-  const breadcrumbSchema = JSON.stringify({
+  const breadcrumbSchema = safeJsonLd({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://emailsignaturegenerator.ai/" },
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": `${SITE_URL}/` },
       ...(breadcrumbParent ? [{ "@type": "ListItem", "position": 2, "name": breadcrumbParent.label, "item": `${SITE_URL}${breadcrumbParent.href}` }] : []),
       { "@type": "ListItem", "position": breadcrumbParent ? 3 : 2, "name": h1, "item": url }
     ]
-  }, null, 2);
+  });
 
   const installHTML = installInstructions ? `
     <section class="install-section">
@@ -337,14 +349,14 @@ function pageHTML({ url, title, metaDesc, h1, slug, intro, shortAnswer, datePubl
   <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${url}">
-  <meta property="og:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta property="og:image" content="${escapeHtml(SOCIAL_IMAGE)}">
   <meta property="og:site_name" content="Email Signature Generator">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
-  <meta name="twitter:image" content="https://emailsignaturegenerator.ai/assets/og-image.png">
+  <meta name="twitter:image" content="${escapeHtml(SOCIAL_IMAGE)}">
 
 ${dateModified ? `  <!-- Article Schema -->
   <script type="application/ld+json">
@@ -501,9 +513,6 @@ ${siteFooterHTML()}
 // Hand-written pages carry the same header and footer markup; update them
 // together (npm run check compares the nav on every page).
 
-// socialImageUrl carries a cache-busting version once site-facts defines it.
-const SOCIAL_IMAGE = SITE_FACTS.socialImageUrl || `${SITE_URL}/assets/og-image.png`;
-
 const NAV_LINKS = [
   { href: '/email-signature-templates', label: 'Templates' },
   { href: '/email-signature-examples', label: 'Examples' },
@@ -556,7 +565,7 @@ ${FOOTER_LINKS.map(link => `      <a href="${link.href}">${link.label}</a>`).joi
 // A light page frame for the template, profession and comparison pages.
 function shellHTML({ url, title, metaDesc, schemas, css, body, bodyClass, scripts }) {
   const schemaHTML = (schemas || []).map(schema => `  <script type="application/ld+json">
-  ${JSON.stringify(schema, null, 2)}
+  ${safeJsonLd(schema)}
   </script>`).join('\n\n');
 
   const html = `<!DOCTYPE html>
@@ -660,14 +669,14 @@ const SAMPLE_PERSON = Object.freeze({
   phone: '+1 555 012 3456',
   email: 'sarah@harbourco.com',
   website: 'https://harbourco.com',
-  photoUrl: '/assets/sample-headshot.jpg',
+  photoUrl: `${SITE_URL}/assets/sample-headshot.jpg`,
   linkedin: 'https://linkedin.com/in/sarahmitchell',
   instagram: 'https://instagram.com/harbourco',
   facebook: 'https://facebook.com/harbourco',
 });
 
 // Shown in the Branded template, which is built around a company logo.
-const SAMPLE_LOGO = '/assets/sample-logo.svg';
+const SAMPLE_LOGO = `${SITE_URL}/assets/sample-logo.svg`;
 
 const SECOND_PERSON = Object.freeze({
   fullName: 'Daniel Brooks',
@@ -1392,49 +1401,52 @@ ${faqSectionHTML(entry.faqs)}`;
   });
 }
 
-function writePage(filename, html) {
-  fs.writeFileSync(path.join(SEO_DIR, filename), html, 'utf8');
-}
-
-function removeObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs = [], retainedProfessionSlugs = []) {
+function findObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs = [], retainedProfessionSlugs = []) {
   const retainedFiles = new Set(
     retainedPlatformSlugs.map((slug) => `email-signature-generator-for-${slug}.html`)
   );
   const retainedComparisons = new Set(retainedComparisonSlugs.map((slug) => `${slug}.html`));
   const retainedProfessions = new Set(retainedProfessionSlugs.map((slug) => `${slug}.html`));
-  let removed = 0;
+  const obsolete = [];
 
-  for (const filename of fs.readdirSync(SEO_DIR)) {
-    const isRoleOrIndustryPage = /^email-signature-for-[a-z0-9-]+\.html$/.test(filename);
-    const isRemovedPlatformPage = /^email-signature-generator-for-[a-z0-9-]+\.html$/.test(filename)
-      && !retainedFiles.has(filename);
+  if (fs.existsSync(SEO_DIR)) {
+    for (const filename of fs.readdirSync(SEO_DIR)) {
+      const isRoleOrIndustryPage = /^email-signature-for-[a-z0-9-]+\.html$/.test(filename);
+      const isRemovedPlatformPage = /^email-signature-generator-for-[a-z0-9-]+\.html$/.test(filename)
+        && !retainedFiles.has(filename);
 
-    const isRemovedComparisonPage = /^[a-z0-9-]+-alternative\.html$/.test(filename)
-      && !retainedComparisons.has(filename);
+      const isRemovedComparisonPage = /^[a-z0-9-]+-alternative\.html$/.test(filename)
+        && !retainedComparisons.has(filename);
 
-    const isRemovedProfessionPage = /^[a-z0-9-]+-email-signature\.html$/.test(filename)
-      && !retainedProfessions.has(filename);
+      const isRemovedProfessionPage = /^[a-z0-9-]+-email-signature\.html$/.test(filename)
+        && !retainedProfessions.has(filename);
 
-    if (isRoleOrIndustryPage || isRemovedPlatformPage || isRemovedComparisonPage || isRemovedProfessionPage) {
-      fs.unlinkSync(path.join(SEO_DIR, filename));
-      removed++;
+      if (isRoleOrIndustryPage || isRemovedPlatformPage || isRemovedComparisonPage || isRemovedProfessionPage) {
+        obsolete.push(path.join(SEO_DIR, filename));
+      }
     }
   }
 
   if (fs.existsSync(TEMPLATE_DIR)) {
     for (const filename of fs.readdirSync(TEMPLATE_DIR)) {
       if (filename.endsWith('.html') && !TEMPLATES[filename.replace(/\.html$/, '')]) {
-        fs.unlinkSync(path.join(TEMPLATE_DIR, filename));
-        removed++;
+        obsolete.push(path.join(TEMPLATE_DIR, filename));
       }
     }
   }
 
-  return removed;
+  return obsolete;
 }
 
-function generatePages() {
-  ensureOutputDir();
+function removeObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs = [], retainedProfessionSlugs = []) {
+  const obsolete = findObsoleteGeneratedPages(retainedPlatformSlugs, retainedComparisonSlugs, retainedProfessionSlugs);
+  for (const filePath of obsolete) {
+    fs.unlinkSync(filePath);
+  }
+  return obsolete.length;
+}
+
+function buildGeneratedPages() {
   const platforms = readDataset('platforms.json');
   const competitors = readDataset('competitors.json');
   for (const competitor of competitors) {
@@ -1445,31 +1457,43 @@ function generatePages() {
   const professions = readProfessions();
   const templates = readTemplateCopy();
   const generatorComparison = readGeneratorComparison();
+  const pages = new Map();
+
+  for (const platform of platforms) {
+    pages.set(path.join(SEO_DIR, `email-signature-generator-for-${platform.slug}.html`), platformPageHTML(platform));
+  }
+
+  for (const competitor of competitors) {
+    pages.set(path.join(SEO_DIR, `${competitor.slug}.html`), comparisonPageHTML(competitor, competitors));
+  }
+
+  for (const profession of professions) {
+    pages.set(path.join(SEO_DIR, `${profession.slug}.html`), professionPageHTML(profession));
+  }
+
+  pages.set(path.join(SEO_DIR, `${generatorComparison.slug}.html`), generatorComparisonHTML(generatorComparison, competitors));
+  pages.set(path.join(__dirname, 'email-signature-templates.html'), templateHubHTML(templates));
+  pages.set(path.join(__dirname, 'brand-extractor.html'), brandExtractorHTML());
+
+  for (const template of templates) {
+    pages.set(path.join(TEMPLATE_DIR, `${template.id}.html`), templatePageHTML(template, templates));
+  }
+
+  return { platforms, competitors, professions, templates, generatorComparison, pages };
+}
+
+function generatePages() {
+  ensureOutputDir();
+  const { platforms, competitors, professions, templates, pages } = buildGeneratedPages();
   const removed = removeObsoleteGeneratedPages(
     platforms.map((platform) => platform.slug),
     competitors.map((competitor) => competitor.slug),
     professions.map((profession) => profession.slug)
   );
 
-  for (const platform of platforms) {
-    writePage(`email-signature-generator-for-${platform.slug}.html`, platformPageHTML(platform));
-  }
-
-  for (const competitor of competitors) {
-    writePage(`${competitor.slug}.html`, comparisonPageHTML(competitor, competitors));
-  }
-
-  for (const profession of professions) {
-    writePage(`${profession.slug}.html`, professionPageHTML(profession));
-  }
-
-  writePage(`${generatorComparison.slug}.html`, generatorComparisonHTML(generatorComparison, competitors));
-
-  fs.writeFileSync(path.join(__dirname, 'email-signature-templates.html'), templateHubHTML(templates), 'utf8');
-  fs.writeFileSync(path.join(__dirname, 'brand-extractor.html'), brandExtractorHTML(), 'utf8');
   if (!fs.existsSync(TEMPLATE_DIR)) fs.mkdirSync(TEMPLATE_DIR, { recursive: true });
-  for (const template of templates) {
-    fs.writeFileSync(path.join(TEMPLATE_DIR, `${template.id}.html`), templatePageHTML(template, templates), 'utf8');
+  for (const [filePath, html] of pages) {
+    fs.writeFileSync(filePath, html, 'utf8');
   }
 
   console.log(`Removed ${removed} obsolete generated pages`);
@@ -1479,7 +1503,7 @@ function generatePages() {
   console.log(`Generated the template gallery and ${templates.length} template pages`);
   console.log('Generated the brand extractor page');
   return {
-    generated: platforms.length + competitors.length + professions.length + 1 + templates.length + 2,
+    generated: pages.size,
     removed,
     platforms: platforms.length,
     comparisons: competitors.length + 1,
@@ -1488,15 +1512,60 @@ function generatePages() {
   };
 }
 
+function checkGeneratedPages() {
+  const { platforms, competitors, professions, pages } = buildGeneratedPages();
+  const drifted = [];
+
+  for (const [filePath, expected] of pages) {
+    const rel = path.relative(__dirname, filePath);
+    if (!fs.existsSync(filePath)) {
+      drifted.push(`missing: ${rel}`);
+      continue;
+    }
+    const actual = fs.readFileSync(filePath, 'utf8');
+    if (actual !== expected) {
+      drifted.push(`drifted: ${rel}`);
+    }
+  }
+
+  const obsolete = findObsoleteGeneratedPages(
+    platforms.map((platform) => platform.slug),
+    competitors.map((competitor) => competitor.slug),
+    professions.map((profession) => profession.slug)
+  );
+  for (const filePath of obsolete) {
+    drifted.push(`obsolete: ${path.relative(__dirname, filePath)}`);
+  }
+
+  if (drifted.length) {
+    console.error(`Generated pages are out of date (${drifted.length} issue(s)):`);
+    for (const issue of drifted) console.error(`  - ${issue}`);
+    console.error('Run "npm run generate" to update generated pages.');
+    return { ok: false, checked: pages.size, drifted };
+  }
+
+  console.log(`Generated pages are up to date (${pages.size} files checked).`);
+  return { ok: true, checked: pages.size, drifted: [] };
+}
+
 if (require.main === module) {
-  generatePages();
+  if (process.argv.includes('--check')) {
+    const result = checkGeneratedPages();
+    if (!result.ok) process.exit(1);
+  } else {
+    generatePages();
+  }
 }
 
 module.exports = {
+  buildGeneratedPages,
+  checkGeneratedPages,
   comparisonPageHTML,
+  findObsoleteGeneratedPages,
   generatePages,
   pageHTML,
   platformPageHTML,
   readDataset,
   removeObsoleteGeneratedPages,
+  safeJsonLd,
 };

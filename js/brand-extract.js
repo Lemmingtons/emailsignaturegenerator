@@ -121,11 +121,13 @@ function hueDistance(a, b) {
 }
 
 const COLOR_TOKEN = /#[0-9a-f]{6}\b|#[0-9a-f]{3}\b|rgba?\([^)]{5,40}\)/gi;
-const BRAND_VAR = /--[a-z0-9-]*(primary|brand|accent|main|theme|secondary|highlight)[a-z0-9-]*\s*:\s*([^;}{]+)/gi;
+const BRAND_VAR = /--([a-z0-9-]{1,64})\s*:\s*([^;}{]{1,120})/gi;
+const BRAND_VAR_KEYWORD = /(?:primary|brand|accent|main|theme|secondary|highlight)/i;
 
 // Scores every colour in the CSS. Custom properties named like a brand colour
 // count heavily; plain uses count once each. Greys, whites and blacks never win.
 export function rankColors(css, themeColor) {
+  const source = String(css || '').slice(0, 250_000);
   const scores = new Map();
   const add = (hex, weight) => {
     if (!isBrandColor(hex)) return;
@@ -134,12 +136,13 @@ export function rankColors(css, themeColor) {
 
   let m;
   BRAND_VAR.lastIndex = 0;
-  while ((m = BRAND_VAR.exec(css))) {
+  while ((m = BRAND_VAR.exec(source))) {
+    if (!BRAND_VAR_KEYWORD.test(m[1])) continue;
     const value = m[2].trim();
     const hex = normalizeHex((value.match(COLOR_TOKEN) || [value])[0]);
     add(hex, /secondary/i.test(m[1]) ? 15 : 30);
   }
-  for (const token of css.match(COLOR_TOKEN) || []) add(normalizeHex(token), 1);
+  for (const token of source.match(COLOR_TOKEN) || []) add(normalizeHex(token), 1);
 
   const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]).map(([hex]) => hex);
   const theme = normalizeHex(themeColor);
@@ -182,28 +185,74 @@ function darkenToContrast(hex) {
 
 // ── Structured data ──
 
+function isTagNameEnd(ch) {
+  return ch === 62 || ch === 47 || ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 12;
+}
+
+// ASCII-only lowercase preserves 1:1 UTF-16 code-unit offsets (unlike
+// String.prototype.toLowerCase(), which expands U+0130 'İ' to two code units).
+function asciiLower(str) {
+  return str.replace(/[A-Z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 32));
+}
+
+// Extracts <tag ...>body</tag> blocks using linear indexOf scans rather than
+// backtracking regexes.
+function extractTagBlocks(html, tagName, maxBlocks = 200, maxBodyChars = Infinity) {
+  const lower = asciiLower(html);
+  const openNeedle = '<' + tagName;
+  const closeNeedle = '</' + tagName;
+  const blocks = [];
+  let pos = 0;
+  let totalChars = 0;
+  while (pos < lower.length && blocks.length < maxBlocks && totalChars < maxBodyChars) {
+    const start = lower.indexOf(openNeedle, pos);
+    if (start < 0) break;
+    const afterName = start + openNeedle.length;
+    if (afterName >= lower.length || !isTagNameEnd(lower.charCodeAt(afterName))) {
+      pos = afterName;
+      continue;
+    }
+    const openEnd = lower.indexOf('>', afterName);
+    if (openEnd < 0) break;
+    const closeStart = lower.indexOf(closeNeedle, openEnd + 1);
+    if (closeStart < 0) break;
+    const closeEnd = lower.indexOf('>', closeStart + closeNeedle.length);
+    if (closeEnd < 0) break;
+    const remaining = maxBodyChars - totalChars;
+    const rawBody = html.slice(openEnd + 1, closeStart);
+    const body = Number.isFinite(remaining) ? rawBody.slice(0, remaining) : rawBody;
+    blocks.push({ openTag: html.slice(start, openEnd + 1), body });
+    totalChars += body.length;
+    pos = closeEnd + 1;
+  }
+  return blocks;
+}
+
 function jsonLdNodes(html) {
   const nodes = [];
-  const re = /<script\b[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi;
-  let m;
-  while ((m = re.exec(html))) {
+  for (const { openTag, body } of extractTagBlocks(html, 'script', 500)) {
+    const attrs = parseAttributes(openTag);
+    const type = (attrs.type || '').split(';')[0].trim().toLowerCase();
+    if (type !== 'application/ld+json') continue;
     let data;
     try {
-      data = JSON.parse(m[1].trim());
+      data = JSON.parse(body.trim());
     } catch {
       continue;
     }
     const stack = [data];
     while (stack.length && nodes.length < 200) {
       const node = stack.pop();
-      if (Array.isArray(node)) stack.push(...node);
-      else if (node && typeof node === 'object') {
+      if (Array.isArray(node)) {
+        for (let i = 0; i < node.length && stack.length < 200; i++) stack.push(node[i]);
+      } else if (node && typeof node === 'object') {
         nodes.push(node);
-        if (node['@graph']) stack.push(node['@graph']);
-        if (node.publisher) stack.push(node.publisher);
-        if (node.author && typeof node.author === 'object') stack.push(node.author);
+        if (node['@graph'] && stack.length < 200) stack.push(node['@graph']);
+        if (node.publisher && stack.length < 200) stack.push(node.publisher);
+        if (node.author && typeof node.author === 'object' && stack.length < 200) stack.push(node.author);
       }
     }
+    if (nodes.length >= 200) break;
   }
   return nodes;
 }
@@ -275,7 +324,8 @@ export function extractBrand(html, fetchedUrl) {
   }
 
   const links = tags(head, 'link').map(parseAttributes);
-  const title = cleanText((head.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i) || [])[1]);
+  const titleBlock = extractTagBlocks(head, 'title', 1, 500)[0];
+  const title = cleanText(titleBlock ? titleBlock.body : '');
 
   // Company name: structured data, then the site name, then the first part of
   // the title ("Acme Plumbing | Sydney" -> "Acme Plumbing").
@@ -359,8 +409,8 @@ export function extractBrand(html, fetchedUrl) {
 
   // Colours: theme-color, then inline CSS. The caller may append one external
   // stylesheet via `css`.
-  const inlineCss = (source.match(/<style\b[^>]*>[\s\S]*?<\/style>/gi) || []).join('\n').slice(0, 250_000) +
-    '\n' + (source.match(/\sstyle\s*=\s*"[^"]*"/gi) || []).slice(0, 300).join('\n');
+  const styleCss = extractTagBlocks(source, 'style', 200, 250_000).map((b) => b.body).join('\n').slice(0, 250_000);
+  const inlineCss = (styleCss + '\n' + (source.match(/\sstyle\s*=\s*"[^"]*"/gi) || []).slice(0, 300).join('\n')).slice(0, 250_000);
   const manifest = links.find((l) => /\bmanifest\b/i.test(l.rel || '') && l.href);
   const stylesheets = links
     .filter((l) => /\bstylesheet\b/i.test(l.rel || '') && l.href)
@@ -382,7 +432,10 @@ export function extractBrand(html, fetchedUrl) {
 // Picks the stylesheet most likely to hold the site's own colours: same site
 // first, skipping font and icon-library CDNs.
 export function pickStylesheet(stylesheets, pageUrl) {
-  const host = new URL(pageUrl).hostname.replace(/^www\./, '');
+  const host = new URL(pageUrl).hostname.replace(/^www\./, '').toLowerCase();
   const usable = stylesheets.filter((s) => !/fonts\.googleapis|font-awesome|fontawesome|bootstrap(\.min)?\.css|cdnjs|jsdelivr|unpkg|typekit/i.test(s));
-  return usable.find((s) => new URL(s).hostname.replace(/^www\./, '').endsWith(host)) || usable[0] || '';
+  return usable.find((s) => {
+    const h = new URL(s).hostname.replace(/^www\./, '').toLowerCase();
+    return h === host || h.endsWith('.' + host);
+  }) || usable[0] || '';
 }

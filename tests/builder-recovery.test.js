@@ -26,39 +26,74 @@ function builder(options = {}) {
   const session = options.session || storage();
   const local = options.local || storage();
   const elements = new Map();
-  function element() {
+  function element(tagName = 'div') {
     const attrs = {};
-    return {
+    const el = {
+      tagName: String(tagName).toUpperCase(),
       value: '', dataset: {}, style: {}, checked: false, disabled: false, hidden: false,
-      textContent: '', innerHTML: '', listeners: {},
-      classList: { add() {}, remove() {}, toggle() {} },
+      textContent: '', innerHTML: '', listeners: {}, children: [],
+      classList: {
+        _set: new Set(),
+        add(c) { this._set.add(c); },
+        remove(c) { this._set.delete(c); },
+        toggle(c, force) { if (force === undefined) { if (this._set.has(c)) this._set.delete(c); else this._set.add(c); } else if (force) this._set.add(c); else this._set.delete(c); },
+        contains(c) { return this._set.has(c); },
+      },
       setAttribute(key, val) { attrs[key] = String(val); }, getAttribute(key) { return key in attrs ? attrs[key] : null; },
       hasAttribute(key) { return key in attrs; }, removeAttribute(key) { delete attrs[key]; },
       addEventListener(type, fn) { this.listeners[type] = fn; },
-      querySelectorAll() { return []; }, replaceChildren() {}, appendChild() {},
+      querySelectorAll() { return []; },
+      replaceChildren(...nodes) { this.children = nodes; },
+      appendChild(node) { this.children.push(node); return node; },
       scrollIntoView() {}, focus() { this.focused = true; }, closest() { return null; },
     };
+    return el;
   }
   const get = id => {
-    if (!elements.has(id)) elements.set(id, element());
+    if (!elements.has(id)) {
+      const el = element();
+      el.id = id;
+      elements.set(id, el);
+    }
     return elements.get(id);
   };
   const calls = [];
   const copied = [];
+  const confirms = [];
   const windowEvents = {};
   const replaced = [];
   const location = Object.assign({ search: '?site=fixture.example.com', hash: '', pathname: '/generator', origin: 'https://fixture.example.com', href: 'builder' }, options.location);
   const context = {
     document: {
+      body: { appendChild() {}, removeChild() {} },
       getElementById: get, addEventListener() {}, querySelectorAll() { return []; }, querySelector() { return null; },
       createElement(tag) {
-        return tag === 'canvas' ? { getContext: () => ({ drawImage() {} }), toDataURL: () => PNG } : element();
+        if (tag === 'canvas') {
+          return options.taintedCanvas
+            ? { getContext: () => ({ drawImage() {} }), toDataURL: () => { throw new Error('SecurityError: tainted canvas'); } }
+            : { getContext: () => ({ drawImage() {} }), toDataURL: () => PNG };
+        }
+        return element(tag);
       },
     },
     window: { SiteFacts: facts, SignatureGeneratorCore: core,
       SignatureHealthCheck: { runAudit: () => ({ score: 100, results: [] }) },
-      location, history: { state: null, replaceState(state, title, url) { replaced.push(url); } },
+      location,
+      history: {
+        state: null,
+        replaceState(state, title, url) {
+          replaced.push(url);
+          const parsed = new URL(url, location.origin);
+          location.pathname = parsed.pathname;
+          location.search = parsed.search;
+          location.hash = parsed.hash;
+        },
+      },
       addEventListener(type, fn) { windowEvents[type] = fn; } },
+    confirm: (msg) => {
+      confirms.push(msg);
+      return typeof options.confirm === 'function' ? options.confirm(msg) : false;
+    },
     TEMPLATES, CATEGORIES, localStorage: local, sessionStorage: session,
     URL, URLSearchParams, Blob, atob, btoa, setTimeout, clearTimeout, console,
     Image: class {
@@ -74,11 +109,13 @@ function builder(options = {}) {
   };
   const testApi = `globalThis.handlers = { handleProPurchase, restoreCheckoutDraft, applyBrand, bindColorPicker, bindPaywall,
     saveSignatureLink, collectSignatureState, getFormData, runSignatureCheck, copyHTML, copyPlainText,
-    checkProStatus, takeTokenFromAddress, getProToken, setProToken, copyAccessLink,
+    checkProStatus, handleIncomingAddressToken, takeTokenFromAddress, getProToken, setProToken, copyAccessLink,
+    applySignatureState, applyLogoImage, hostPreviewLogo, clearPersonalFields,
+    getPendingAddressToken() { return pendingAddressToken; },
     state() { return { isPro, teamId }; }, setTeam(id) { teamId = id; },
     paidFixture() { isPro = true; }, setPhotoCanvas() { photoState.primaryCanvas = { toDataURL: () => ${JSON.stringify(PNG)} }; } };`;
   vm.runInNewContext(source.replace(/\}\)\(\);\s*$/, testApi + '\n})();'), context);
-  return { ...context.handlers, get, session, local, location, calls, windowEvents, copied, replaced, context };
+  return { ...context.handlers, get, session, local, location, calls, windowEvents, copied, replaced, confirms, context };
 }
 
 function fillValid(b) {
@@ -207,17 +244,167 @@ async function main() {
   assert.equal(slow.state().isPro, true);
   assert.equal(slow.copied.length, 1, 'the copy goes ahead once the token is verified');
 
-  // ── Token in the address ──
+  // ── Token in the address (synchronous strip at startup + helper contract) ──
   for (const [search, hash, expected] of [['?token=' + TOKEN + '&s=abc', '', '/generator?s=abc'], ['?team=xyz', '#token=' + TOKEN, '/generator?team=xyz']]) {
     const addr = builder({ location: { search, hash } });
-    const params = new URLSearchParams(search);
-    assert.equal(addr.takeTokenFromAddress(params), TOKEN);
-    assert.deepEqual(addr.replaced, [expected], 'token removed from the address and this history entry');
-    assert.equal(params.has('token'), false);
+    assert.equal(addr.getPendingAddressToken(), TOKEN, 'token captured synchronously into memory before DOMContentLoaded');
+    assert.equal(addr.local.getItem(facts.proTokenStorageKey), null, 'unverified address token must not overwrite localStorage at startup');
+    assert.deepEqual(addr.replaced, [expected], 'token removed from the address and this history entry synchronously');
+    assert.equal(new URLSearchParams(addr.location.search).has('token'), false);
+    assert.ok(!addr.location.hash.includes('token='));
   }
   const junk = builder({ location: { search: '', hash: '#token=<script>' } });
-  assert.equal(junk.takeTokenFromAddress(new URLSearchParams('')), '', 'malformed tokens are dropped');
+  assert.equal(junk.getPendingAddressToken(), '', 'malformed tokens are dropped synchronously');
   assert.deepEqual(junk.replaced, ['/generator']);
+
+  // Direct takeTokenFromAddress helper check (e.g. hashchange path).
+  const direct = builder();
+  direct.location.hash = '#token=' + TOKEN;
+  assert.equal(direct.takeTokenFromAddress(new URLSearchParams('?team=xyz')), TOKEN);
+  assert.deepEqual(direct.replaced, ['/generator?team=xyz']);
+
+  // ── Token fixation / overwrite protection (M-2 & F-18) ──
+  const EXISTING_TOKEN = 'existing.valid.token';
+  const OTHER_VALID_TOKEN = 'other.valid.token';
+  const INVALID_TOKEN = 'bad.fake.token';
+
+  // Invalid incoming token must never wipe an existing valid stored Pro token.
+  {
+    const local = storage();
+    local.setItem(facts.proTokenStorageKey, EXISTING_TOKEN);
+    const fix = builder({
+      local,
+      fetch: async (url, init) => {
+        const body = JSON.parse(init.body);
+        return { ok: true, status: 200, json: async () => ({ valid: body.token === EXISTING_TOKEN, reason: body.token === EXISTING_TOKEN ? undefined : 'invalid_signature' }) };
+      },
+    });
+    await fix.handleIncomingAddressToken(INVALID_TOKEN, { checkExistingFallback: true });
+    assert.equal(fix.getProToken(), EXISTING_TOKEN, 'invalid incoming token keeps existing valid Pro token in memory');
+    assert.equal(fix.local.getItem(facts.proTokenStorageKey), EXISTING_TOKEN, 'invalid incoming token keeps existing valid Pro token in localStorage');
+    assert.equal(fix.state().isPro, true, 'existing valid Pro access remains unlocked');
+    assert.match(fix.get('exportStatusHint').textContent, /not valid or has expired/i);
+  }
+
+  // Hashchange with an invalid token while already Pro keeps existing Pro token intact.
+  {
+    const local = storage();
+    local.setItem(facts.proTokenStorageKey, EXISTING_TOKEN);
+    const hc = builder({
+      local,
+      fetch: async (url, init) => {
+        const body = JSON.parse(init.body);
+        return { ok: true, status: 200, json: async () => ({ valid: body.token === EXISTING_TOKEN, reason: 'invalid_signature' }) };
+      },
+    });
+    hc.paidFixture();
+    hc.location.hash = '#token=' + INVALID_TOKEN;
+    hc.windowEvents.hashchange();
+    await new Promise(r => setTimeout(r, 10));
+    assert.equal(hc.local.getItem(facts.proTokenStorageKey), EXISTING_TOKEN, 'hashchange invalid token cannot wipe stored Pro token');
+    assert.equal(hc.state().isPro, true);
+    assert.match(hc.get('exportStatusHint').textContent, /not valid or has expired/i);
+  }
+
+  // Valid incoming token replacing a *different* valid stored token prompts confirm().
+  // Declining keeps existing token; accepting replaces it.
+  for (const accept of [false, true]) {
+    const local = storage();
+    local.setItem(facts.proTokenStorageKey, EXISTING_TOKEN);
+    const swap = builder({
+      local,
+      confirm: () => accept,
+      fetch: async () => ({ ok: true, status: 200, json: async () => ({ valid: true, plan: 'pro' }) }),
+    });
+    await swap.handleIncomingAddressToken(OTHER_VALID_TOKEN, { checkExistingFallback: true });
+    assert.equal(swap.confirms.length, 1, 'replacing a different valid token must ask confirm()');
+    assert.equal(swap.local.getItem(facts.proTokenStorageKey), accept ? OTHER_VALID_TOKEN : EXISTING_TOKEN);
+    assert.equal(swap.state().isPro, true);
+  }
+
+  // Valid incoming token with no stored token unlocks without confirm().
+  {
+    const fresh = builder({
+      confirm: () => { throw new Error('should not confirm when no existing token is stored'); },
+      fetch: async () => ({ ok: true, status: 200, json: async () => ({ valid: true, plan: 'pro' }) }),
+    });
+    await fresh.handleIncomingAddressToken(OTHER_VALID_TOKEN, { checkExistingFallback: true });
+    assert.equal(fresh.confirms.length, 0);
+    assert.equal(fresh.local.getItem(facts.proTokenStorageKey), OTHER_VALID_TOKEN);
+    assert.equal(fresh.state().isPro, true);
+  }
+
+  // ── Shared ?s= restore hardening (F-04) ──
+  {
+    const shared = builder();
+    shared.get('brandSite').value = 'keep-me.example';
+    shared.applySignatureState({
+      version: 1,
+      template: 'classic',
+      style: { primaryColor: '#0891B2' },
+      data: {
+        fullName: 'Shared User',
+        brandSite: 'evil-overwrite.example',
+        photoUrl: 'javascript:alert(1)',
+        logoUrl: 'data:image/svg+xml;base64,PHN2Zz4=',
+      },
+      nameLink: { target: 'card', cardSlug: 'untrusted-slug' },
+    });
+    assert.equal(shared.get('fullName').value, 'Shared User');
+    assert.equal(shared.get('brandSite').value, 'keep-me.example', 'applySignatureState must not touch DOM IDs outside allowlist');
+    assert.equal(shared.get('photoUrl').value, '', 'unsafe javascript: photoUrl dropped');
+    assert.equal(shared.get('logoUrl').value, '', 'unsafe SVG data URI logoUrl dropped');
+    assert.equal(shared.get('photoPreviewThumb').children.length, 0, 'unsafe photoUrl creates no <img>');
+    assert.equal(shared.get('logoPreviewThumb').children.length, 0, 'unsafe logoUrl creates no <img>');
+    assert.equal(shared.local.getItem('esg_card_slug'), null, 'untrusted ?s= restore must not persist card slug to localStorage');
+    assert.equal(shared.get('cardPageConsent').checked, false, 'untrusted ?s= restore must not auto-check card consent');
+
+    // Safe https URL & fromLocalDraft: true restores safely via DOM img element and persists slug.
+    shared.applySignatureState({
+      version: 1,
+      template: 'classic',
+      data: { fullName: 'Local User', photoUrl: 'https://fixture.example.com/u/abc/photo.jpg', logoUrl: PNG },
+      nameLink: { target: 'card', cardSlug: 'my-card-slug' },
+    }, { fromLocalDraft: true });
+    assert.equal(shared.get('photoPreviewThumb').children.length, 1);
+    assert.equal(shared.get('photoPreviewThumb').children[0].tagName, 'IMG');
+    assert.equal(shared.get('photoPreviewThumb').children[0].src, 'https://fixture.example.com/u/abc/photo.jpg');
+    assert.equal(shared.get('logoPreviewThumb').children[0].src, PNG);
+    assert.equal(shared.local.getItem('esg_card_slug'), 'my-card-slug');
+    assert.equal(shared.get('cardPageConsent').checked, true);
+  }
+
+  // ── Tainted SVG canvas & in-flight upload await on Copy (F-11) ──
+  {
+    const tainted = builder({ taintedCanvas: true });
+    assert.equal(tainted.applyLogoImage({ naturalWidth: 100, naturalHeight: 50 }), null, 'tainted canvas returns null instead of throwing');
+  }
+  {
+    let finishUpload;
+    const uploading = builder({
+      fetch: () => new Promise(resolve => { finishUpload = resolve; }),
+      confirm: () => { throw new Error('must not show preview-only confirm while upload is in flight'); },
+    });
+    uploading.paidFixture();
+    uploading.setProToken(TOKEN);
+    fillValid(uploading);
+    uploading.get('logoPreviewThumb').dataset.previewOnly = PNG;
+    uploading.hostPreviewLogo();
+    const copyPromise = uploading.copyHTML(uploading.get('copyHtmlBtn'));
+    await new Promise(r => setTimeout(r, 0));
+    finishUpload({ ok: true, status: 200, json: async () => ({ url: 'https://fixture.example.com/u/abc/logo.png' }) });
+    await copyPromise;
+    assert.equal(uploading.copied.length, 1, 'copy succeeds once in-flight logo upload finishes');
+    assert.match(await uploading.copied[0][0].items['text/html'].text(), /https:\/\/fixture\.example\.com\/u\/abc\/logo\.png/);
+  }
+
+  // ── clearPersonalFields restores photo placeholder (F-20) ──
+  {
+    const teamClear = builder();
+    teamClear.get('photoPreviewThumb').innerHTML = '<img src="x">';
+    teamClear.clearPersonalFields();
+    assert.equal(teamClear.get('photoPreviewThumb').innerHTML, '<span class="photo-placeholder">No photo</span>');
+  }
 
   // ── Access link ──
   const paidLink = builder();
@@ -353,6 +540,17 @@ async function main() {
   importing.get('brandImportBtn').disabled = true;
   importing.handleProPurchase(facts.paymentLink);
   assert.equal(importing.location.href, 'builder', 'checkout cannot interrupt brand import');
+
+  // Transient outage when arriving with a token and no prior stored token preserves it for reload retry.
+  {
+    const transient = builder({
+      search: '?token=' + TOKEN,
+      fetch: async () => { throw new Error('network down'); },
+    });
+    await transient.handleIncomingAddressToken(TOKEN);
+    assert.equal(transient.local.getItem(facts.proTokenStorageKey), TOKEN, 'incoming token is retained across transient outage when no prior purchase is stored');
+    assert.match(transient.get('exportStatusHint').textContent, /Reload in a moment/);
+  }
 
   console.log('Builder checkout recovery, paywall and export checks passed');
 }

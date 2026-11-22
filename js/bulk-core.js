@@ -187,7 +187,7 @@
   function parseDelimited(text) {
     if (typeof text !== 'string' || encoder.encode(text).length > root.SiteFacts.bulkMaxSpreadsheetBytes) throw error('file_too_large', 'Use a spreadsheet under 500 KB.');
     text = text.replace(/^\uFEFF/, '');
-    const firstLine = text.split(/\r?\n/, 1)[0];
+    const firstLine = text.split(/\r?\n/).find((line) => line.trim()) || '';
     const delimiter = firstLine.includes('\t') ? '\t' : firstLine.includes(';') && !firstLine.includes(',') ? ';' : ',';
     const rows = [];
     let row = [], value = '', quoted = false, closed = false;

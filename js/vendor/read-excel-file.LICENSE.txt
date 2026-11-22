@@ -1,3 +1,10 @@
+Provenance
+----------
+Package: read-excel-file (browser UMD bundle, `bundle/read-excel-file.min.js`)
+Upstream: https://gitlab.com/catamphetamine/read-excel-file
+Local modification: stripped dangling trailing `//# sourceMappingURL=read-excel-file.min.js.map` comment only (library code unmodified).
+SHA-256 (`js/vendor/read-excel-file.min.js`): f489b307478c7a3ab3e9cdb703df120312f290980f5c6eff517de576edb397a7
+
 MIT License
 
 Copyright (c) 2018 gitlab.com/catamphetamine

@@ -17,6 +17,7 @@ function json(body, status = 200, headers = {}) {
 }
 
 function error(status, code, headers = {}) {
+  if (status >= 500) console.error(JSON.stringify({ event: 'bulk_api_error', status, code }));
   return json({ error: code, code }, status, headers);
 }
 
@@ -36,12 +37,13 @@ function configuredKeys(value) {
 }
 
 async function authenticate(request, env, paidAuthorizer) {
-  if (paidAuthorizer && !/^Bearer [A-Za-z0-9_-]{1,64}\.[A-Za-z0-9_-]{32,128}$/i.test(request.headers.get('Authorization') || '')) {
+  const authHeader = request.headers.get('Authorization') || '';
+  const keys = configuredKeys(env.BULK_API_KEYS);
+  const match = /^Bearer ([A-Za-z0-9_-]{1,64})\.([A-Za-z0-9_-]{32,128})$/i.exec(authHeader);
+  if (paidAuthorizer && (!keys || !match)) {
     return paidAuthorizer(request, env);
   }
-  const keys = configuredKeys(env.BULK_API_KEYS);
   if (!keys) return error(503, 'bulk_not_configured');
-  const match = /^Bearer ([A-Za-z0-9_-]{1,64})\.([A-Za-z0-9_-]{32,128})$/i.exec(request.headers.get('Authorization') || '');
   if (!match) return error(401, 'invalid_api_key', { 'WWW-Authenticate': 'Bearer' });
   const known = Object.hasOwn(keys, match[1]);
   // Hashes have equal length; compare every byte without exposing a matching prefix.

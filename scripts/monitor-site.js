@@ -53,14 +53,16 @@ function committedLlmsHeading() {
   return fs.readFileSync(path.join(__dirname, '..', 'llms.txt'), 'utf8').split('\n')[0].trim();
 }
 
-// Every committed sitemap URL plus every page in blog/ and seo/, so a page
-// committed without a sitemap entry is caught rather than trusted.
-function expectedSitemapPaths(canonicalOrigin) {
-  const root = path.join(__dirname, '..');
-  const xml = fs.readFileSync(path.join(root, 'sitemap.xml'), 'utf8');
+// Every committed sitemap URL plus every page in blog/, seo/ and
+// email-signature-templates/, so a page committed without a sitemap entry is
+// caught rather than trusted.
+function expectedSitemapPaths(canonicalOrigin, rootDir = path.join(__dirname, '..')) {
+  const xml = fs.readFileSync(path.join(rootDir, 'sitemap.xml'), 'utf8');
   const paths = new Set([...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(canonicalOrigin, '')));
-  for (const dir of ['blog', 'seo']) {
-    for (const file of fs.readdirSync(path.join(root, dir))) {
+  for (const dir of ['blog', 'seo', 'email-signature-templates']) {
+    const dirPath = path.join(rootDir, dir);
+    if (!fs.existsSync(dirPath)) continue;
+    for (const file of fs.readdirSync(dirPath)) {
       if (!file.endsWith('.html')) continue;
       paths.add(file === 'index.html' ? `/${dir}/` : `/${dir}/${file.replace(/\.html$/, '')}`);
     }
@@ -68,7 +70,7 @@ function expectedSitemapPaths(canonicalOrigin) {
   return [...paths];
 }
 
-async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
+async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin, options = {}) {
   const base = baseUrl.replace(/\/$/, '');
   const failures = [];
   const fail = (message) => failures.push(message);
@@ -114,7 +116,7 @@ async function monitor(baseUrl, canonicalOrigin = SITE_FACTS.origin) {
   if (sitemap.status !== 200) {
     fail(`/sitemap.xml returned ${describe(sitemap)}`);
   } else {
-    const missing = expectedSitemapPaths(canonicalOrigin)
+    const missing = expectedSitemapPaths(canonicalOrigin, options.rootDir)
       .filter((p) => !sitemap.body.includes(`<loc>${canonicalOrigin}${p}</loc>`));
     if (missing.length) fail(`live sitemap is missing committed URLs: ${missing.join(', ')}`);
   }
@@ -152,4 +154,4 @@ async function main() {
 
 if (require.main === module) main();
 
-module.exports = { monitor };
+module.exports = { monitor, expectedSitemapPaths };

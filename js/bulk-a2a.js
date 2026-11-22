@@ -15,6 +15,7 @@ const identifier = (value) => typeof value === 'string' && value.length > 0 && v
 const json = (value, status = 200, headers = {}) => new Response(JSON.stringify(value), { status, headers: { ...HEADERS, ...headers } });
 
 function failure(status, message, reason, headers = {}, domain = 'a2a-protocol.org') {
+  if (status >= 500) console.error(JSON.stringify({ event: 'bulk_a2a_error', status, reason: reason || 'internal_error' }));
   const names = { 400: 'INVALID_ARGUMENT', 403: 'PERMISSION_DENIED', 404: 'NOT_FOUND', 405: 'UNIMPLEMENTED', 406: 'INVALID_ARGUMENT', 413: 'RESOURCE_EXHAUSTED', 415: 'INVALID_ARGUMENT', 500: 'INTERNAL', 503: 'UNAVAILABLE' };
   return json({ error: {
     code: status, status: names[status] || 'UNKNOWN', message,
@@ -62,6 +63,8 @@ export async function bulkA2aResponse(request, env, options = {}) {
   const url = new URL(request.url);
   const origin = request.headers.get('Origin');
   if (origin !== null && origin !== url.origin) return failure(403, 'Origin not allowed');
+  // Auth runs before route/method checks so unauthenticated probes fail closed
+  // with 401/503 without exposing A2A route structure.
   if (typeof options.authorize !== 'function') return failure(503, 'Agent access is unavailable');
   const access = await options.authorize(request, env);
   if (access instanceof Response) {
@@ -119,6 +122,7 @@ export async function bulkA2aResponse(request, env, options = {}) {
     method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: operation, arguments: args } }),
   }), env, { authorize: async () => access });
+  if (mcp.status === 413) return failure(413, 'Request exceeds the input byte limit');
   const result = await mcp.json();
   if (result.error) return failure(result.error.code === -32603 ? 500 : 400, result.error.code === -32603 ? 'Signature generation failed' : 'Invalid operation arguments');
   const value = result.result?.structuredContent;

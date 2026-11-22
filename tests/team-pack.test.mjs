@@ -137,16 +137,28 @@ assert.deepEqual(await verify(env, members[0]), { valid: true, plan: 'pro' }, 'a
 res = await call(env, '/api/team', bearer(members[0], { method: 'POST', body: JSON.stringify(design) }));
 assert.equal(res.status, 403, 'a colleague cannot replace the team design');
 
-// Colleagues' card pages belong to them, not to the buyer or each other.
+// Colleagues' card pages cannot be overwritten by each other or the buyer,
+// but the team buyer can delete a colleague's card to reclaim shared card quota.
 res = await call(env, '/api/card', bearer(members[0], { method: 'POST', body: JSON.stringify({ fullName: 'Ada Lovelace' }) }));
 assert.equal(res.status, 200);
 const card = await res.json();
 res = await call(env, '/api/card', bearer(members[1], { method: 'POST', body: JSON.stringify({ fullName: 'Grace', slug: card.slug }) }));
 assert.equal(res.status, 403);
-res = await call(env, `/api/card/${card.slug}`, bearer(owner.token, { method: 'DELETE' }));
-assert.equal(res.status, 403);
+res = await call(env, `/api/card/${card.slug}`, bearer(members[1], { method: 'DELETE' }));
+assert.equal(res.status, 403, 'another colleague cannot delete a colleague\'s card');
+res = await call(env, '/api/card', bearer(owner.token, { method: 'POST', body: JSON.stringify({ fullName: 'Boss', slug: card.slug }) }));
+assert.equal(res.status, 403, 'buyer cannot overwrite a colleague\'s card');
 res = await call(env, `/api/card/${card.slug}`, bearer(members[0], { method: 'DELETE' }));
 assert.equal(res.status, 200);
+
+// Team buyer deletes a departed colleague's card to reclaim shared quota (F-15).
+res = await call(env, '/api/card', bearer(members[0], { method: 'POST', body: JSON.stringify({ fullName: 'Departed Staff' }) }));
+assert.equal(res.status, 200);
+const departedCard = await res.json();
+res = await call(env, `/api/card/${departedCard.slug}`, bearer(single.token, { method: 'DELETE' }));
+assert.equal(res.status, 403, 'unrelated buyer cannot delete a team member\'s card');
+res = await call(env, `/api/card/${departedCard.slug}`, bearer(owner.token, { method: 'DELETE' }));
+assert.equal(res.status, 200, 'team buyer can unpublish a colleague\'s card to free quota');
 
 // Colleagues' photos live in their own folders, so one cannot replace another's.
 const png = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0]);
@@ -189,12 +201,30 @@ const afterRace = await (await call(envClaim, `/api/team/${teamClaim.id}`)).json
 assert.equal(afterRace.members, 4, 'the seat claimed mid-save is kept');
 assert.equal(afterRace.design.template, 'classic');
 
+// Concurrent join retries on ETag mismatch instead of immediately failing with 409 team_busy (F-15).
+let joinRaced = false;
+bucketClaim.beforePut = async (key) => {
+  if (joinRaced || !key.startsWith('teams/')) return;
+  joinRaced = true;
+  // Simulate another colleague winning the write just before this join writes.
+  const cur = bucketClaim.store.get(key);
+  const parsed = JSON.parse(cur.body);
+  bucketClaim.store.set(key, { ...cur, body: JSON.stringify({ ...parsed, members: parsed.members + 1 }), etag: 'e-raced-join' });
+};
+res = await joinWith('d'.repeat(32));
+bucketClaim.beforePut = null;
+assert.equal(res.status, 200, 'join retries cleanly on ETag mismatch');
+assert.equal((await res.json()).seat, 7, 'retry takes the next seat after the concurrent join');
+
 // ── Refund ends the whole team ──
 const env2 = makeEnv();
 const owner2 = await buy(env2, 'plink_team123', 9);
 const team2 = await (await call(env2, '/api/team', bearer(owner2.token, { method: 'POST', body: JSON.stringify(design) }))).json();
 const member2 = (await (await call(env2, `/api/team/${team2.id}/join`, { method: 'POST' })).json()).token;
 await webhook(env2, 'charge.refunded', { payment_intent: owner2.paymentIntent, amount: 2900, amount_refunded: 2900, refunded: true });
+res = await call(env2, `/api/team/${team2.id}`);
+assert.equal(res.status, 403, 'GET /api/team/{id} rejects a revoked team');
+assert.equal((await res.json()).code, 'team_inactive');
 res = await call(env2, `/api/team/${team2.id}/join`, { method: 'POST' });
 assert.equal(res.status, 403);
 assert.equal((await res.json()).code, 'team_inactive');

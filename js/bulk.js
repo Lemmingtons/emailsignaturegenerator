@@ -8,16 +8,21 @@
   const local = bulk.safeStorage(() => window.localStorage);
   const session = bulk.safeStorage(() => window.sessionStorage);
   const tokenKey = facts.proTokenStorageKey;
-  // Strip the token from the address bar first, then keep it before anything
-  // can fail: a paid token that only lives in memory is lost on the first
-  // network error, refresh or closed tab.
+  // Strip the token from the address bar first. When no purchase is saved yet,
+  // persist immediately so a network blip or refresh does not lose a new paid
+  // token. When a different purchase is already saved, verify the returned token
+  // and confirm with the user before overwriting localStorage (prevents token
+  // fixation / accidental replacement).
   const returned = bulk.takeReturnedToken(window.location.href);
   if (returned.changed) history.replaceState(null, '', returned.cleaned);
   const storedToken = local.get(tokenKey) || '';
+  let pendingOverwrite = Boolean(returned.token && storedToken && returned.token !== storedToken);
   let tokenRemembered = true;
-  if (returned.token && returned.token !== storedToken) tokenRemembered = local.set(tokenKey, returned.token);
+  if (returned.token && !storedToken) tokenRemembered = local.set(tokenKey, returned.token);
   const restoreHelp = `Open your access link (use “Copy my access link” in the signature builder) or email ${facts.supportEmail}.`;
   let imported = null;
+  let renderedImport = null;
+  let defaultsTimer = null;
   let batch = null;
   let selected = 0;
   let fileVersion = 0;
@@ -26,13 +31,23 @@
   let downloading = false;
   let payload = null;
   let purchaseToken = returned.token || storedToken;
-  // An earlier purchase in this browser, tried if the returned token is rejected.
-  let fallbackToken = returned.token && storedToken !== returned.token ? storedToken : '';
+  // An earlier purchase in this browser, tried if the returned token is rejected
+  // or if the user declines replacing their existing saved purchase.
+  let fallbackToken = pendingOverwrite ? storedToken : '';
   let paidAccess = null;
   let managingKey = false;
   // 'idle' | 'checking' | 'retry': while a stored purchase is unconfirmed the
   // buy buttons stay hidden so a network blip cannot lead to a second purchase.
   let accessState = 'idle';
+
+  function setAgentKeyVisible(visible) {
+    $('agent-key').type = visible ? 'text' : 'password';
+    const toggle = $('toggle-api-key');
+    if (toggle) {
+      toggle.textContent = visible ? 'Hide key' : 'Show key';
+      toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    }
+  }
 
   function credential() {
     return $('bulk-key').value.trim() || (paidAccess ? purchaseToken : '');
@@ -52,6 +67,7 @@
       $('paid-status').textContent = accessState === 'checking' ? 'Checking your purchase…' : '';
       $('agent-status').textContent = 'Buy a lifetime plan to create your API and MCP key.';
       $('agent-key').value = '';
+      setAgentKeyVisible(false);
       $('agent-key-result').hidden = true;
     }
     ['create-api-key', 'rotate-api-key', 'revoke-api-key'].forEach((id) => { $(id).disabled = !paid || managingKey; });
@@ -79,10 +95,28 @@
     // refresh after a failed check still brings the staff list back.
     if (accessState === 'idle') session.remove(facts.bulkCheckoutDraftStorageKey);
     if (outcome === 'active') {
+      if (pendingOverwrite) {
+        const replace = typeof window.confirm === 'function'
+          ? window.confirm('This browser already has a different purchase saved. Replace it with the purchase from this link?')
+          : false;
+        pendingOverwrite = false;
+        if (!replace) {
+          paidAccess = null;
+          purchaseToken = '';
+          const keep = fallbackToken;
+          fallbackToken = '';
+          if (keep) { refreshAccess(keep); return; }
+          updateAccess();
+          return;
+        }
+        fallbackToken = '';
+        tokenRemembered = local.set(tokenKey, token);
+      }
       paidAccess = info;
       if (!tokenRemembered) showError('purchase-error', `Access is active in this tab, but your browser could not remember it. Keep this tab open while you work, or email ${facts.supportEmail} to restore access later.`);
     } else if (outcome === 'rejected') {
       paidAccess = null;
+      pendingOverwrite = false;
       if (local.get(tokenKey) === token) { if (fallbackToken) local.set(tokenKey, fallbackToken); else local.remove(tokenKey); }
       purchaseToken = '';
       const next = fallbackToken;
@@ -91,6 +125,7 @@
       showError('purchase-error', `This purchase access was not accepted. ${restoreHelp}`);
     } else if (outcome === 'not_owner') {
       paidAccess = null;
+      pendingOverwrite = false;
       showError('purchase-error', `Use the original buyer’s purchase access to manage bulk downloads and API keys. If you have an older Pro purchase, email ${facts.supportEmail} to restore access.`);
     } else {
       showError('purchase-error', outcome === 'busy'
@@ -110,9 +145,10 @@
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${purchaseToken}` },
         body: JSON.stringify({ action }), credentials: 'omit', cache: 'no-store',
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.code === 'rate_limited' ? 'Wait a minute before changing your key again.' : 'Could not update your key. Refresh the page and try again.');
       $('agent-key').value = result.key || '';
+      setAgentKeyVisible(false);
       $('agent-key-result').hidden = !result.key;
       $('agent-status').textContent = result.revoked ? 'Your API key has been revoked. Agents using it can no longer connect. Your purchase access remains active.' : `Your API and MCP key is ready. Up to ${result.maxRows} signatures per batch.`;
     } catch (err) { showError('agent-error', err.message); }
@@ -156,6 +192,7 @@
   function resetResults() {
     batch = null;
     payload = null;
+    renderedImport = null;
     $('batch-count').textContent = 'No list yet';
     $('preview-empty').hidden = false;
     $('preview-content').hidden = true;
@@ -200,13 +237,16 @@
     $('preview-empty').hidden = true;
     $('preview-content').hidden = false;
     const picker = $('preview-person');
-    picker.replaceChildren();
-    batch.results.forEach((row, index) => {
-      const option = document.createElement('option');
-      option.value = index;
-      option.textContent = `${row.fullName || 'Missing name'}${row.email ? ` · ${row.email}` : ''}${row.errors.length ? ' · Needs correction' : ''}`;
-      picker.appendChild(option);
-    });
+    if (renderedImport !== imported) {
+      picker.replaceChildren();
+      batch.results.forEach((row, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${row.fullName || 'Missing name'}${row.email ? ` · ${row.email}` : ''}${row.errors.length ? ' · Needs correction' : ''}`;
+        picker.appendChild(option);
+      });
+      renderedImport = imported;
+    }
     selected = Math.min(selected, batch.results.length - 1);
     picker.value = selected;
     previewPerson();
@@ -247,6 +287,8 @@
 
   $('staff-file').addEventListener('change', async () => {
     const version = ++fileVersion;
+    clearTimeout(defaultsTimer);
+    defaultsTimer = null;
     if (cancelWorkbook) cancelWorkbook();
     imported = null;
     selected = 0;
@@ -291,14 +333,31 @@
     ], { type: 'text/csv;charset=utf-8' }), 'staff-signatures-sample.csv');
   });
 
+  function scheduleDefaultsRender() {
+    clearTimeout(defaultsTimer);
+    defaultsTimer = setTimeout(() => {
+      defaultsTimer = null;
+      render();
+    }, 150);
+  }
+
+  function flushDefaultsRender() {
+    if (defaultsTimer !== null) {
+      clearTimeout(defaultsTimer);
+      defaultsTimer = null;
+      render();
+    }
+  }
+
   ['bulk-template', 'bulk-font', 'bulk-primary', 'bulk-secondary'].forEach((id) => $(id).addEventListener('change', render));
-  ['bulk-company', 'bulk-website', 'bulk-logo'].forEach((id) => $(id).addEventListener('input', render));
+  ['bulk-company', 'bulk-website', 'bulk-logo'].forEach((id) => $(id).addEventListener('input', scheduleDefaultsRender));
   $('bulk-key').addEventListener('input', () => { showError('download-error', ''); updateDownload(); });
   $('allow-partial').addEventListener('change', updateDownload);
   $('preview-person').addEventListener('change', () => { selected = Number($('preview-person').value); previewPerson(); });
   $('signature-preview').addEventListener('click', (event) => event.preventDefault());
   $('bulk-form').addEventListener('submit', async (event) => {
     event.preventDefault();
+    flushDefaultsRender();
     if ($('download-zip').disabled || !payload) return;
     downloading = true;
     $('bulk-editor').disabled = true;
@@ -378,6 +437,7 @@
     checkout.searchParams.set('client_reference_id', 'bulk');
     $(id).href = checkout.toString();
     $(id).addEventListener('click', (event) => {
+      flushDefaultsRender();
       if (imported && !payload) {
         event.preventDefault();
         showError('purchase-error', 'Correct the shared design details before checkout so your staff list can be restored.');
@@ -404,6 +464,7 @@
   $('create-api-key').addEventListener('click', () => manageKey('create'));
   $('rotate-api-key').addEventListener('click', () => manageKey('rotate'));
   $('revoke-api-key').addEventListener('click', () => manageKey('revoke'));
+  $('toggle-api-key')?.addEventListener('click', () => setAgentKeyVisible($('agent-key').type === 'password'));
   $('copy-api-key').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('agent-key').value); $('agent-status').textContent = 'API key copied. Paste it only into your agent’s private configuration.'; }
     catch { showError('agent-error', 'Could not copy automatically. Select the key field and copy it manually.'); }
@@ -435,6 +496,8 @@
   refreshAccess();
   window.addEventListener('storage', (event) => {
     if (event.key !== tokenKey || !event.newValue || event.newValue === purchaseToken) return;
+    pendingOverwrite = false;
+    fallbackToken = '';
     tokenRemembered = true;
     accessState = 'idle';
     refreshAccess(event.newValue);
