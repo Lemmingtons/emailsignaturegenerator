@@ -136,4 +136,33 @@ assert.equal((await agent('register', { agent_name: 'Fixture' }, '', { env: { ..
 response = await agent('token', { claim_token: attacked.claim_token }, '', { env: { ...env, UPLOADS: { get: async () => { throw new Error('private storage identifier'); } } } });
 assert.equal(response.status, 503);
 assert.ok(!(await response.text()).includes('private storage identifier'));
+
+// Rate-limit keys split by action, and verified token polling keys by rid (not shared NAT IP).
+{
+  const keys = [];
+  const trackedEnv = { ...env, RATE_LIMIT: { limit: async ({ key }) => { keys.push(key); return { success: true }; } } };
+  const r1 = await (await agent('register', { agent_name: 'NAT Agent 1' }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } })).json();
+  const r2 = await (await agent('register', { agent_name: 'NAT Agent 2' }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } })).json();
+  assert.ok(keys.some((k) => k.startsWith('agent-registration:register:')), 'register uses action-scoped rate-limit key');
+  const req1 = new URL(r1.claim.verification_uri).searchParams.get('request');
+  await agent('preview', { request_token: req1 }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } });
+  assert.ok(keys.some((k) => k.startsWith('agent-registration:preview:')), 'preview uses action-scoped rate-limit key');
+  await agent('token', { claim_token: r1.claim_token }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } });
+  await agent('token', { claim_token: r2.claim_token }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } });
+  assert.ok(keys.includes(`agent-registration:token:${r1.registration_id}`), 'verified token poll keys by rid');
+  assert.ok(keys.includes(`agent-registration:token:${r2.registration_id}`), 'second registration behind same IP gets its own rid bucket');
+  await agent('token', { claim_token: 'invalid.token.value' }, '', { env: trackedEnv, headers: { 'CF-Connecting-IP': '203.0.113.50' } });
+  assert.ok(keys.some((k) => k.startsWith('agent-registration:token-unverified:')), 'unverified token requests stay IP-capped');
+
+  // Sandbox mode uses request origin for verification_uri.
+  const sandboxRes = await worker.fetch(new Request('https://sandbox.example.workers.dev/api/v1/agent/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agent_name: 'Sandbox Agent' }),
+  }), { ...env, SANDBOX_MODE: 'true' });
+  assert.equal(sandboxRes.status, 200);
+  const sandboxReg = await sandboxRes.json();
+  assert.equal(new URL(sandboxReg.claim.verification_uri).origin, 'https://sandbox.example.workers.dev', 'sandbox verification_uri uses request origin');
+}
+
 console.log('Agent registration: paid buyer approval, one-time concurrent exchange, generation-only access, plan limits, expiry, rotation/refunds and private-data boundaries passed.');

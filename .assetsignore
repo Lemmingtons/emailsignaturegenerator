@@ -57,3 +57,6 @@ js/agent-discovery.js
 js/agent-registration.js
 js/bulk-a2a.js
 js/purchase-email.js
+js/brand-extract.js
+docs
+docs/**

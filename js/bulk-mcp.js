@@ -24,6 +24,7 @@ function json(body, status = 200, headers = {}) {
 }
 
 function rpcError(id, code, message, status = 200, headers = {}) {
+  if (status >= 500 || code === -32603) console.error(JSON.stringify({ event: 'bulk_mcp_error', status, code }));
   return json({ jsonrpc: '2.0', id, error: { code, message } }, status, headers);
 }
 
@@ -87,6 +88,8 @@ function paramsHaveOnly(params, allowed) {
 export async function bulkMcpResponse(request, env, options = {}) {
   const origin = request.headers.get('Origin');
   if (origin !== null && origin !== new URL(request.url).origin) return rpcError(null, -32600, 'Origin not allowed', 403);
+  // Auth runs before method checks so unauthenticated GET probes cannot bypass
+  // authorization (unsigned/missing tokens fail before any R2 or limiter call).
   if (typeof options.authorize !== 'function') return rpcError(null, -32603, 'MCP access is unavailable', 503);
   const access = await options.authorize(request, env);
   if (access instanceof Response) {

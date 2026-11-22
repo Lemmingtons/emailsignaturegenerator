@@ -24,3 +24,13 @@ period = 60
 SANDBOX_MODE = "true"
 STRIPE_LIVEMODE = "false"
 STRIPE_PAYMENT_LINK_ID = "plink_1Ty9ruBbbCddizce8Ihdj7jx"
+
+[[analytics_engine_datasets]]
+binding = "CHECKOUT_CLICKS"
+dataset = "checkout_clicks_sandbox"
+
+[observability]
+enabled = true
+
+[observability.logs]
+invocation_logs = false

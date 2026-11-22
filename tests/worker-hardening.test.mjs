@@ -143,9 +143,14 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   const page = await call(env, '/generator');
   const csp = page.headers.get('Content-Security-Policy');
   const directive = (name) => csp.split(';').map((d) => d.trim()).find((d) => d.startsWith(name + ' '));
-  assert.equal(directive('script-src'), "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com");
+  assert.equal(directive('script-src'), "script-src 'self' https://static.cloudflareinsights.com");
   assert.equal(directive('connect-src'), "connect-src 'self' https://cloudflareinsights.com");
+  assert.equal(directive('base-uri'), "base-uri 'none'");
+  assert.equal(directive('form-action'), "form-action 'self'");
+  assert.equal(directive('frame-ancestors'), "frame-ancestors 'none'");
+  assert.equal(page.headers.get('Referrer-Policy'), 'no-referrer', '/generator sends no-referrer');
   assert.ok(!csp.includes('*'), 'no wildcard hosts');
+  assert.equal((await call(env, '/js/home.js')).status, 200, '/js/home.js is a public client script');
   for (const path of ['/', '/generator', '/api/health', '/does-not-exist', '/generator.html', '/api/verify-payment?session_id=cs_test_nope']) {
     assert.equal((await call(env, path)).headers.get('Strict-Transport-Security'), 'max-age=31536000', 'HSTS on ' + path);
   }
@@ -356,4 +361,173 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   assert.equal((await call(makeEnv(), '/api/checkout-click', { method: 'POST', body: '{"placement":"home-team"}' })).status, 204, 'a missing dataset binding still answers');
 }
 
-console.log('Worker hardening checks passed: full-refund-only revocation, fragment tokens, capped payment return pages, Web Analytics CSP and HSTS, verify-token input, concurrent card cap, bounded bodies.');
+// ── 8. M-1: format changes preserve other-extension siblings in the same slot ─
+{
+  const env = makeEnv();
+  const buyer = await buy(env);
+  const jpg = new Uint8Array([0xFF, 0xD8, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const gif = new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0, 0, 0, 0, 0, 0]);
+  const jpgRes = await call(env, '/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + buyer.token, 'X-Image-Type': 'photo' }, body: jpg });
+  assert.equal(jpgRes.status, 200);
+  const jpgUrl = new URL((await jpgRes.json()).url);
+  const gifRes = await call(env, '/api/upload-image', { method: 'POST', headers: { Authorization: 'Bearer ' + buyer.token, 'X-Image-Type': 'photo' }, body: gif });
+  assert.equal(gifRes.status, 200);
+  const gifUrl = new URL((await gifRes.json()).url);
+  assert.equal((await call(env, jpgUrl.pathname)).status, 200, 'previous photo.jpg stays live after uploading photo.gif');
+  assert.equal((await call(env, gifUrl.pathname)).status, 200, 'new photo.gif is live too');
+}
+
+// ── 9. F-03: Rate limits on DELETE /api/card, /api/verify-payment, /sitemap-cards.xml & edge cache ─
+{
+  const env = makeEnv();
+  const buyer = await buy(env);
+  const pub = await (await call(env, '/api/card', bearer(buyer.token, { method: 'POST', body: JSON.stringify({ fullName: 'Rate Card' }) }))).json();
+  const denyCard = { ...env, RATE_LIMIT: { limit: async ({ key }) => ({ success: !key.startsWith('card:') }) } };
+  assert.equal((await call(denyCard, `/api/card/${pub.slug}`, bearer(buyer.token, { method: 'DELETE' }))).status, 429, 'DELETE /api/card/:slug is rate limited');
+
+  const denyVerify = { ...env, RATE_LIMIT: { limit: async ({ key }) => ({ success: !key.startsWith('verify-payment:') }) } };
+  assert.equal((await call(denyVerify, '/api/verify-payment?session_id=cs_test_x')).status, 429, '/api/verify-payment is rate limited');
+
+  const denySitemap = { ...env, RATE_LIMIT: { limit: async ({ key }) => ({ success: !key.startsWith('sitemap:') }) } };
+  assert.equal((await call(denySitemap, '/sitemap-cards.xml')).status, 429, '/sitemap-cards.xml is rate limited');
+
+  // caches.default caches /i/* and /sitemap-cards.xml when available.
+  const cacheStore = new Map();
+  let listCalls = 0;
+  const origList = env.UPLOADS.list.bind(env.UPLOADS);
+  env.UPLOADS.list = async (args) => { listCalls++; return origList(args); };
+  const prevCaches = globalThis.caches;
+  globalThis.caches = {
+    default: {
+      async match(req) { const r = cacheStore.get(req.url); return r ? r.clone() : undefined; },
+      async put(req, res) { cacheStore.set(req.url, res.clone()); },
+    },
+  };
+  try {
+    const s1 = await call(env, '/sitemap-cards.xml');
+    const s2 = await call(env, '/sitemap-cards.xml');
+    assert.equal(s1.status, 200);
+    assert.equal(s2.status, 200);
+    assert.equal(listCalls, 1, 'second /sitemap-cards.xml served from caches.default');
+    const i1 = await call(env, '/i/linkedin-0891b2.png');
+    const i2 = await call(env, '/i/linkedin-0891b2.png?bust=1');
+    assert.equal(i1.status, 200);
+    assert.equal(i2.status, 200);
+    assert.ok(cacheStore.has(ORIGIN + '/i/linkedin-0891b2.png'), '/i/* caches normalized URL without query');
+  } finally {
+    globalThis.caches = prevCaches;
+  }
+}
+
+// ── 10. F-12 & F-18: vCard CR escaping, card control-char/email hygiene, collision retry & card CSP ─
+{
+  const env = makeEnv();
+  const buyer = await buy(env);
+  const dirty = await call(env, '/api/card', bearer(buyer.token, {
+    method: 'POST',
+    body: JSON.stringify({
+      fullName: 'Jane\r\nSmith\u0000',
+      title: 'Lead\rDev',
+      phone: '+1\n555\r0100',
+      email: 'jane@acme.com?subject=evil',
+      website: 'https://acme.com',
+    }),
+  }));
+  assert.equal(dirty.status, 200);
+  const { slug } = await dirty.json();
+  const cardRes = await call(env, `/c/${slug}`);
+  assert.equal(cardRes.status, 200);
+  assert.match(cardRes.headers.get('Content-Security-Policy'), /script-src 'none'/, 'card pages enforce script-src none');
+  const cardHtml = await cardRes.text();
+  assert.ok(!cardHtml.includes('mailto:'), 'query-injected email is stripped from card');
+
+  // Legacy card stored with raw CR still escapes cleanly in vCard output.
+  env.UPLOADS.store.set('cards/legacy-cr-111111.json', {
+    etag: 'e-legacy',
+    body: JSON.stringify({ fullName: 'Bob\rEND:VCARD\r\nBEGIN:VCARD', title: 'A\rB' }),
+  });
+  const vcf = await (await call(env, '/c/legacy-cr-111111.vcf')).text();
+  const vcfLines = vcf.split('\r\n');
+  assert.equal(vcfLines.filter((l) => l === 'BEGIN:VCARD').length, 1, 'bare CR cannot inject a second vCard');
+  assert.ok(vcf.includes('TITLE:A\\nB'), 'bare CR is escaped to \\n');
+
+  // Collision retry: pre-seed a colliding slug and verify conditional put retries without overwriting.
+  const origRandom = crypto.getRandomValues.bind(crypto);
+  let calls = 0;
+  crypto.getRandomValues = (arr) => {
+    calls++;
+    if (calls === 1 && arr.length === 3) { arr.set([0xaa, 0xbb, 0xcc]); return arr; }
+    return origRandom(arr);
+  };
+  env.UPLOADS.store.set('cards/collider-aabbcc.json', { etag: 'e-other', body: JSON.stringify({ fullName: 'Original', owner: 'ent_OTHER' }) });
+  try {
+    const colRes = await call(env, '/api/card', bearer(buyer.token, { method: 'POST', body: JSON.stringify({ fullName: 'Collider' }) }));
+    assert.equal(colRes.status, 200);
+    const colCard = await colRes.json();
+    assert.notEqual(colCard.slug, 'collider-aabbcc', 'collision retries with a fresh suffix');
+    assert.equal(JSON.parse(env.UPLOADS.store.get('cards/collider-aabbcc.json').body).owner, 'ent_OTHER', 'existing card is untouched');
+    assert.ok(![...env.UPLOADS.store.keys()].some((k) => k.endsWith('/collider-aabbcc')), 'collided slug does not leak into owner index');
+  } finally {
+    delete crypto.getRandomValues;
+  }
+}
+
+// ── 11. F-13: Explicit shortcut redirects directly in Worker ────────────────
+{
+  let assetHits = 0;
+  const env = makeEnv({ ASSETS: { fetch: async () => { assetHits++; return new Response('nope', { status: 404 }); } } });
+  for (const path of ['/app', '/create', '/generate']) {
+    const res = await call(env, path);
+    assert.equal(res.status, 301, path + ' redirects');
+    assert.equal(res.headers.get('Location'), ORIGIN + '/generator', path + ' redirects to /generator');
+  }
+  assert.equal(assetHits, 0, 'shortcut redirects never depend on ASSETS/_redirects');
+}
+
+// ── 12. F-14: Out-of-order Stripe dispute webhooks cannot re-revoke a won dispute ─
+{
+  const env = makeEnv();
+  const buyer = await buy(env);
+  const signedEvent = async (type, object, created) => {
+    const payload = JSON.stringify({ id: 'evt_dispute_' + created + '_' + type, type, livemode: false, created, data: { object } });
+    const t = Math.floor(Date.now() / 1000);
+    const sig = createHmac('sha256', WEBHOOK_SECRET).update(`${t}.${payload}`).digest('hex');
+    return call(env, '/api/stripe-webhook', { method: 'POST', headers: { 'Stripe-Signature': `t=${t},v1=${sig}` }, body: payload });
+  };
+  // Dispute closed (won) arrives BEFORE the older dispute.created event.
+  assert.equal((await signedEvent('charge.dispute.closed', { id: 'dp_1', status: 'won', payment_intent: buyer.paymentIntent }, 2000)).status, 200);
+  assert.equal((await verify(env, buyer.token)).valid, true);
+  assert.equal((await signedEvent('charge.dispute.created', { id: 'dp_1', payment_intent: buyer.paymentIntent }, 1900)).status, 200);
+  assert.equal((await verify(env, buyer.token)).valid, true, 'stale dispute.created cannot re-revoke a won dispute');
+  // Same-second out-of-order dispute.created for the same dispute id is also ignored.
+  assert.equal((await signedEvent('charge.dispute.created', { id: 'dp_1', payment_intent: buyer.paymentIntent }, 2000)).status, 200);
+  assert.equal((await verify(env, buyer.token)).valid, true, 'same-second stale dispute.created is ignored');
+  // A newer dispute DOES revoke.
+  assert.equal((await signedEvent('charge.dispute.created', { id: 'dp_2', payment_intent: buyer.paymentIntent }, 2100)).status, 200);
+  assert.equal((await verify(env, buyer.token)).valid, false, 'a newer dispute still revokes');
+}
+
+// ── 13. F-24/F-25: Clean Refresh header & JSON 500s on /mcp and /a2a/* ──────
+{
+  const env = makeEnv();
+  const pending = await call(env, '/api/verify-payment?session_id=cs_test_cleanrefresh&evil=1&redirect=https://evil.example');
+  assert.equal(pending.status, 202);
+  assert.equal(pending.headers.get('Refresh'), '2;url=/api/verify-payment?session_id=cs_test_cleanrefresh&attempt=1', 'Refresh carries only session_id and attempt');
+
+  // Force unhandled exception inside /mcp and /a2a/* via throwing env getter.
+  const explodingEnv = new Proxy({}, { get() { throw new Error('boom'); } });
+  const realError = console.error;
+  console.error = () => {};
+  try {
+    const mcpCrash = await call(explodingEnv, '/mcp', { method: 'POST', headers: { Authorization: 'Bearer a.b.c' } });
+    assert.equal(mcpCrash.status, 500);
+    assert.equal((await mcpCrash.json()).jsonrpc, '2.0', '/mcp unhandled 500 returns JSON-RPC');
+    const a2aCrash = await call(explodingEnv, '/a2a/message:send', { method: 'POST', headers: { Authorization: 'Bearer a.b.c' } });
+    assert.equal(a2aCrash.status, 500);
+    assert.equal((await a2aCrash.json()).error.code, 500, '/a2a/* unhandled 500 returns A2A JSON');
+  } finally {
+    console.error = realError;
+  }
+}
+
+console.log('Worker hardening checks passed: full-refund-only revocation, fragment tokens, capped payment return pages, Web Analytics CSP and HSTS, verify-token input, concurrent card cap, bounded bodies, M-1/F-03/F-12/F-13/F-14/F-24/F-25.');
