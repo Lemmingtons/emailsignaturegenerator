@@ -161,13 +161,15 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
 
 // ── 4. Payment return pages ─────────────────────────────────────────────────
 {
-  const env = makeEnv();
+  // Use a real 25/min budget limiter so the full polling loop + emailed restore hop fit within budget.
+  let verifyHits = 0;
+  const pendingEnv = makeEnv({ RATE_LIMIT: { limit: async () => ({ success: ++verifyHits <= 25 }) } });
   const sid = 'cs_test_pendingforever';
-  let res = await call(env, `/api/verify-payment?session_id=${sid}`);
+  let res = await call(pendingEnv, `/api/verify-payment?session_id=${sid}`);
   assert.equal(res.status, 202);
-  assert.equal(res.headers.get('Retry-After'), '2');
+  assert.equal(res.headers.get('Retry-After'), '3');
   assert.equal(res.headers.get('Cache-Control'), 'no-store, private');
-  assert.equal(res.headers.get('Refresh'), `2;url=/api/verify-payment?session_id=${sid}&attempt=1`);
+  assert.equal(res.headers.get('Refresh'), `3;url=/api/verify-payment?session_id=${sid}&attempt=1`);
   let html = await res.text();
   assert.ok(!html.includes(sid), 'the pending page body never contains the session id');
 
@@ -175,13 +177,13 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   let next = res.headers.get('Refresh').split('url=')[1];
   let hops = 1;
   while (next) {
-    res = await call(env, next);
+    res = await call(pendingEnv, next);
     assert.equal(res.status, 202);
     next = res.headers.get('Refresh') && res.headers.get('Refresh').split('url=')[1];
     hops++;
-    assert.ok(hops <= 30, 'the pending loop is capped');
+    assert.ok(hops <= 20, 'the pending loop is capped');
   }
-  assert.equal(hops, 30, 'about 30 attempts before giving up');
+  assert.equal(hops, 20, '20 attempts at 3s fit comfortably inside the 25/min limiter');
   html = await res.text();
   assert.match(html, /still being confirmed/);
   assert.match(html, /not lost your payment/);
@@ -189,11 +191,18 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   assert.ok(!html.includes(sid) && !html.includes('pi_'), 'no Stripe id in the final page');
   assert.equal(res.headers.get('Cache-Control'), 'no-store, private');
 
+  // When genuinely rate-limited, /api/verify-payment returns a branded resumable HTML page.
+  const limitedVerify = await call(makeEnv({ RATE_LIMIT: { limit: async () => ({ success: false }) } }), `/api/verify-payment?session_id=${sid}`);
+  assert.equal(limitedVerify.status, 429);
+  assert.equal(limitedVerify.headers.get('Content-Type'), 'text/html; charset=utf-8');
+  assert.match(await limitedVerify.text(), /id="check-again"/);
+
   // The webhook arrives late: checking again still works.
-  await webhook(env, 'checkout.session.completed', { ...sessionFor('plink_pro123'), id: sid });
-  assert.equal((await call(env, `/api/verify-payment?session_id=${sid}&attempt=29`)).status, 302);
+  await webhook(pendingEnv, 'checkout.session.completed', { ...sessionFor('plink_pro123'), id: sid });
+  assert.equal((await call(pendingEnv, `/api/verify-payment?session_id=${sid}&attempt=19`)).status, 302);
 
   // Each failure case gets its own branded page.
+  const env = makeEnv();
   const wrong = { ...sessionFor('plink_other') };
   await webhook(env, 'checkout.session.completed', wrong);
   const refunded = await buy(env);
@@ -488,11 +497,11 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
 {
   const env = makeEnv();
   const buyer = await buy(env);
-  const signedEvent = async (type, object, created) => {
+  const signedEvent = async (type, object, created, targetEnv = env) => {
     const payload = JSON.stringify({ id: 'evt_dispute_' + created + '_' + type, type, livemode: false, created, data: { object } });
     const t = Math.floor(Date.now() / 1000);
     const sig = createHmac('sha256', WEBHOOK_SECRET).update(`${t}.${payload}`).digest('hex');
-    return call(env, '/api/stripe-webhook', { method: 'POST', headers: { 'Stripe-Signature': `t=${t},v1=${sig}` }, body: payload });
+    return call(targetEnv, '/api/stripe-webhook', { method: 'POST', headers: { 'Stripe-Signature': `t=${t},v1=${sig}` }, body: payload });
   };
   // Dispute closed (won) arrives BEFORE the older dispute.created event.
   assert.equal((await signedEvent('charge.dispute.closed', { id: 'dp_1', status: 'won', payment_intent: buyer.paymentIntent }, 2000)).status, 200);
@@ -505,6 +514,42 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   // A newer dispute DOES revoke.
   assert.equal((await signedEvent('charge.dispute.created', { id: 'dp_2', payment_intent: buyer.paymentIntent }, 2100)).status, 200);
   assert.equal((await verify(env, buyer.token)).valid, false, 'a newer dispute still revokes');
+
+  // Overlapping first writes (empty key): insert-only onlyIf prevents older create from overwriting newer restore.
+  const raceEnv = makeEnv();
+  const raceBuyer = await buy(raceEnv);
+  const origGet = raceEnv.UPLOADS.get.bind(raceEnv.UPLOADS);
+  let holdFirstGet = true;
+  let releaseCreateGet;
+  const createPaused = new Promise((resolve) => { releaseCreateGet = resolve; });
+  let createReachedGet;
+  const waitedForCreateGet = new Promise((resolve) => { createReachedGet = resolve; });
+  raceEnv.UPLOADS.get = async (key) => {
+    const res = await origGet(key);
+    if (holdFirstGet && key.endsWith('/dispute.json') && !res) {
+      holdFirstGet = false;
+      createReachedGet();
+      await createPaused;
+    }
+    return res;
+  };
+  const raceCreate = signedEvent('charge.dispute.created', { id: 'dp_race', payment_intent: raceBuyer.paymentIntent }, 3000, raceEnv);
+  await waitedForCreateGet;
+  // Won closure arrives while creation is paused after reading empty key; writes 'restored' first.
+  const raceCloseRes = await signedEvent('charge.dispute.closed', { id: 'dp_race', status: 'won', payment_intent: raceBuyer.paymentIntent }, 3100, raceEnv);
+  assert.equal(raceCloseRes.status, 200);
+  releaseCreateGet();
+  const raceCreateRes = await raceCreate;
+  assert.equal(raceCreateRes.status, 200);
+  assert.equal((await verify(raceEnv, raceBuyer.token)).valid, true, 'overlapping first write cannot let stale dispute.created overwrite restored');
+
+  // Exhausted conditional writes return 503 so Stripe retries instead of dropping the update.
+  const busyEnv = makeEnv();
+  const busyBuyer = await buy(busyEnv);
+  const origBusyPut = busyEnv.UPLOADS.put.bind(busyEnv.UPLOADS);
+  busyEnv.UPLOADS.put = async (key, body, opts) => (key.endsWith('/dispute.json') ? null : origBusyPut(key, body, opts));
+  const busyRes = await signedEvent('charge.dispute.created', { id: 'dp_busy', payment_intent: busyBuyer.paymentIntent }, 4000, busyEnv);
+  assert.equal(busyRes.status, 503, 'exhausted dispute conditional write returns 503 for Stripe retry');
 }
 
 // ── 13. F-24/F-25: Clean Refresh header & JSON 500s on /mcp and /a2a/* ──────
@@ -512,7 +557,7 @@ const verify = async (env, token) => (await call(env, '/api/verify-token', { met
   const env = makeEnv();
   const pending = await call(env, '/api/verify-payment?session_id=cs_test_cleanrefresh&evil=1&redirect=https://evil.example');
   assert.equal(pending.status, 202);
-  assert.equal(pending.headers.get('Refresh'), '2;url=/api/verify-payment?session_id=cs_test_cleanrefresh&attempt=1', 'Refresh carries only session_id and attempt');
+  assert.equal(pending.headers.get('Refresh'), '3;url=/api/verify-payment?session_id=cs_test_cleanrefresh&attempt=1', 'Refresh carries only session_id and attempt');
 
   // Force unhandled exception inside /mcp and /a2a/* via throwing env getter.
   const explodingEnv = new Proxy({}, { get() { throw new Error('boom'); } });

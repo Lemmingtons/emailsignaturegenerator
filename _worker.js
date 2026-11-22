@@ -387,7 +387,7 @@ async function revokeEntitlement(env, paymentIntentId, reason, event) {
       };
       const written = await bucket.put(key, JSON.stringify(record), {
         httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-        onlyIf: current && current.etag ? { etagMatches: current.etag } : undefined,
+        onlyIf: current ? (current.etag ? { etagMatches: current.etag } : undefined) : { etagDoesNotMatch: '*' },
       });
       if (written !== null) return true;
     }
@@ -440,7 +440,7 @@ async function restoreDisputedEntitlement(env, paymentIntentId, event) {
     };
     const written = await bucket.put(key, JSON.stringify(record), {
       httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-      onlyIf: current && current.etag ? { etagMatches: current.etag } : undefined,
+      onlyIf: current ? (current.etag ? { etagMatches: current.etag } : undefined) : { etagDoesNotMatch: '*' },
     });
     if (written !== null) return true;
   }
@@ -513,9 +513,11 @@ async function redeemCheckoutSession(sessionId, env) {
 }
 
 // The Stripe return page retries while the signed webhook is still on its way,
-// counting attempts in the URL so it cannot loop forever.
-const PAYMENT_PENDING_ATTEMPTS = 30;
-const PAYMENT_PENDING_RETRY_SECONDS = 2;
+// counting attempts in the URL so it cannot loop forever. 20 attempts at 3s
+// keeps a full 60s wait safely inside the 25/min IP rate limit (including an
+// emailed fragment restore hop).
+const PAYMENT_PENDING_ATTEMPTS = 20;
+const PAYMENT_PENDING_RETRY_SECONDS = 3;
 
 // Small branded pages for the payment return. They never contain the token or
 // any Stripe id: the retry uses a Refresh header, not a link in the body.
@@ -1507,7 +1509,17 @@ async function handleRequest(request, env, ctx) {
       if (request.method !== 'GET') return apiError(405, 'method_not_allowed');
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
       const limited = await enforceRateLimit(env, `verify-payment:${ip}`);
-      if (limited) return limited;
+      if (limited) {
+        if (limited.status === 429) {
+          const script = `<script>document.getElementById('check-again').addEventListener('click',function(){var u=new URL(location.href);u.searchParams.delete('attempt');location.replace(u.pathname+u.search);});</script>`;
+          const html = paymentPageHtml('Please wait a moment', [
+            'Too many confirmation checks happened in a short time. Your payment is safe and you do not need to pay again.',
+            'Wait a few seconds, then check again to finish unlocking your purchase.',
+          ], { script, action: '<p style="margin-top:32px"><button type="button" id="check-again" class="btn btn-primary">Check again</button></p>' });
+          return new Response(html, { status: 429, headers: paymentPageHeaders({ 'Retry-After': '5' }) });
+        }
+        return paymentProblemResponse('server_misconfiguration');
+      }
       const sessionId = url.searchParams.get('session_id');
 
       // No query: the emailed link, whose session id is in the fragment.
@@ -1613,13 +1625,17 @@ async function handleRequest(request, env, ctx) {
         if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'refund', event);
       } else if (event.type === 'charge.dispute.created') {
         const paymentIntent = stripeId(object.payment_intent, 'pi');
-        if (paymentIntent) await revokeEntitlement(env, paymentIntent, 'dispute', event);
+        if (paymentIntent && !await revokeEntitlement(env, paymentIntent, 'dispute', event)) {
+          return apiError(503, 'entitlement_update_busy');
+        }
       } else if (
         event.type === 'charge.dispute.closed' &&
         (object.status === 'won' || object.status === 'warning_closed')
       ) {
         const paymentIntent = stripeId(object.payment_intent, 'pi');
-        if (paymentIntent) await restoreDisputedEntitlement(env, paymentIntent, event);
+        if (paymentIntent && !await restoreDisputedEntitlement(env, paymentIntent, event)) {
+          return apiError(503, 'entitlement_update_busy');
+        }
       }
 
       // Access is durable before email delivery. Retryable delivery errors return

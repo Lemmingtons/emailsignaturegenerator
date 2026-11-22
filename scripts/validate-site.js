@@ -142,7 +142,7 @@ function checkWorkerBehavior() {
     "if (crashed.status !== 500 || (await crashed.json()).code !== 'server_error') throw new Error('unhandled exception did not return a clean 500');",
     // New Stripe purchases use opaque, durable entitlements and can be revoked.
     "const pendingPurchase = await worker.default.fetch(new Request('https://example.com/api/verify-payment?session_id=cs_test_PURCHASE'), env);",
-    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '2') throw new Error('checkout redirect did not wait safely for its signed webhook');",
+    "if (pendingPurchase.status !== 202 || pendingPurchase.headers.get('Retry-After') !== '3') throw new Error('checkout redirect did not wait safely for its signed webhook');",
     "const purchaseSession = { id: 'cs_test_PURCHASE', mode: 'payment', status: 'complete', payment_status: 'paid', livemode: false, payment_link: env.STRIPE_PAYMENT_LINK_ID, payment_intent: 'pi_PURCHASE' };",
     "const purchaseWebhook = await postStripeEvent({ id: 'evt_PURCHASE', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), livemode: false, data: { object: purchaseSession } });",
     "if (purchaseWebhook.status !== 200) throw new Error('paid checkout webhook returned ' + purchaseWebhook.status);",
@@ -1241,6 +1241,8 @@ for (const file of internalLinkFiles) {
   }
   const hub = read('email-signature-templates.html');
   for (const [id] of templates) assert(hub.includes(`href="/email-signature-templates/${id}"`), `Template gallery must link ${id}`);
+  assert(hub.includes('/assets/sample-headshot.jpg'), 'Template gallery specimens must retain their sample headshot');
+  assert(read('email-signature-templates/branded.html').includes('/assets/sample-logo.svg'), 'Branded template specimen must retain its sample logo');
 
   const navFiles = [
     ...fs.readdirSync(root).filter(f => f.endsWith('.html') && !/^(?:test|googlee[0-9a-f]+)\.html$/.test(f)),

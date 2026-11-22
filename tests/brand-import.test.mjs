@@ -348,4 +348,12 @@ assert.ok(decodedLogo.includes('<!DOCTYPE svg'), 'real SVG with prolog/comments/
   assert.equal(samePost.status, 200);
 }
 
+// U+0130 ('İ') expands to 2 code units under toLowerCase(); ASCII case-folding preserves slice offsets.
+{
+  const turkishHtml = `<html><head><meta name="description" content="İstanbul studio"><title>Acme Company | Home</title><script type="application/ld+json">{"@type":"Organization","name":"Acme Company","logo":"https://acme.example/logo.png"}</script></head></html>`;
+  const parsed = extractBrand(turkishHtml, 'https://acme.example/');
+  assert.equal(parsed.company, 'Acme Company', 'U+0130 before <title>/JSON-LD does not shift tag slice offsets');
+  assert.equal(parsed.logos[0]?.url, 'https://acme.example/logo.png', 'JSON-LD logo still parses cleanly after U+0130');
+}
+
 console.log('Brand import checks passed');

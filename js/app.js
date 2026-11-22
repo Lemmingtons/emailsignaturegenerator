@@ -3385,8 +3385,14 @@
     }
 
     if (!result.valid) {
+      // When no purchase is saved yet, keep the incoming token across transient
+      // outages (network/429/5xx) so refreshing can retry verification instead
+      // of losing a paid checkout return after the URL fragment was stripped.
+      if (result.unreachable && !existingToken) {
+        setProToken(incomingToken);
+      }
       const msg = result.unreachable
-        ? 'Could not verify that access link right now. Try again in a moment.'
+        ? 'Could not verify that access link right now. Reload in a moment to try again.'
         : existingToken
           ? 'That access link is not valid or has expired. Your existing Pro access was kept unchanged.'
           : 'That access link is not valid or has expired.';

@@ -669,14 +669,14 @@ const SAMPLE_PERSON = Object.freeze({
   phone: '+1 555 012 3456',
   email: 'sarah@harbourco.com',
   website: 'https://harbourco.com',
-  photoUrl: '/assets/sample-headshot.jpg',
+  photoUrl: `${SITE_URL}/assets/sample-headshot.jpg`,
   linkedin: 'https://linkedin.com/in/sarahmitchell',
   instagram: 'https://instagram.com/harbourco',
   facebook: 'https://facebook.com/harbourco',
 });
 
 // Shown in the Branded template, which is built around a company logo.
-const SAMPLE_LOGO = '/assets/sample-logo.svg';
+const SAMPLE_LOGO = `${SITE_URL}/assets/sample-logo.svg`;
 
 const SECOND_PERSON = Object.freeze({
   fullName: 'Daniel Brooks',

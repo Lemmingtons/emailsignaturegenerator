@@ -50,6 +50,10 @@
     });
   }
 
+  function demoAsset(path) {
+    try { return new URL(path, window.location.origin).href; } catch { return path; }
+  }
+
   var D = {
     fullName: 'Sarah Mitchell',
     title: 'Senior Account Manager',
@@ -57,7 +61,7 @@
     phone: '+1 555 012 3456',
     email: 'sarah@acmecorp.com',
     website: 'https://acmecorp.com',
-    photoUrl: 'assets/sample-headshot.jpg',
+    photoUrl: demoAsset('assets/sample-headshot.jpg'),
     linkedin: 'https://linkedin.com/in/sarahmitchell',
     instagram: 'https://instagram.com/sarahmitchell',
     facebook: '',
@@ -67,9 +71,9 @@
   // moving element per signature. The ring bakes its accent into the pixels so it
   // needs a colour-matched file; the shine sweep only lightens, so one file serves
   // every slide. Regenerate with: node scripts/build-demo-animations.js
-  var RING_TEAL = 'assets/demo-photo-ring-0891B2.gif';
-  var RING_PINE = 'assets/demo-photo-ring-0D9488.gif';
-  var SWEEP = 'assets/demo-photo-sweep.gif';
+  var RING_TEAL = demoAsset('assets/demo-photo-ring-0891B2.gif');
+  var RING_PINE = demoAsset('assets/demo-photo-ring-0D9488.gif');
+  var SWEEP = demoAsset('assets/demo-photo-sweep.gif');
 
   var SLIDES = [
     {
@@ -102,7 +106,7 @@
       // stays still here so this slide demonstrates exactly one moving element.
       id: 'ctabox', category: 'Sales / CTA', name: 'CTA Box',
       effect: 'Button sheen',
-      ctaImage: { url: 'assets/demo-cta-EA580C.gif', width: 129, height: 32 },
+      ctaImage: { url: demoAsset('assets/demo-cta-EA580C.gif'), width: 129, height: 32 },
       desc: 'Drive meetings and demos with a call-to-action button that catches the eye.',
       style: { primaryColor: '#EA580C', textColor: '#1d1d1f', fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif", dividerStyle: 'line', photoShape: 'circle', iconStyle: 'mono', ctaText: 'Book a Meeting', ctaUrl: '#' }
     },

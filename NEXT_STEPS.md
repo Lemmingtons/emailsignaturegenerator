@@ -63,6 +63,7 @@ Applied to the `email-sig-photos` bucket:
 | --- | --- |
 | `users/` | **No expiry.** Deliberate — these images are referenced by signatures already sitting in other people's inboxes, so expiring them would break sent mail. Growth is bounded at up to 16 small objects per user or team-member folder (4 slots × 4 extensions, with cross-extension siblings preserved so sent mail keeps loading). |
 | `signatures/` | Expire objects after 365 days (`expire-saved-signatures-365d`). |
+| `bulk-api/registrations/` | Expire objects after 7 days (`expire-agent-registrations-7d`). |
 | all prefixes | Abort incomplete multipart uploads after 7 days (Cloudflare's default rule, already present). |
 
 Do not add an Infrequent Access transition to `users/`. Those objects are read every time a recipient opens an email, and IA adds a per-retrieval charge.

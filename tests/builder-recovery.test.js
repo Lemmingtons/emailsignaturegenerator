@@ -541,6 +541,17 @@ async function main() {
   importing.handleProPurchase(facts.paymentLink);
   assert.equal(importing.location.href, 'builder', 'checkout cannot interrupt brand import');
 
+  // Transient outage when arriving with a token and no prior stored token preserves it for reload retry.
+  {
+    const transient = builder({
+      search: '?token=' + TOKEN,
+      fetch: async () => { throw new Error('network down'); },
+    });
+    await transient.handleIncomingAddressToken(TOKEN);
+    assert.equal(transient.local.getItem(facts.proTokenStorageKey), TOKEN, 'incoming token is retained across transient outage when no prior purchase is stored');
+    assert.match(transient.get('exportStatusHint').textContent, /Reload in a moment/);
+  }
+
   console.log('Builder checkout recovery, paywall and export checks passed');
 }
 

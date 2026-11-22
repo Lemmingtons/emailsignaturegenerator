@@ -77,6 +77,7 @@ Production deploys automatically via **Cloudflare Workers Builds** on every merg
 2. Locate the last known-good deployment version and click **Rollback**.
    - Rollback restores Worker code and static assets immediately.
    - Rollback does **not** revert R2 objects, Cloudflare secrets, or Stripe configuration.
+   - **Dispute-restoration compatibility note:** If rolling back to a pre-PR #48 Worker version (before timestamped `status: "restored"` dispute markers), check R2 for any `entitlements/revoked/*/dispute.json` objects containing `"status": "restored"` and delete them — older Worker builds treat any object at that key as an active revocation.
 3. Verify recovery:
    - `GET https://emailsignaturegenerator.ai/api/health` returns `200` (`{ "ok": true, ... }`).
    - Run read-only `node scripts/monitor-site.js`.

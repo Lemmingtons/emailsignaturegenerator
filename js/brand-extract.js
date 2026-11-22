@@ -189,10 +189,16 @@ function isTagNameEnd(ch) {
   return ch === 62 || ch === 47 || ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 12;
 }
 
+// ASCII-only lowercase preserves 1:1 UTF-16 code-unit offsets (unlike
+// String.prototype.toLowerCase(), which expands U+0130 'İ' to two code units).
+function asciiLower(str) {
+  return str.replace(/[A-Z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 32));
+}
+
 // Extracts <tag ...>body</tag> blocks using linear indexOf scans rather than
 // backtracking regexes.
 function extractTagBlocks(html, tagName, maxBlocks = 200, maxBodyChars = Infinity) {
-  const lower = html.toLowerCase();
+  const lower = asciiLower(html);
   const openNeedle = '<' + tagName;
   const closeNeedle = '</' + tagName;
   const blocks = [];
