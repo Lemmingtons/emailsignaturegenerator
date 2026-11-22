@@ -20,6 +20,10 @@
     "test:purchase-email": "node tests/purchase-email.test.mjs",
     "monitor": "node scripts/monitor-site.js",
     "test:funnel": "node tests/checkout-funnel.test.js",
+    "test:gsc": "node tests/export-search-console.test.js",
+    "test:encoders": "node tests/media-encoders.test.js",
+    "test:ui": "node tests/health-check.test.js && node tests/brand-tool.test.js && node tests/connect-agent.test.js && node tests/bulk-ui.test.js",
+    "test": "npm run check && node generate-pages.js --check && npm run test:frontend && npm run test:ui && npm run test:monitor && npm run test:funnel && npm run test:gsc && npm run test:automation && npm run test:encoders && npm run test:brand && npm run test:team && npm run test:bulk && npm run test:agents && npm run test:builder && npm run test:templates && npm run test:worker && npm run test:purchase-email",
     "funnel": "node scripts/checkout-funnel.js"
   }
 }
