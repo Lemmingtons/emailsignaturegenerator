@@ -1040,6 +1040,28 @@ function readProfessions() {
   return entries;
 }
 
+// Regulated jobs build from the employer's website and turn on the compliance
+// fields. Entries without a website to import (students) set their own "cta"
+// and link straight to a suitable template instead.
+function professionCtaHTML(entry) {
+  if (entry.cta) {
+    return `    <div class="page-cta">
+      <h2>${escapeHtml(entry.cta.heading)}</h2>
+      <p>${escapeHtml(entry.cta.text)} Free to preview, ${PRICE_SHORT} once to use.</p>
+      <a href="${escapeHtml(entry.cta.href)}" class="btn btn-primary">${escapeHtml(entry.cta.button)}</a>
+    </div>`;
+  }
+  return `    <div class="page-cta">
+      <h2>Build your ${escapeHtml(entry.label.toLowerCase())} signature from your website</h2>
+      <p>Type your ${entry.slug.startsWith('real-estate') ? 'brokerage' : entry.slug.startsWith('nurse') ? 'employer' : 'firm'} website to bring in the logo and colours, then turn on the compliance fields. Free to preview, ${PRICE_SHORT} once to use.</p>
+      <form class="profession-brand-form" action="/generator" method="get">
+        <label for="professionSite" class="visually-hidden">Website</label>
+        <input type="text" id="professionSite" name="site" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourcompany.com" maxlength="300">
+        <button type="submit" class="btn btn-primary">Build my signature</button>
+      </form>
+    </div>`;
+}
+
 function professionPageHTML(entry) {
   const url = `${SITE_URL}/seo/${entry.slug}`;
   const examplesHTML = entry.examples.map(example => {
@@ -1093,25 +1115,17 @@ ${entry.include.map(item => `        <li>${escapeHtml(item)}</li>`).join('\n')}
       <ul class="guide-list">
 ${entry.avoid.map(item => `        <li>${escapeHtml(item)}</li>`).join('\n')}
       </ul>
-      <p class="specimen-caption">Licence, disclaimer and credential wording on this page is general information, not legal advice. Check the current rules with your regulator, employer or brokerage.</p>
+      <p class="specimen-caption">${escapeHtml(entry.note || 'Licence, disclaimer and credential wording on this page is general information, not legal advice. Check the current rules with your regulator, employer or brokerage.')}</p>
     </section>
 
-    <div class="page-cta">
-      <h2>Build your ${escapeHtml(entry.label.toLowerCase())} signature from your website</h2>
-      <p>Type your ${entry.slug.startsWith('real-estate') ? 'brokerage' : entry.slug.startsWith('nurse') ? 'employer' : 'firm'} website to bring in the logo and colours, then turn on the compliance fields. Free to preview, ${PRICE_SHORT} once to use.</p>
-      <form class="profession-brand-form" action="/generator" method="get">
-        <label for="professionSite" class="visually-hidden">Website</label>
-        <input type="text" id="professionSite" name="site" inputmode="url" autocomplete="url" spellcheck="false" placeholder="yourcompany.com" maxlength="300">
-        <button type="submit" class="btn btn-primary">Build my signature</button>
-      </form>
-    </div>
+${professionCtaHTML(entry)}
 
 ${faqSectionHTML(entry.faqs)}
 
     <section aria-labelledby="more">
       <h2 id="more">More signature guides</h2>
       <ul class="guide-list">
-        <li><a href="/email-signature-examples">52 email signature examples</a> for other jobs and situations</li>
+${(entry.related || []).map(link => `        <li><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a></li>\n`).join('')}        <li><a href="/email-signature-examples">52 email signature examples</a> for other jobs and situations</li>
         <li><a href="${TEMPLATE_HUB_PATH}">All ${TEMPLATE_COUNT} email signature templates</a></li>
         <li><a href="/blog/email-signature-credentials">How to list credentials in an email signature</a></li>
         <li><a href="/health-check">Free signature health check</a> for dark mode, Outlook and size problems</li>
