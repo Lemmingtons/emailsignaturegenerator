@@ -433,7 +433,7 @@
     "cta": {
       "heading": "Build your PhD student signature",
       "text": "Start with a plain layout, add your field, lab and university, and see it update as you type.",
-      "href": "/generator?template=minimal&role=PhD+Candidate",
+      "href": "/generator?template=minimal&role=PhD+Student",
       "button": "Build my signature"
     },
     "related": [
